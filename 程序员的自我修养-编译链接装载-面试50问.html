@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编译 · 链接 · 装载 面试宝典 · 50 问</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --panel:#ffffff;
+    --panel-2:#fbfcfe;
+    --ink:#1a1d24;
+    --ink-2:#4a5262;
+    --ink-3:#7b8496;
+    --line:#e3e7ee;
+    --line-2:#eef1f6;
+    --brand:#00599c;
+    --brand-2:#0a7bc4;
+    --brand-soft:#e8f2fa;
+    --hot:#d9480f;
+    --hot-soft:#fdeee7;
+    --ok:#0f7b57;
+    --code-bg:#eef2f7;
+    --code-ink:#0b4f7a;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,30,50,.05), 0 8px 24px -12px rgba(20,30,50,.14);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.top{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1240px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px;
+  }
+  .logo{display:flex;align-items:center;gap:11px;flex-shrink:0}
+  .logo-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(145deg,#00487d,#2e9be0);
+    color:#fff;font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    letter-spacing:-1px;
+    box-shadow:0 4px 12px -4px rgba(0,89,156,.55);
+  }
+  .logo-txt b{display:block;font-size:15.5px;line-height:1.25;letter-spacing:.2px}
+  .logo-txt span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.4px}
+  .search{
+    flex:1; max-width:420px; position:relative; margin-left:auto;
+  }
+  .search input{
+    width:100%; padding:9px 14px 9px 36px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--panel-2); color:var(--ink);
+    font-size:13.5px; font-family:inherit; outline:none;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .search input:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(10,123,196,.13);background:#fff}
+  .search::before{
+    content:"⌕"; position:absolute; left:12px; top:50%; transform:translateY(-52%);
+    color:var(--ink-3); font-size:16px; pointer-events:none;
+  }
+  .search kbd{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:10.5px; color:var(--ink-3); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:5px; padding:1px 5px; background:#fff;
+    font-family:inherit;
+  }
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-2);
+    padding:8px 13px; border-radius:9px; font-size:12.8px; font-family:inherit;
+    cursor:pointer; white-space:nowrap; transition:.16s;
+  }
+  .btn:hover{border-color:#c9d2e0;color:var(--ink);background:var(--panel-2)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#004b85;border-color:#004b85;color:#fff}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 90px;display:flex;gap:26px;align-items:flex-start}
+  aside{
+    width:222px; flex-shrink:0; position:sticky; top:76px;
+  }
+  .side-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 12px; box-shadow:var(--shadow);
+  }
+  .side-title{font-size:11px;letter-spacing:1.2px;color:var(--ink-3);font-weight:700;padding:0 8px 8px}
+  .nav-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:7px 9px; border-radius:9px; font-size:12.8px; color:var(--ink-2);
+    text-decoration:none; cursor:pointer; transition:.15s; border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--brand-soft);color:var(--brand);border-color:#d6e8f5}
+  .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600;border-color:#cbe2f2}
+  .nav-item .n{
+    font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+    background:var(--line-2);border-radius:20px;padding:1px 7px;font-weight:600;
+  }
+  .nav-item.active .n{background:#d3e7f6;color:var(--brand)}
+  .progress-box{margin-top:12px;padding:12px 10px 8px;border-top:1px solid var(--line-2)}
+  .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:7px}
+  .progress-label b{color:var(--brand);font-variant-numeric:tabular-nums}
+  .bar{height:6px;background:var(--line-2);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--brand),#3aa0e0);transition:width .35s ease}
+
+  main{flex:1;min-width:0}
+
+  .hero{
+    background:linear-gradient(135deg,#003a66 0%,#00599c 50%,#1e88cf 100%);
+    border-radius:18px; padding:26px 28px; color:#fff;
+    box-shadow:0 14px 34px -18px rgba(0,60,110,.8);
+    position:relative; overflow:hidden;
+  }
+  .hero::after{
+    content:"ELF"; position:absolute; right:-10px; bottom:-40px;
+    font-size:120px; font-weight:800; color:rgba(255,255,255,.09); letter-spacing:-4px;
+    pointer-events:none;
+  }
+  .hero h1{margin:0 0 8px;font-size:25px;letter-spacing:.3px;font-weight:700}
+  .hero p{margin:0;font-size:13.5px;opacity:.92;max-width:660px;line-height:1.7}
+  .hero .stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;position:relative;z-index:1}
+  .chip{
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+    border-radius:20px; padding:4px 12px; font-size:12.3px; letter-spacing:.2px;
+    backdrop-filter:blur(4px);
+  }
+  .chip b{font-weight:700}
+
+  .section{margin-top:34px;scroll-margin-top:82px}
+  .section-head{display:flex;align-items:baseline;gap:11px;margin-bottom:14px;padding-left:2px}
+  .section-head h2{margin:0;font-size:17.5px;letter-spacing:.2px}
+  .section-head .cnt{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .section-head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);margin-bottom:5px}
+
+  .q{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:11px; box-shadow:var(--shadow); overflow:hidden;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .q.open{border-color:#cfe2f0;box-shadow:0 2px 4px rgba(20,30,50,.05),0 14px 30px -18px rgba(0,89,156,.4)}
+  .q-head{
+    display:flex; align-items:flex-start; gap:13px; padding:14px 18px;
+    cursor:pointer; user-select:none;
+  }
+  .q-head:hover{background:var(--panel-2)}
+  .num{
+    flex-shrink:0; width:29px; height:29px; border-radius:9px;
+    background:var(--brand-soft); color:var(--brand);
+    font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .q.open .num{background:var(--brand);color:#fff}
+  .q-title{flex:1;font-size:14.6px;font-weight:600;line-height:1.6;letter-spacing:.1px}
+  .q-tags{display:flex;align-items:center;gap:7px;flex-shrink:0;margin-top:2px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  .tag.hot{background:var(--hot-soft);color:var(--hot)}
+  .tag.d1{background:#e9f5ee;color:#0f7b57}
+  .tag.d2{background:#fff4e3;color:#b26a00}
+  .tag.d3{background:#f0ecfb;color:#5b3bc4}
+  .caret{
+    flex-shrink:0;color:var(--ink-3);font-size:11px;margin-top:8px;transition:transform .25s;
+  }
+  .q.open .caret{transform:rotate(180deg);color:var(--brand)}
+
+  .q-body{display:none;padding:0 20px 18px 20px;}
+  .q.open .q-body{display:block}
+  .q-body .inner{padding-top:4px;border-top:1px dashed var(--line);padding-top:14px}
+
+  .blk-label{
+    font-size:11px;font-weight:700;letter-spacing:1.3px;color:var(--brand);
+    margin:0 0 8px; display:flex; align-items:center; gap:7px;
+  }
+  .blk-label::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--brand);display:block}
+  .blk-label.follow{color:var(--hot)}
+  .blk-label.follow::before{background:var(--hot)}
+
+  ul.pts{margin:0;padding:0;list-style:none}
+  ul.pts li{
+    position:relative;padding-left:19px;margin-bottom:7px;font-size:13.9px;color:var(--ink-2);line-height:1.75;
+  }
+  ul.pts li::before{
+    content:"";position:absolute;left:5px;top:9px;width:5px;height:5px;border-radius:50%;
+    background:#a9bcd2;
+  }
+  ul.pts li b,ul.pts li strong{color:var(--ink);font-weight:600}
+  ul.pts li em{font-style:normal;color:var(--brand);font-weight:600}
+
+  code{
+    background:var(--code-bg);color:var(--code-ink);
+    padding:1.5px 6px;border-radius:5px;font-size:12.7px;
+    font-family:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    border:1px solid #e0e7f0;
+  }
+
+  .follow-box{
+    margin-top:16px;background:var(--panel-2);border:1px solid var(--line-2);
+    border-left:3px solid #f0a06a;border-radius:10px;padding:14px 16px 6px;
+  }
+  .faq{margin-bottom:11px}
+  .faq .fq{
+    font-size:13.4px;font-weight:600;color:var(--ink);margin-bottom:4px;
+    display:flex;gap:7px;align-items:flex-start;
+  }
+  .faq .fq .mark{color:var(--hot);font-weight:800;flex-shrink:0;font-size:12px;margin-top:1px}
+  .faq .fa{font-size:13.4px;color:var(--ink-2);line-height:1.75;padding-left:19px}
+
+  .empty{
+    display:none;text-align:center;padding:60px 20px;color:var(--ink-3);font-size:14px;
+  }
+  .empty.show{display:block}
+  .empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
+
+  footer{
+    max-width:1240px;margin:0 auto;padding:8px 22px 40px;color:var(--ink-3);font-size:12px;text-align:center;
+  }
+
+  .totop{
+    position:fixed;right:26px;bottom:26px;z-index:40;
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;color:var(--brand);font-size:16px;cursor:pointer;
+    box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;
+  }
+  .totop.show{display:flex}
+
+  @media (max-width:980px){
+    aside{display:none}
+    .wrap{padding:20px 14px 80px}
+    .top-inner{padding:10px 14px;gap:10px;flex-wrap:wrap}
+    .search{max-width:none;margin-left:0;order:3;flex-basis:100%}
+    .logo-txt span{display:none}
+  }
+  @media print{
+    header.top,aside,.totop,.q-tags .tag.d1,.q-tags .tag.d2,.q-tags .tag.d3{display:none!important}
+    body{background:#fff;font-size:11.5pt}
+    .q-body{display:block!important}
+    .q{border:1px solid #ccc;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+    .hero{box-shadow:none}
+    .wrap{display:block;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo">
+      <div class="logo-mark">ELF</div>
+      <div class="logo-txt">
+        <b>编译 · 链接 · 装载</b>
+        <span>50 问 · 面试宝典（含追问）</span>
+      </div>
+    </div>
+    <div class="search">
+      <input id="q" type="text" placeholder="搜索，如 重定位 / GOT / PLT / 符号表 / 内联" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <button class="btn" id="expandAll">展开全部</button>
+    <button class="btn primary" id="printBtn">打印 / 存 PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="side-card">
+      <div class="side-title">知 识 模 块</div>
+      <div id="nav"></div>
+      <div class="progress-box">
+        <div class="progress-label"><span>复习进度</span><span><b id="pv">0</b> / 50</span></div>
+        <div class="bar"><i id="pbar"></i></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>编译 · 链接 · 装载 面试 50 问</h1>
+      <p>沿着《程序员的自我修养——链接、装载与库》的主线，把「一段源码如何变成内存里跑起来的进程」这条链路拆成 50 道高频面试题：目标文件与节、符号与重定位、静态与动态链接、GOT/PLT 与延迟绑定、装载流程、运行库与内存布局，再延伸到编译原理与优化、工具链排查。每题给出回答要点，并附面试官最可能追问的方向。</p>
+      <div class="stats">
+        <span class="chip"><b>50</b> 道高频题</span>
+        <span class="chip"><b>7</b> 大知识模块</span>
+        <span class="chip">ELF · 符号 · 重定位 · 装载</span>
+        <span class="chip">要点 + 追问 双栏结构</span>
+      </div>
+    </div>
+
+    <div id="list"></div>
+    <div class="empty" id="empty">
+      <div class="big">⌕</div>
+      没有匹配的题目，换个关键词试试
+    </div>
+  </main>
+</div>
+
+<footer>按 <b>/</b> 快速搜索 · 点击题目展开答案 · 建议配合 <code>readelf / nm / objdump / ldd</code> 亲手验证一遍</footer>
+<button class="totop" id="totop">↑</button>
+
+<script>
+var DATA = [
+/* ============ 一、编译流程与目标文件 (8) ============ */
+{cat:"编译流程与目标文件",diff:1,hot:true,
+ q:"从源代码到可执行文件，编译系统经历了哪几个阶段？",
+ points:[
+  "四个阶段：预处理 → 编译 → 汇编 → 链接。每一步都有独立的工具，GCC 只是它们的驱动程序。",
+  "预处理：由 [[cpp]] 处理 [[#include]]、[[#define]]、条件编译，输出纯文本的 [[.i]]（C）或 [[.ii]]（C++）文件。",
+  "编译：由 [[cc1plus]] 做词法分析、语法分析、语义分析、生成中间表示并优化，输出汇编文件 [[.s]]。",
+  "汇编：由 [[as]] 把汇编翻译成机器指令，按节组织，输出可重定位目标文件 [[.o]]（ELF 的 [[ET_REL]]）。",
+  "链接：由 [[ld]] 合并多个 [[.o]] 与库，完成符号决议与重定位，输出可执行文件或共享库。",
+  "用 [[gcc -v]] 可以看到每一步实际调用的命令，[[gcc -save-temps]] 会把中间文件全部保留下来。"
+ ],
+ follow:[
+  {q:"怎么保留中间产物来验证这条链路？",a:"[[gcc -save-temps main.c]] 会留下 [[main.i]]、[[main.s]]、[[main.o]]；再配合 [[file]] 和 [[readelf -h]] 逐个查看，整条链路就非常直观。"},
+  {q:"编译器、汇编器、链接器的分工为什么要分开？",a:"分层解耦。编译器只需生成汇编文本，指令编码与重定位信息的生成交给汇编器，这样同一套前端可以支持多种目标架构和汇编语法，职责也更清晰。"},
+  {q:"链接器算编译器的一部分吗？",a:"不算传统意义上的「编译器」。链接器通常独立实现（GNU ld、gold、lld、mold），它是构建流程的最后一环，处理的是目标文件而不是源码。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:1,hot:false,
+ q:"预处理阶段具体做了哪些事？#include 是纯文本展开会带来什么问题？",
+ points:[
+  "宏定义与替换：处理 [[#define]]，包括对象宏、函数宏，以及 [[#]]（字符串化）与 [[##]]（拼接）运算符。",
+  "文件包含：把 [[#include]] 指定的文件内容原地递归展开，本质是文本复制粘贴。",
+  "条件编译：[[#if]] / [[#ifdef]] / [[#ifndef]] / [[#elif]] / [[#else]] / [[#endif]]，用于平台适配和避免重复包含。",
+  "删除注释，插入行号标记（形如 [[# 1 \"main.c\"]]）供编译器报错与调试器定位使用。",
+  "最终输出一份「展开后的单一源文件」，其中不再有任何预处理指令。"
+ ],
+ follow:[
+  {q:"既然是文本展开，重复包含会怎样？",a:"同一个头文件被包含两次，里面的定义就会重复，触发重定义错误。标准解法是头文件卫哨 [[#ifndef XXX_H]] 或 [[#pragma once]]。"},
+  {q:"为什么头文件里定义全局变量很危险？",a:"每个包含它的翻译单元都会生成一份定义，链接期就是 [[multiple definition]]。正解是头文件里用 [[extern]] 声明，在某个 .cpp 里定义一次；C++17 起可以用 [[inline]] 变量。"},
+  {q:"宏为什么容易出 bug？",a:"它没有作用域、没有类型检查、不进符号表；函数宏的参数可能被多次求值（如 [[SQ(i++)]]），缺失括号还会破坏运算优先级。现代 C++ 优先用 [[constexpr]] 和内联函数替代。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:2,hot:true,
+ q:"编译阶段做了什么？编译器前端、中端、后端分别负责什么？",
+ points:[
+  "前端：词法分析（切 token）→ 语法分析（构造抽象语法树 AST）→ 语义分析（类型检查、符号表维护、模板实例化、重载决议），产出与目标机器无关的中间表示。",
+  "中端（优化器）：在 IR 上做机器无关优化，如常量折叠与传播、死代码消除、公共子表达式消除、循环优化、内联，输出优化后的 IR。",
+  "后端：指令选择、寄存器分配、指令调度、窥孔优化，最终生成目标机器的汇编代码。",
+  "三段用 IR 解耦，这正是 LLVM 的 LLVM IR 与 GCC 的 GIMPLE/RTL 存在的意义。",
+  "工程收益：M 种语言 × N 种目标机器，只需 M 个前端 + N 个后端，而不是 M×N 套实现。"
+ ],
+ follow:[
+  {q:"LLVM 和 GCC 的结构差异在哪？",a:"LLVM 全程使用统一的 IR，并且是「库化」设计，可以直接作为库被调用，因此特别适合做 JIT 与新语言后端；GCC 是整体式设计，内部有多套 IR（GIMPLE/RTL），历史悠久但扩展成本更高。"},
+  {q:"模板报错为什么那么长？",a:"模板在语义分析阶段实例化，编译器会把完整的实例化推导链全部打印出来，出错位置往往在最深一层，于是信息量爆炸。"},
+  {q:"为什么做 AI 编译器的人更常选 LLVM？",a:"因为它的 IR 与 Pass 基础设施完善、可嵌入式设计、扩展后端成本低；MLIR 更是直接在 LLVM 项目下发展出多层 dialect 机制。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:2,hot:false,
+ q:"汇编器的职责是什么？汇编代码与机器码是什么关系？",
+ points:[
+  "汇编器（[[as]]）把汇编文本翻译成机器指令，并按节（section）组织内容，输出可重定位目标文件。",
+  "具体工作：指令编码（把 [[mov]]、[[call]] 等助记符变成二进制机器码）、伪指令与符号处理、构建符号表、生成重定位表。",
+  "凡是引用外部符号或跨段地址的位置，汇编器都留空并记录一条重定位项，等链接器在最终确定地址后回填。",
+  "汇编阶段基本是「一对一或一对多」的翻译，不做跨函数的高层次优化，因此远比编译阶段简单。"
+ ],
+ follow:[
+  {q:"汇编器会做优化吗？",a:"基本不做中端意义上的优化，最多有指令编码选择、跳转优化这类窥孔级操作。真正的优化在编译器中端完成。"},
+  {q:"可以直接写汇编吗？",a:"可以。[[.s]] 文件能直接交给汇编器；源码中可以内联汇编 [[asm volatile]]，常用于系统编程、原子操作和性能关键路径。"},
+  {q:"怎么看汇编和重定位信息？",a:"[[objdump -d]] 反汇编，[[objdump -dr]] 会同时显示重定位项——第一次看会非常有收获，能直观看到哪些地址是链接期才填的。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:2,hot:false,
+ q:"目标文件里有什么？为什么叫「可重定位目标文件」？",
+ points:[
+  "目标文件 = 机器指令 + 数据 + 符号表 + 重定位表 + 调试信息，按 ELF 格式组织。",
+  "内容可分三类：① 代码与数据（[[.text]]、[[.data]]、[[.rodata]]、[[.bss]]）；② 元信息（符号表 [[.symtab]]、字符串表 [[.strtab]]、重定位表 [[.rela.text]]）；③ 辅助信息（[[.comment]]、[[.note]]、[[.debug_*]]）。",
+  "叫「可重定位」是因为文件内的地址都是未定的（相对段内偏移），需要链接器确定各段最终地址后回填。",
+  "[[.o]] 文件不能被直接执行：它没有程序头表（装载视图），也没有确定的入口地址。"
+ ],
+ follow:[
+  {q:"用什么命令看目标文件结构？",a:"[[readelf -a x.o]] 看全部，[[readelf -S]] 看节头表，[[readelf -s]] 看符号表，[[readelf -r]] 看重定位表。"},
+  {q:"静态库和 .o 是什么关系？",a:"静态库（[[.a]]）就是用 [[ar]] 把一堆 [[.o]] 归档打包的结果，链接时按需提取其中的成员，本质还是目标文件。"},
+  {q:"为什么 .o 没有程序头表？",a:"程序头表描述的是「装载视图」，供操作系统映射内存用；[[.o]] 不参与装载，自然不需要，它只有节头表这个「链接视图」。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:3,hot:true,
+ q:"ELF 文件有哪几种类型？链接视图和执行视图有什么区别？",
+ points:[
+  "四种类型：[[ET_REL]] 可重定位文件（[[.o]]）、[[ET_EXEC]] 可执行文件、[[ET_DYN]] 共享目标文件（[[.so]] 以及 PIE）、[[ET_CORE]] 核心转储文件。",
+  "链接视图 = 节（section）视角，由节头表描述。以最小功能单位组织，包含代码、数据、符号表、重定位表，链接器关心的是它。",
+  "执行视图 = 段（segment）视角，由程序头表描述。把权限相同的节合并成一个段，按 R / RX / RW 划分，装载器关心的是它。",
+  "两者是包含关系：一个本段（segment）通常包含多个节（section）。",
+  "查看方式：[[readelf -S]] 看节，[[readelf -l]] 看段。"
+ ],
+ follow:[
+  {q:"为什么要有两套视角？",a:"职责不同。链接需要细粒度的节来做重定位与合并；装载只关心「映射哪块内存、什么权限、什么地址」，粒度过细会让页表和 mmap 调用次数暴涨，效率反而差。"},
+  {q:"常见的段（segment）有哪些？",a:"[[LOAD]]（要映射的内容，最常见）、[[INTERP]]（动态链接器路径）、[[DYNAMIC]]（动态链接信息）、[[GNU_STACK]]（栈是否可执行）、[[GNU_RELRO]]（重定位后设为只读的区域）、[[NOTE]]。"},
+  {q:"有节不属于任何段吗？",a:"有。典型是 [[.debug_*]] 调试信息节，它们不参与装载，因此不出现在程序头表里，只存在于文件的节头表中。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:1,hot:true,
+ q:".text / .data / .bss / .rodata 有什么区别？各自存什么？",
+ points:[
+  "[[.text]]：编译后的机器指令。只读、可执行，多进程之间可以在物理内存中共享。",
+  "[[.data]]：已初始化的全局变量和静态变量（初值非 0）。可读写，占用文件空间。",
+  "[[.rodata]]：只读数据。字符串字面量、const 修饰的全局常量、跳转表都在这里。",
+  "[[.bss]]：未初始化或初值为 0 的全局/静态变量。可读写，但**在文件中不占空间**，只记录大小。",
+  "其他常见节：[[.symtab]] 符号表、[[.strtab]] 字符串表、[[.rela.text]] 重定位表、[[.init_array]] 初始化函数指针数组、[[.comment]] 编译器版本、[[.note]] 平台信息。"
+ ],
+ follow:[
+  {q:"字符串字面量能修改吗？",a:"不能。它存放在 [[.rodata]]（映射为只读），写入会触发段错误，这是典型的未定义行为。"},
+  {q:"局部变量在哪个节？",a:"都不在。局部变量分配在栈上或直接放进寄存器，不属于目标文件的任何节。只有生命周期贯穿程序运行的变量（全局、静态）才进 [[.data]] / [[.bss]]。"},
+  {q:"怎么快速查看各节大小？",a:"[[size -A ./prog]] 或 [[readelf -S ./prog]]，[[size ./prog]] 会直接给出 text / data / bss 三个总量，评估体积时很好用。"}
+ ]},
+
+{cat:"编译流程与目标文件",diff:2,hot:true,
+ q:"为什么未初始化的全局变量放在 .bss 而不是 .data？",
+ points:[
+  "[[.data]] 需要在文件中保存每个字节的初值；[[.bss]] 只需记录「起始地址 + 长度」，文件里完全不占空间。",
+  "如果未初始化的大数组放在 [[.data]]，可执行文件会被大量 0 撑大——这是纯粹的存储浪费。",
+  "C 标准规定全局变量未显式初始化就是 0，而「全是 0」这件事根本不需要写在磁盘上：装载时由内核把这块内存清零即可。",
+  "因此在程序头表里，[[.bss]] 表现为「内存大小大于文件大小」的部分：[[readelf -l]] 中 LOAD 段的 [[FileSiz]] 与 [[MemSiz]] 之差的含义就在于此。"
+ ],
+ follow:[
+  {q:"怎么在 readelf 输出里验证？",a:"[[readelf -l ./prog]] 看 LOAD 段，[[MemSiz]] 大于 [[FileSiz]] 的那个差值就是 [[.bss]] 对应的内存，内核会在映射后把它清零。"},
+  {q:"静态局部变量放在哪？",a:"也在 [[.data]] / [[.bss]]，因为它同样要求「只初始化一次、生命周期到程序结束」。它的初值若为 0，同样进 [[.bss]]。"},
+  {q:"这和「局部变量未初始化是 UB」矛盾吗？",a:"不矛盾。全局/静态变量未初始化是标准明确定义为 0；而局部变量未初始化时其值是不确定的，读取它是未定义行为，两者性质完全不同。"}
+ ]},
+
+/* ============ 二、符号与重定位 (8) ============ */
+{cat:"符号与重定位",diff:2,hot:true,
+ q:"什么是符号？强符号、弱符号、未定义符号分别指什么？",
+ points:[
+  "符号就是函数名、变量名在目标文件中的「条目」，记录了名字、所在节、偏移、大小与类型等信息。",
+  "强符号：函数定义、已初始化的全局变量。",
+  "弱符号：C 语言中未初始化的全局变量默认是弱符号；C++ 中 [[inline]] 函数、模板实例化、类的静态成员通常也被生成为弱符号。",
+  "未定义符号（[[UND]]）：本文件引用但没有定义的符号，等待链接器到其他目标文件或库里去找。",
+  "链接器的三条规则：① 强符号不允许重复定义（否则报错）；② 强弱同时存在时选强符号；③ 多个弱符号则选占用空间最大的那个。"
+ ],
+ follow:[
+  {q:"为什么 C++ 的 inline 函数和模板是弱符号？",a:"因为同一个 inline 函数或模板实例可能在多个编译单元中都被实例化，必须允许「重复定义」存在（ODR 的例外），用弱符号让链接器只保留一份即可。"},
+  {q:"怎么查看符号？",a:"[[nm x.o]] 列出符号：[[U]] 未定义、[[T]] 在 .text 中定义、[[B]]/[[D]] 在 .bss/.data 中定义、[[W]] 弱符号；[[nm -C]] 可以还原 C++ 修饰名。"},
+  {q:"头文件里定义全局变量为什么报错？",a:"每个包含它的翻译单元都产生了一个强符号定义，直接违反「强符号不能重复」。正确做法是 [[extern]] 声明 + 单一源文件定义，或 C++17 的 [[inline]] 变量。"}
+ ]},
+
+{cat:"符号与重定位",diff:2,hot:false,
+ q:"符号表里存了什么？.symtab 和 .dynsym 有什么区别？",
+ points:[
+  "每条符号记录包含：名字（在 [[.strtab]] 中的偏移）、值/地址、大小、类型（函数/对象/节等）、绑定属性（LOCAL/GLOBAL/WEAK）、所属节索引。",
+  "[[.symtab]] 是完整的符号表，供链接期使用，包含全部符号（含局部符号），发布版可用 [[strip]] 删除以减小体积。",
+  "[[.dynsym]] 是动态符号表，只包含需要对外导出/导入的符号，供运行期动态链接使用，**不能删除**，否则程序无法运行。",
+  "常规定位工具：[[nm]]、[[nm -D]]（看动态符号）、[[readelf -s]]、[[objdump -t]]、[[c++filt]]。"
+ ],
+ follow:[
+  {q:"为什么 strip 之后程序还能正常运行？",a:"运行时动态链接只需要 [[.dynsym]] 和动态段，[[.symtab]] 只是链接与调试用。strip 去掉的是后者，所以功能不受影响。"},
+  {q:"遇到符号找不到该怎么排查？",a:"先用 [[nm -C libxxx.a]] 确认库里是否真的有这个符号、名字修饰是否匹配（C 与 C++ 混用时最常见），再检查链接顺序。"},
+  {q:"符号版本是什么？",a:"共享库可以用版本脚本给符号打版本（[[readelf --dyn-syms]] 里能看到 [[@@GLIBC_2.2.5]] 这种后缀），这样同一符号可以同时存在多个版本的实现，保证老二进制不被新库破坏。"}
+ ]},
+
+{cat:"符号与重定位",diff:2,hot:true,
+ q:"为什么需要名字修饰（name mangling）？C 和 C++ 的符号有什么不同？",
+ points:[
+  "C++ 支持函数重载、命名空间、类成员函数，同一个函数名可能对应多个实现，必须在符号名里编码「参数类型、命名空间、所属类」等信息才能唯一区分。",
+  "GCC / Clang 遵循 Itanium C++ ABI：[[int add(int, int)]] 会被修饰成 [[_Z3addii]]，规则是 [[_Z]] 前缀 + 名字长度 + 名字 + 参数类型编码。",
+  "MSVC 使用另一套规则，例如 [[?add@@YAHHH@Z]]，两者互不兼容。",
+  "C 语言没有重载，符号名基本就是函数名本身，简单、稳定，可以直接用 [[dlsym]] 查找。",
+  "这解释了为什么 C++ 调用 C 库必须写 [[extern \"C\"]]：不写就会去链接带 [[_Z]] 前缀的符号，而 C 库只有裸名字。"
+ ],
+ follow:[
+  {q:"怎么把修饰名还原成可读形式？",a:"[[c++filt _Z3addii]] 可以直接还原；[[nm -C]]、[[objdump --demangle]] 也会自动做这件事。"},
+  {q:"修饰名有长度限制吗？",a:"工具链与调试器上通常有上限（MSVC 大约 4096 字符），超长的模板签名可能触发「name too long」类问题，这是深度泛型代码会碰到的现实约束。"},
+  {q:"不同编译器编译的 C++ 模块能互链吗？",a:"Itanium ABI 是事实标准，Linux 上 GCC 与 Clang 通常可以互操作；但 MSVC 与之不兼容，跨平台/跨编译器的二进制复用要走 C 接口。"}
+ ]},
+
+{cat:"符号与重定位",diff:3,hot:false,
+ q:"链接器如何处理重复定义的符号？强/弱符号规则有什么实际用途？",
+ points:[
+  "链接器按符号决议规则处理：强符号重复定义直接报 [[multiple definition]] 错误；强弱共存取强符号；多个弱符号取占用空间最大的那个。",
+  "常见触发场景：全局变量定义写在头文件里、头文件缺少卫哨、非 inline 的函数定义写在头文件、多个源文件定义了同名全局对象/函数。",
+  "用一个实用技巧：把希望被替换的默认实现声明为 [[__attribute__((weak))]]，使用者只要提供同名强实现就能覆盖它，这是很多库暴露扩展点的惯用做法。",
+  "反过来，[[static]] 或匿名命名空间可以把符号变成内部链接，彻底避免冲突，但代价是每个翻译单元一份副本，语义已经改变。"
+ ],
+ follow:[
+  {q:"报错信息怎么读？",a:"「multiple definition of X; first defined here」会同时给出两处定义的位置。最常见的修复是补 [[extern]]（变量）或给头文件里的函数加 [[inline]]。"},
+  {q:"为什么类内定义的成员函数写在头文件里却不报重复定义？",a:"因为写在类体内的成员函数会被隐式视为 [[inline]]，因而生成为弱符号，允许重复定义，链接器只保留一份。"},
+  {q:"用 static 掩盖冲突有什么风险？",a:"每个翻译单元各有一份副本，修改「那一份」的可见性变得非常反直觉，容易出现「改了不生效」的诡异 bug，应该优先用匿名命名空间而不是 static 函数。"}
+ ]},
+
+{cat:"符号与重定位",diff:2,hot:true,
+ q:"符号决议和重定位分别做了什么？",
+ points:[
+  "符号决议（Symbol Resolution）：为每一处「未定义符号引用」找到唯一的定义，回答「这个函数/变量到底在哪里」。",
+  "重定位（Relocation）：确定符号的最终运行地址后，把这个地址填进代码或数据中预留的位置。",
+  "重定位信息由编译器和汇编器生成，记录在 [[.rela.text]] 等重定位表中；链接器负责消费它。",
+  "每条重定位项包含四个要素：待修改的位置（偏移）、引用的符号、重定位类型、加数（addend）。",
+  "执行顺序是「先全量决议，再统一分配地址，最后批量重定位改写」，而不是边扫描边修改。"
+ ],
+ follow:[
+  {q:"为什么必须先决议再重定位？",a:"因为重定位需要知道符号的最终地址，而地址分配依赖所有输入段的总大小与排列，必须先完成全局布局。这是一个典型的「两遍」结构。"},
+  {q:"重定位会修改机器码吗？",a:"会。链接器直接改写 [[.text]] 中指令的操作数字段，这就是「链接期修改代码」，也是非 PIC 方案无法让代码段共享的根源。"},
+  {q:"静态库成员的提取发生在哪个阶段？",a:"发生在符号决议阶段。链接器维护一个滚动的「未定义符号集合」，按需从静态库中提取成员目标文件，这也是链接顺序会出错的原因。"}
+ ]},
+
+{cat:"符号与重定位",diff:3,hot:true,
+ q:"什么是重定位表？绝对地址重定位和相对地址重定位有什么区别？",
+ points:[
+  "重定位表（[[.rela.text]] / [[.rela.data]] / [[.rela.dyn]]）是一份「待修地址清单」，每条记录指出「改哪里、引用谁、怎么改」。",
+  "绝对地址重定位（如 [[R_X86_64_64]]、[[R_X86_64_32]]）：直接把符号的绝对地址填入，常见于数据段里存放的指针。",
+  "相对地址重定位（如 [[R_X86_64_PC32]]、[[R_X86_64_PLT32]]）：填入「目标地址 − 当前位置」的偏移，常见于函数调用与 PC 相对寻址，天然与加载地址无关。",
+  "用 [[objdump -dr]] 可以同时看到反汇编和重定位标注，是理解重定位最直观的方式。",
+  "共享库中还常见 [[R_X86_64_RELATIVE]]（基址 + 固定偏移，无需查符号表）与 [[R_X86_64_GLOB_DAT]]（外部数据的绝对地址，写入 GOT）。"
+ ],
+ follow:[
+  {q:"为什么 x86-64 上函数调用普遍使用相对重定位？",a:"一条 [[call rel32]] 就能完成跳转，且与代码被加载到哪无关，这是实现位置无关代码的基础，也让代码段可以只读共享。"},
+  {q:"遇到「relocation truncated to fit」怎么理解？",a:"重定位的目标距离超出了该字段能表达的位宽（例如 32 位偏移不够用），常见于超大二进制或用错了代码模型（[[-mcmodel]]）。"},
+  {q:"为什么数据段多用绝对重定位？",a:"因为指针变量里存的就是绝对地址。在共享库中这类位置不能直接改代码段，必须集中放到可写的 GOT 里，等装载时填写。"}
+ ]},
+
+{cat:"符号与重定位",diff:3,hot:true,
+ q:"链接顺序会影响结果吗？静态库的循环依赖问题怎么解决？",
+ points:[
+  "会。链接器对静态库采用「按需提取」策略：从左到右扫描，只提取能解决当前未定义符号的成员。",
+  "因此静态库必须放在引用它的目标文件**之后**，否则扫描该库时未定义符号集合还是空的，成员不会被提取，最终报 [[undefined reference]]。",
+  "循环依赖（A 依赖 B、B 又依赖 A）无法靠单次扫描解决，需要 [[-Wl,--start-group -lA -lB -Wl,--end-group]] 让链接器反复扫描直到收敛，或者把库重复列出。",
+  "口诀：<b>被依赖者放后面</b>——[[g++ a.o -lfoo]] 而不是 [[g++ -lfoo a.o]]。",
+  "GNU ld 的标准语义如此，gold/lld 有改进但保持一致行为，所以这条规则在所有工具链上都适用。"
+ ],
+ follow:[
+  {q:"为什么大家的 -l 都写在命令末尾？",a:"因为要先让用户目标文件产生未定义符号，库放在最后最不容易出错。这也是 CMake 会自动做依赖排序的原因。"},
+  {q:"动态库也有顺序问题吗？",a:"基本没有。动态库的符号在装载/运行时统一解析，不依赖链接顺序；但 [[--as-needed]] 会影响是否记录该依赖，可能造成「看似链接了实际没依赖」的现象。"},
+  {q:"怎么快速确认是顺序问题？",a:"把同一个库在命令行里重复写两次，如果错误消失，那基本就是顺序或循环依赖导致的。"}
+ ]},
+
+{cat:"符号与重定位",diff:3,hot:false,
+ q:"什么是弱引用？__attribute__((weak)) 有什么用？",
+ points:[
+  "弱引用（weak reference）允许符号「未定义」而不报链接错误，运行时其值为 0，因此使用前必须判空。",
+  "声明方式：[[__attribute__((weak))]]（GCC/Clang 扩展），或 [[#pragma weak]]，或使用链接器提供的 weak 语义。",
+  "典型用途一：探测可选能力。例如某平台特有函数可能不存在，用弱引用可以让程序在缺失时优雅降级而不是链接失败。",
+  "典型用途二：做库的扩展点/钩子。库提供一个弱符号的默认实现，使用者定义同名强符号即可覆盖，无需修改库代码。",
+  "与弱符号的区别：弱符号是「定义的优先级低」，弱引用是「引用的强制性低」，两者经常配合出现。"
+ ],
+ follow:[
+  {q:"能举一个真实例子吗？",a:"glibc 与许多框架里都有 hook 类弱符号；系统编程中也常用它来判断「某个模块是否被链接进来」，从而决定是否启用对应功能。"},
+  {q:"弱符号和 C++ 编译器自动生成的 weak symbol 是一回事吗？",a:"底层机制相同（ELF 的 [[STB_WEAK]]），但来源不同：C++ 的弱符号是编译器为 inline 函数与模板实例自动生成的，而这里是程序员显式声明。"},
+  {q:"使用弱引用有什么风险？",a:"忘记判空直接调用会崩溃；程序行为依赖链接结果，容易出现「不同构建方式表现完全不同」的隐蔽问题，因此要限定在明确的扩展点场景使用。"}
+ ]},
+
+/* ============ 三、静态链接与可执行文件 (7) ============ */
+{cat:"静态链接与可执行文件",diff:2,hot:true,
+ q:"静态链接的具体过程是什么？",
+ points:[
+  "输入是多个可重定位目标文件（[[.o]]）和静态库（[[.a]]），输出是一个完整的可执行文件。",
+  "步骤一 · 符号决议：建立全局符号表，为所有未定义符号找到定义。",
+  "步骤二 · 段合并：把所有输入文件的同类节合并到输出的同名节中，例如所有 [[.text]] 合成一个 [[.text]]，并计算各自的偏移。",
+  "步骤三 · 地址分配：为合并后的各段确定虚拟地址（VMA）。",
+  "步骤四 · 重定位：按重定位表把真实地址填回指令与数据。",
+  "步骤五 · 生成节头表、程序头表与 ELF 头部，输出最终文件。"
+ ],
+ follow:[
+  {q:"静态链接的主要缺点是什么？",a:"体积膨胀（每个可执行文件都带一份库代码）、库升级必须重新链接整个程序、多个程序无法共享同一份物理内存，因此内存占用更高。"},
+  {q:"目标文件的地址是什么时候确定的？",a:"静态链接在链接期就完全确定，所以叫「静态」；动态链接则推迟到装载时甚至首次调用时才确定（延迟绑定）。"},
+  {q:"链接器怎么知道要把哪些节合在一起？",a:"按节名和属性匹配，具体规则由默认链接脚本描述（[[ld --verbose]] 可以看到完整脚本），也可以用自定义链接脚本改写。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:1,hot:true,
+ q:"静态库和动态库有什么区别？各自的优缺点是什么？",
+ points:[
+  "静态库（Linux [[.a]] / Windows [[.lib]]）：代码被复制进可执行文件。动态库（[[.so]] / [[.dll]]）：只记录依赖，运行时加载。",
+  "静态库优点：没有外部依赖、部署简单、启动快、地址确定便于优化。缺点：体积大、升级需重新链接、多进程无法共享内存。",
+  "动态库优点：体积小、只读代码段在多进程间共享同一份物理内存、可独立升级、支持插件与热更新（[[dlopen]]）。缺点：有加载与符号解析开销、存在版本依赖问题（DLL Hell）。",
+  "还有一个折中方案：把动态库按静态方式链接（[[-Wl,-Bstatic]]），或用 [[-static]] 全静态链接，兼顾位置无关与免依赖。"
+ ],
+ follow:[
+  {q:"怎么查看一个程序依赖哪些动态库？",a:"[[ldd ./prog]] 最直观；[[readelf -d ./prog]] 看 [[NEEDED]] 项更严谨（ldd 在某些情况下会执行程序，安全性不如 readelf）。"},
+  {q:"内存共享的收益有多大？",a:"只读的代码段在物理内存中多进程共享，对「一个服务开几十个进程」的部署模型能省下大量内存，这是动态库在服务端长期占主导的关键原因。"},
+  {q:"冷启动敏感的场合选哪个？",a:"静态链接通常更快，省去了动态链接器的符号解析与重定位过程；但代价是体积与升级便利性。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:2,hot:true,
+ q:"为什么静态库链接是「按需提取」？链接顺序为什么会引发 undefined reference？",
+ points:[
+  "链接器不会把整个静态库都塞进可执行文件，只提取「能解决当前未定义符号」的成员目标文件，以避免不必要的体积膨胀。",
+  "判定依据是「当前未定义符号集合」，这个集合随扫描过程不断变化，是一个滚动状态。",
+  "若库出现在使用它的目标文件之前，扫描该库时未定义集合还是空的，成员不会被提取；之后再用到这些符号就变成未定义，最终链接失败。",
+  "这个机制是从 COFF/a.out 时代继承下来的经典行为，至今未变。"
+ ],
+ follow:[
+  {q:"循环依赖为什么不能靠调整顺序解决？",a:"因为无论怎么排，总有一方先被扫描而对方的符号尚未产生需求。必须用 [[--start-group/--end-group]] 让链接器反复扫描直到不再有新的符号被解决。"},
+  {q:"CMake 里怎么体现这个约束？",a:"[[target_link_libraries]] 的顺序会被 CMake 尽量自动拓扑排序；使用 [[PUBLIC/PRIVATE]] 控制依赖传播范围，能避免把内部依赖泄漏给上层。"},
+  {q:"-Wl 前缀是干什么的？",a:"[[-Wl,]] 用于把后续参数透传给链接器。因为 gcc 只认识自己的选项，链接器选项必须通过它转发，例如 [[-Wl,-rpath,...]]。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:3,hot:false,
+ q:"相似段合并是怎么回事？为什么要合并？",
+ points:[
+  "链接器把所有输入文件的同类型节合并到输出文件的同名节中：所有 [[.text]] 合成一个，所有 [[.data]] 合成一个，[[.bss]] 只累加大小。",
+  "合并的目的是让相同权限的内容聚集在一起，从而能用尽量少的段（内存页）承载它们，减少内存浪费与页表项数量。",
+  "合并时必须保持各输入节的对齐要求，因此可能插入填充字节；节的对齐方式会影响最终文件大小。",
+  "特殊处理：[[.bss]] 只累加长度不复制数据；只读常量（尤其字符串）可能被去重合并，[[-fmerge-all-constants]] 会更激进但可能违反语义。"
+ ],
+ follow:[
+  {q:"合并会带来副作用吗？",a:"会改变函数在内存中的排列顺序，进而影响指令缓存局部性。可用 [[-ffunction-sections -fdata-sections]] 让每个函数独立成节，再配合 [[-Wl,--gc-sections]] 丢弃未使用的部分。"},
+  {q:"为什么不按文件顺序简单拼接？",a:"不同文件的数据权限不同（有的只读、有的可写），混在一起就无法用同一组页权限保护，会破坏代码段的只读与可共享性。"},
+  {q:"怎么给可执行文件瘦身？",a:"[[-ffunction-sections -fdata-sections]] + [[-Wl,--gc-sections]] 去掉死代码，用 [[-Os]] 优化体积，最后 [[strip]] 去掉符号与调试信息。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:3,hot:true,
+ q:"可执行文件的「装载视图」是怎么来的？段和节是什么关系？",
+ points:[
+  "链接器把众多「节」按内存权限归类，合并为少数几个 [[LOAD]] 段，并写入程序头表。",
+  "典型的 LOAD 段有两类：只读可执行段（R-X，包含 [[.text]]、[[.rodata]]、[[.plt]] 等）与可读写数据段（RW-，包含 [[.data]]、[[.bss]]、[[.got]] 等）。",
+  "装载器只按程序头表工作：把每个 LOAD 段 [[mmap]] 到指定虚拟地址并设置权限，完全不关心节。",
+  "除 LOAD 外还有 [[INTERP]]（动态链接器路径，如 [[/lib64/ld-linux-x86-64.so.2]]）、[[DYNAMIC]]（动态链接所需信息）、[[GNU_RELRO]]、[[GNU_STACK]]。",
+  "所以：节是链接视角、段是装载视角，二者是「多对一」的包含关系。"
+ ],
+ follow:[
+  {q:"怎么看一个可执行文件的段？",a:"[[readelf -l ./prog]]，关注 Offset、VirtAddr、FileSiz、MemSiz、Flg（权限 R/W/E）与 Align 这几列。"},
+  {q:"GNU_RELRO 是干什么的？",a:"它标记「重定位完成后就不再需要可写」的区域（典型是 [[.got]]），装载后由动态链接器改为只读，用来抵御 GOT 覆写攻击，是重要的安全缓解措施。"},
+  {q:"为什么段之间有 padding？",a:"段需要按页对齐（常见 4KB，也可能 2MB 大页），对齐产生的空洞在文件与内存中都需要补齐，这直接影响可执行文件体积。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:3,hot:false,
+ q:"VMA 和 LMA 有什么区别？程序头表起什么作用？",
+ points:[
+  "VMA（Virtual Memory Address）：段在运行时的虚拟地址，也就是程序「看到」的地址。",
+  "LMA（Load Memory Address）：段在装载镜像中的存放地址。在嵌入式场景中常见「数据存在 Flash、启动时拷贝到 RAM」，此时 VMA 与 LMA 不同。",
+  "在带虚拟内存的 Linux 上，两者通常相同（文件偏移按页对齐后直接映射），差异主要体现在裸机开发与链接脚本中。",
+  "程序头表（Program Header Table）是给装载器看的说明书：每个条目描述一个段的位置、大小、目标虚拟地址、权限和对齐要求。"
+ ],
+ follow:[
+  {q:"链接脚本里怎么显式设置 LMA？",a:"可以用 [[.data : AT(ADDR(.text) + SIZEOF(.text)) {...}]] 这种写法，这是嵌入式启动代码把数据段从 Flash 搬到 RAM 的经典手段。"},
+  {q:"哪些文件必须有程序头表？",a:"可执行文件与共享库必须有（它们要被装载）；[[.o]] 可重定位文件没有，它只有节头表。"},
+  {q:"为什么对齐常见 0x1000 和 0x200000？",a:"分别是 4KB 普通页与 2MB 大页的对齐要求。大页能显著减少 TLB 压力，对大型程序的内存访问性能有帮助。"}
+ ]},
+
+{cat:"静态链接与可执行文件",diff:3,hot:true,
+ q:"什么是 PIE？它和 PIC 是什么关系？",
+ points:[
+  "PIE（Position Independent Executable）：位置无关的可执行文件，ELF 类型是 [[ET_DYN]]，与共享库同一类型，可以被加载到任意地址。",
+  "好处：配合 ASLR，每次运行的基址随机化，大幅提高内存漏洞的利用难度；代价是需要通过 GOT/PLT 做间接访问，有一点性能开销。",
+  "PIC（Position Independent Code）是「生成位置无关代码」的编译技术，用 [[-fPIC]] / [[-fPIE]] 开启；PIE 则是「用 PIC 方式编译并链接成可执行文件」的产物。",
+  "现代发行版（Ubuntu、Debian 等）默认开启 PIE，所以默认编译出的可执行文件通常就是 [[ET_DYN]]。",
+  "可以用 [[-no-pie]] 关闭，用于需要固定加载地址的场景，但会削弱安全性。"
+ ],
+ follow:[
+  {q:"怎么判断一个程序是不是 PIE？",a:"[[readelf -h ./prog | grep Type]] 显示 [[ET_DYN]] 就是；[[file ./prog]] 会直接显示 \"pie executable\"。"},
+  {q:"-fPIC 和 -fPIE 有什么区别？",a:"语义相近。[[-fPIE]] 面向可执行文件，假定符号不会被外部插入（interposition），因此可用更少的 GOT 间接访问；[[-fPIC]] 面向共享库，必须假定符号可被覆盖。"},
+  {q:"PIE 对性能影响大吗？",a:"通常只有个位数百分比以内，且现代 CPU 的分支预测与缓存能很好吸收间接跳转开销；安全收益普遍被认为远超这点成本。"}
+ ]},
+
+/* ============ 四、动态链接与装载 (8) ============ */
+{cat:"动态链接与装载",diff:1,hot:true,
+ q:"动态链接相比静态链接有什么优势和代价？",
+ points:[
+  "优势：① 代码段在物理内存中多进程共享，显著降低内存占用；② 库可独立升级，无需重新链接程序；③ 天然支持模块化与插件机制（[[dlopen]] / [[dlsym]]）；④ 减小可执行文件体积。",
+  "代价：① 装载时需要动态链接器做符号解析与重定位，有启动开销；② 存在依赖地狱（版本不匹配、DLL Hell）；③ GOT/PLT 的间接跳转带来轻微运行时开销；④ 部署环境需要正确配置库搜索路径。",
+  "本质区别是「符号决议与地址确定」被推迟：静态链接在链接期完成，动态链接推迟到装载时甚至首次调用时（延迟绑定）。",
+  "现代工程的常见取舍：核心服务倾向静态链接或容器化以保证依赖可控，插件系统与公共基础库用动态库。"
+ ],
+ follow:[
+  {q:"动态链接器是谁？",a:"由 [[INTERP]] 段指定，例如 [[/lib64/ld-linux-x86-64.so.2]]。内核装载完可执行文件后，把控制权交给它，它是第一个被运行的「用户态程序」。"},
+  {q:"怎么让程序优先搜索自定义库目录？",a:"[[LD_LIBRARY_PATH]]（临时）、rpath（[[-Wl,-rpath,'$ORIGIN/lib']]，随程序走）、或系统级 [[ld.so.conf]] 配置。发布时 rpath 配合 [[$ORIGIN]] 最稳妥。"},
+  {q:"为什么升级动态库容易出问题？",a:"符号解析按名字匹配。若新库改了接口语义却保留同样的符号名，就会出现「链接成功、运行出错」的静默不兼容，因此共享库必须严格管理 SOVERSION 与符号版本。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:true,
+ q:"动态链接的基本实现思路是什么？为什么必须有 GOT？",
+ points:[
+  "核心矛盾：共享库要能在任意地址加载（需要位置无关），但代码段是只读的，装载时不能改写；而访问外部符号又必须用到绝对地址。",
+  "解决办法：把「需要绝对地址的地方」从代码段搬到可写的数据段——这就是全局偏移表（GOT, Global Offset Table）。",
+  "代码访问外部变量时不再直接寻址，而是「先定位 GOT 表项，再通过表项中的绝对地址间接访问」；GOT 由动态链接器在装载时填充。",
+  "GOT 与代码段的相对位置在链接期就固定了，因此代码可以用一条 PC 相对指令定位到 GOT 表项：既保持位置无关，又能拿到绝对地址。",
+  "这就是「位置无关代码」能够访问模块外符号的根本机制，也是动态链接能共享内存的关键前提。"
+ ],
+ follow:[
+  {q:"GOT 表项什么时候填？",a:"数据符号一般在装载时全部填好；函数符号可以留到首次调用时再填，这就是延迟绑定，目的是加快启动。"},
+  {q:"GOT 可写不是安全隐患吗？",a:"确实是。因此有 [[GNU_RELRO]]（重定位后把 GOT 设为只读）与 Full RELRO（[[-Wl,-z,relro,-z,now]]，关闭延迟绑定，让 GOT 全程只读）。"},
+  {q:"静态链接的程序有 GOT 吗？",a:"可能有（同一编译单元内的间接访问或某些 ABI 需求），但没有动态重定位需求，通常比动态链接场景简单得多。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:true,
+ q:"什么是 PLT？GOT 和 PLT 如何配合实现延迟绑定？",
+ points:[
+  "PLT（Procedure Linkage Table，过程链接表）是一段位于代码段的小型跳板代码，每个被调用的外部函数对应一个表项。",
+  "调用外部函数时，编译出的指令是 [[call func@plt]]：先跳到 PLT 表项，再由 PLT 间接跳转到对应 GOT 表项中的地址。",
+  "初始状态下 GOT 表项并不指向真实函数，而是指回 PLT 中「解析准备」的代码，这就是延迟绑定的起点。",
+  "延迟绑定的收益：程序启动时不必解析全部外部符号（大型程序可能有上万个），启动明显更快。",
+  "代价：每个函数第一次调用会多一次符号解析开销，之后便与直接调用几乎等价（只剩两次跳转）。"
+ ],
+ follow:[
+  {q:"PLT 和 GOT 的分工是什么？",a:"GOT 存「地址」，PLT 存「代码（跳板）」。PLT 提供调用入口，GOT 提供目标地址，两者配合才实现了位置无关的间接调用。"},
+  {q:"相对重定位在这里起什么作用？",a:"[[call func@plt]] 使用 PC 相对寻址（[[R_X86_64_PLT32]]），因此调用指令本身与加载地址无关，符合 PIC 的要求。"},
+  {q:"可以关闭延迟绑定吗？",a:"可以。[[-Wl,-z,now]]（或环境变量 [[LD_BIND_NOW=1]]）改为立即绑定：启动时解析所有符号，启动变慢但可配合 Full RELRO 提升安全性，也是很多安全加固发行版的做法。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:true,
+ q:"第一次调用动态库函数时，具体发生了什么？",
+ points:[
+  "初始状态：PLT[n] 的第一跳指向 GOT[n]，而 GOT[n] 的初值指向 [[PLT[0]]] 后面的「解析准备」代码。",
+  "第一次执行 [[call func@plt]]：跳入 PLT[n] → 间接跳到 GOT[n] → 又回到 PLT[0] 的准备代码。",
+  "准备阶段：把「该符号在重定位表中的索引」压栈，再压入「本模块的 ID」，然后跳转调用动态链接器的入口 [[_dl_runtime_resolve]]。",
+  "[[_dl_runtime_resolve]] 根据模块 ID 与符号索引，在动态符号表中查找真实地址，并把它写入 GOT[n]。",
+  "返回后执行真正的函数。从第二次调用开始，PLT[n] → GOT[n] 已经直接指向真实地址，只剩两次跳转的开销。"
+ ],
+ follow:[
+  {q:"为什么要压入模块 ID？",a:"运行时可能有多个共享对象，解析器需要知道这个符号应该到哪个模块的符号表里去查，模块 ID 就是用来定位目标模块的。"},
+  {q:"这个机制有什么安全隐患？",a:"延迟绑定期间 GOT 必须可写，攻击者若能用任意写漏洞覆写 GOT 表项，就能劫持控制流。这正是 Full RELRO + [[-z now]] 存在的原因。"},
+  {q:"怎么亲手观察这个过程？",a:"用 [[LD_DEBUG=bindings ./prog]] 打印绑定过程，或在 gdb 里对 PLT 表项下断点、单步跟进 [[_dl_runtime_resolve]]，看 GOT 表项从「指回 PLT」变成「指向真实函数」。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:false,
+ q:"地址无关代码（PIC）有哪几种地址引用方式？",
+ points:[
+  "经典框架是按「模块内 / 模块间」×「函数 / 数据」分成四类，这是《程序员的自我修养》给出的总结：",
+  "① 模块内部函数调用：使用 PC 相对寻址（[[R_X86_64_PLT32]]），一条 [[call rel32]] 即可，不需要 GOT。",
+  "② 模块内部数据访问：同样用 PC 相对寻址定位数据，只是相对偏移。",
+  "③ 模块间函数调用：通过 PLT/GOT 间接跳转，因为目标函数地址要到装载后才确定。",
+  "④ 模块间数据访问：统一经 GOT 间接访问，代码里只保留「GOT 的位置」这一相对偏移。",
+  "实践意义：一个符号如果被隐藏（[[-fvisibility=hidden]]）或本就是本模块内的 static，就能退化为更快的相对寻址。"
+ ],
+ follow:[
+  {q:"为什么模块内部可以直接相对寻址？",a:"因为同一模块内代码与数据的相对距离在链接期就固定了，不会随加载地址改变，因此相对寻址天然正确。"},
+  {q:"[[-fno-semantic-interposition]] 有什么用？",a:"它允许编译器假设本模块定义的符号不会被外部同名符号覆盖（不做 interposition），因此对模块内调用也可直接相对寻址甚至内联，是共享库性能优化的重要手段。"},
+  {q:"符号可见性为什么会影响性能？",a:"隐藏的符号少了一层 GOT 间接访问，也少了动态符号表条目，因而加载更快、运行更快，还能安全地做跨函数优化。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:true,
+ q:"共享库的符号导出与可见性控制是什么？为什么推荐 -fvisibility=hidden？",
+ points:[
+  "默认情况下，共享库中所有非 static 的全局符号都会进入动态符号表（[[.dynsym]]）并对外可见，这既有符号冲突风险，也拖慢加载（符号越多，重定位与解析越慢）。",
+  "[[-fvisibility=hidden]] 让所有符号默认隐藏，只对需要导出的接口显式标注 [[__attribute__((visibility(\"default\")))]]，通常用导出宏统一管理。",
+  "收益一：减少符号冲突——不同库内部同名的辅助符号不再互相干扰。",
+  "收益二：加快动态链接——动态符号表与重定位项都变少。",
+  "收益三：便于优化——隐藏符号可以安全地直接相对寻址与内联。",
+  "收益四：缩小 ABI 表面积，降低长期维护负担。因此这是现代 C++ 共享库的标配选项。"
+ ],
+ follow:[
+  {q:"Windows 上对应什么机制？",a:"MSVC 默认全部隐藏，必须显式 [[__declspec(dllexport)]]。这也是把 Windows 代码移植到 Linux 时最容易踩的坑：Linux 默认全导出，移植过来忘了加可见性控制也无所谓，但反向移植就会大面积报错。"},
+  {q:"怎么检查到底导出了哪些符号？",a:"[[nm -D libfoo.so]] 或 [[readelf --dyn-syms libfoo.so]]，重点关注不希望暴露的 C++ 内部符号是否泄漏。"},
+  {q:"隐藏之后运行时报符号找不到怎么办？",a:"说明有接口忘了标 [[default]] 可见性。类成员、模板实例、静态成员需要逐个确认，必要时用导出宏统一包裹，并用 [[nm -D]] 复核结果。"}
+ ]},
+
+{cat:"动态链接与装载",diff:3,hot:false,
+ q:"装载时重定位和运行时重定位有什么区别？为什么代码段不需要重定位？",
+ points:[
+  "装载时重定位：程序被加载到内存时，由动态链接器一次性把需要修正的地址填好，主要处理数据符号（GOT 中的绝对地址）。",
+  "运行时重定位：推迟到符号首次被使用时才解析，典型就是 PLT/GOT 对函数符号的延迟绑定。",
+  "动态重定位项常见两类：[[R_X86_64_RELATIVE]] 表示「基址 + 固定偏移」；[[R_X86_64_GLOB_DAT]] 表示「外部数据的绝对地址」，两者都写入数据段。",
+  "代码段本身不需要被改写，这正是 PIC 的意义所在：代码可以映射为只读，从而在多进程间共享物理内存。"
+ ],
+ follow:[
+  {q:"为什么说「修改代码段」代价很高？",a:"会触发写时复制（COW）。一旦写入，原本多进程共享的只读物理页就会为每个进程复制一份，内存占用成倍增长——这正是早期「装载时对代码段做重定位」方案的致命缺陷。"},
+  {q:"[[R_X86_64_RELATIVE]] 为什么处理得快？",a:"它只需要「基址 + 固定偏移」，不用查符号表，因此可以批量高效处理，这也是 PIE 与共享库能快速装载的原因之一。"},
+  {q:"怎么观察重定位项？",a:"[[readelf -r ./prog]] 或 [[readelf -r libfoo.so]]，配合 [[LD_DEBUG=reloc]] 可以看装载时的实际处理过程。"}
+ ]},
+
+{cat:"动态链接与装载",diff:2,hot:true,
+ q:"一个程序从被 execve 到 main 执行，完整经历了什么？",
+ points:[
+  "① shell 调用 [[fork]] 复制出子进程，子进程调用 [[execve(path, argv, envp)]]。",
+  "② 内核读取 ELF 头校验格式，定位程序头表。",
+  "③ 内核按程序头表把各 [[LOAD]] 段 [[mmap]] 到地址空间并设置权限，同时创建用户栈、压入 argv/envp，并放置 [[AT_PHDR]]、[[AT_ENTRY]]、[[AT_RANDOM]] 等辅助向量。",
+  "④ 若存在 [[INTERP]] 段，内核改为装载动态链接器（[[ld-linux.so]]），并把真正的入口点交给它。",
+  "⑤ 动态链接器接管：递归装载所有依赖的共享库、完成符号解析与重定位、填充 GOT、执行 [[.init_array]] 中的初始化函数。",
+  "⑥ 控制权交给 CRT 的入口 [[_start]]，它从栈上取出 argc/argv，调用 [[__libc_start_main]]。",
+  "⑦ [[__libc_start_main]] 完成 libc 初始化（堆、线程、TLS、信号），调用全局构造函数，最后调用 [[main]]。",
+  "⑧ main 返回后回到 [[__libc_start_main]]，执行 [[exit]]：运行 [[atexit]] 回调、析构全局对象，最后以 [[exit_group]] 系统调用结束进程。"
+ ],
+ follow:[
+  {q:"为什么说入口不是 main？",a:"main 只是程序员约定的起点，真正被内核/CRT 指定的入口是 [[_start]]。它由 CRT 提供骨架，负责把运行环境（栈、libc、构造函数）准备好再交给 main。"},
+  {q:"怎么观察其中某一步？",a:"[[ldd ./prog]] 看依赖库，[[LD_DEBUG=libs,files,reloc,bindings]] 打印装载与重定位细节，[[strace]] 看系统调用，gdb 里 [[break _start]] 后 [[bt]] 能看完整调用链。"},
+  {q:"静态链接的程序少了哪些步骤？",a:"没有 [[INTERP]]、没有动态链接器、没有运行时符号解析，装载后直接进入 [[_start]]（CRT 被静态链入），因此启动更快、依赖更简单。"}
+ ]},
+
+/* ============ 五、内存布局与运行时 (7) ============ */
+{cat:"内存布局与运行时",diff:1,hot:true,
+ q:"进程的虚拟地址空间是如何划分的？",
+ points:[
+  "x86-64 Linux 的典型布局（由低到高）：保留区（不可访问的 NULL 页）→ 可执行文件代码段 → 数据段 → 堆（向高地址增长）→ mmap 区域（共享库、匿名映射）→ 栈（向低地址增长）→ 内核空间。",
+  "非 PIE 程序的代码段通常从 [[0x400000]] 附近开始；PIE 程序则每次随机。",
+  "堆通过 [[brk/sbrk]] 或 [[mmap]] 扩展；共享库与线程栈一般通过 [[mmap]] 建立。",
+  "栈从高地址向低地址增长，主线程栈默认约 8MB（[[ulimit -s]] 可查看与修改）。",
+  "这种布局让各区域有明确的权限与增长方向，既便于管理，也构成了漏洞利用中「哪些区域可写、哪些可执行」的安全边界。"
+ ],
+ follow:[
+  {q:"怎么查看某个进程的实际映射？",a:"[[cat /proc/<pid>/maps]] 能看到每个映射的地址范围、权限（rwx）以及来源文件，是最直接的观察手段。"},
+  {q:"为什么栈和堆相向增长？",a:"让二者共享中间大片未使用的地址空间，从而最大化利用效率，避免为任一方预留固定大小。"},
+  {q:"ASLR 随机化了哪些区域？",a:"栈、mmap 区（含共享库）、堆，以及 PIE 的代码段与数据段。早年非 PIE 程序代码段地址固定，这正是 PIE 被大力推广的原因。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:2,hot:true,
+ q:"main 函数是怎么被调用的？_start 和 __libc_start_main 做了什么？",
+ points:[
+  "真正的入口符号是 [[_start]]，由 CRT 提供，链接时自动加入。",
+  "[[_start]] 的代码极其精简：把栈上的 argc/argv/envp 按 ABI 传给 [[__libc_start_main]]（现代 glibc 会先调用 [[__libc_start_call_main]]）。",
+  "[[__libc_start_main]] 在调用 main 之前要完成：初始化堆（malloc 子系统）、初始化线程与信号、建立 TLS、注册 [[rtld_fini]]（动态链接器清理回调）、执行 [[.init_array]] 中的全局构造函数（C++ 静态对象构造就在这里发生）。",
+  "然后才调用 [[main(argc, argv, envp)]]，并把返回值交给 [[exit]] 处理。",
+  "所以整个链路是：内核 → [[_start]] → [[__libc_start_main]] → 全局构造 → [[main]] → [[exit]]。"
+ ],
+ follow:[
+  {q:"C++ 全局对象的构造函数什么时候执行？",a:"在 main 之前的 [[.init_array]] 阶段。这也正是「静态初始化顺序问题（SIOF）」的根源：跨编译单元的顺序不确定。"},
+  {q:"怎么看到这个调用链？",a:"gdb 里先 [[break _start]]，运行后 [[bt]] 可以看到 _start → __libc_start_main 的栈帧；再 [[break main]] 就能看到完整的进入过程。"},
+  {q:"[[__attribute__((constructor))]] 什么时候执行？",a:"也在 main 之前，与全局构造函数同属一个阶段，其函数指针同样被放进 [[.init_array]]。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:2,hot:false,
+ q:"什么是 CRT？glibc 提供了哪些东西？",
+ points:[
+  "CRT（C Runtime）是程序启动与退出所需的运行期支撑代码，包括入口 [[_start]]、初始化逻辑，以及被隐式链接的启动文件（[[crt1.o]]、[[crti.o]]、[[crtn.o]] 等）。",
+  "典型职责：准备栈与参数、初始化 libc、调用全局构造与析构、维护 [[atexit]] 列表、最终调用 [[exit]]。",
+  "glibc 作为最主流的 C 库实现，除标准 C 库函数外还提供：[[malloc]] 内存分配、[[printf]] 系列带缓冲 IO、pthread 线程、动态链接器 [[ld.so]]、[[dlopen]]/[[dlsym]]、TLS 实现、以及系统调用的用户态封装。",
+  "「用户态运行库」的存在是 C 程序能跨 UNIX 平台的关键：底层系统调用接口可能不同，但库接口保持一致。"
+ ],
+ follow:[
+  {q:"为什么有时会报 [[undefined reference to __libc_start_main]]？",a:"通常是使用了 [[-nostdlib]] 之类选项把 CRT 排除了，需要显式补上启动文件与库；只想去掉启动文件可用 [[-nostartfiles]]。"},
+  {q:"静态链接时 libc 怎么处理？",a:"[[-static]] 会把 libc 也静态链入，体积变大但无依赖。注意 NSS（名称解析）等组件在静态链接下行为可能改变，容器与嵌入式部署要额外测试。"},
+  {q:"除了 glibc 还有别的实现吗？",a:"有。musl（体积小、静态链接友好，Alpine 默认）、uClibc、Bionic（Android）。这也是同一份代码在不同发行版上表现不同的常见原因。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:3,hot:true,
+ q:"什么是静态初始化顺序问题（SIOF）？怎么解决？",
+ points:[
+  "成因：不同编译单元中的全局/静态对象的构造顺序在标准中是「未定义」的。若 A 的构造函数使用了 B 提供、但尚未构造的对象，就会用到未初始化对象。",
+  "同一编译单元内，构造顺序按定义顺序；跨编译单元则依赖链接顺序，链接器的段重排（如 [[-ffunction-sections]]）都可能改变行为。",
+  "解法一：把全局对象改成「函数内的静态局部变量」（Meyers Singleton）。C++11 起局部静态变量的初始化是线程安全且延迟到首次使用的。",
+  "解法二：用 [[constexpr]] 或 [[constinit]]（C++20）保证常量初始化，从根源上避免动态初始化。",
+  "解法三：显式初始化——提供 init 函数在 main 中按明确顺序调用，或用 [[__attribute__((init_priority(n)))]] 指定初始化优先级。"
+ ],
+ follow:[
+  {q:"C++11 的 magic static 保证了什么？",a:"保证局部静态变量初始化的原子性与一次性，并在多线程下安全。因此「函数内静态」是跨平台可靠的延迟初始化写法。"},
+  {q:"析构也有对称问题吗？",a:"有。析构顺序是构造的逆序，跨编译单元同样不确定；程序退出阶段还可能遇到「静态对象已析构但仍被其他线程访问」的崩溃，需要靠显式生命周期管理规避。"},
+  {q:"工程上的建议是什么？",a:"尽量避免跨编译单元的全局对象互相依赖。改用依赖注入、显式初始化函数，或把「全局对象」收敛为「函数内静态 + 明确的访问接口」。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:2,hot:true,
+ q:"什么是系统调用？库函数和系统调用是什么关系？",
+ points:[
+  "系统调用是用户态程序请求内核服务的唯一正式入口，通过特定指令陷入内核（x86-64 是 [[syscall]]，32 位是 [[int 0x80]]）。",
+  "x86-64 的调用约定：系统调用号放在 [[rax]]，参数依次放在 [[rdi]]、[[rsi]]、[[rdx]]、[[r10]]、[[r8]]、[[r9]]，返回值在 [[rax]]。",
+  "库函数是库提供的接口，它与系统调用有三种关系：① 直接引发系统调用（[[open]]、[[write]]）；② 完全在用户态实现（[[strlen]]、[[memcpy]]）；③ 是系统调用的封装加增强（[[malloc]] 内部调用 [[brk]]/[[mmap]]）。",
+  "经典对照：[[printf]] 是带缓冲的库函数，[[write]] 是无缓冲的系统调用。所以 printf 不加换行且程序不退出时可能看不到输出，而 write 立即生效。",
+  "引入内核与系统调用的意义：屏蔽硬件差异、提供权限与隔离、给出统一抽象的编程接口。"
+ ],
+ follow:[
+  {q:"为什么 printf 要有缓冲？",a:"因为每次系统调用都要陷入内核（寄存器保存、权限检查、态切换），开销比普通函数调用高一到两个数量级。缓冲能把多次小写合并为少数几次大写，显著提升吞吐。"},
+  {q:"怎么看库函数到底调用了哪些系统调用？",a:"[[strace ./prog]]，或精准一点用 [[strace -e trace=write,openat ./prog]]，对理解带缓冲/不带缓冲的行为差异非常有效。"},
+  {q:"系统调用为什么慢？",a:"涉及用户态与内核态切换、上下文保存与恢复、地址空间与权限检查，还可能引发调度。因此高性能程序会尽量减少系统调用次数（批量 IO、io_uring 等机制）。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:3,hot:false,
+ q:"什么是 TLS（线程局部存储）？它是怎么实现的？",
+ points: [
+  "TLS 让每个线程拥有同一个变量的独立副本，例如 GCC 扩展 [[__thread int x;]] 或 C++11 的 [[thread_local]]。",
+  "典型用途：线程私有的错误码（[[errno]]）、随机数状态、缓存、日志缓冲，用来避免为共享数据加锁。",
+  "实现方式：编译器为每个线程分配一块 TLS 区域，通过线程控制块（TCB）与段寄存器定位（x86-64 上通常用 [[fs]]），再按固定偏移访问变量。",
+  "常见模型：全局动态（[[global-dynamic]]，最通用，需调用 [[__tls_get_addr]]）、局部动态、初始执行（[[initial-exec]]）、局部执行（[[local-exec]]，最快但一般只用于主程序或静态链接）。",
+  "由于依赖 TCB 与 TLS 块布局，动态装载新库时 TLS 空间可能需要调整，这是 [[dlopen]] 与 [[initial-exec]] 模型组合时的一个易踩限制。"
+ ],
+ follow:[
+  {q:"为什么 [[errno]] 是线程安全的？",a:"因为它本质上就是线程局部的（glibc 用 TLS 实现），每个线程访问的都是自己的副本，不存在数据竞争。"},
+  {q:"TLS 变量能跨线程共享吗？",a:"不能。任何线程看到的都只是自己那份副本。需要共享就得用普通全局变量加同步机制。"},
+  {q:"[[thread_local]] 一定比全局变量慢吗？",a:"会有额外寻址开销（global-dynamic 模型下需要函数调用获取地址），但远低于加锁成本；对热点路径可用 [[local-exec]] 模型或减少访问次数来优化。"}
+ ]},
+
+{cat:"内存布局与运行时",diff:3,hot:false,
+ q:"什么是写时复制（COW）？它在进程创建与文件映射中起什么作用？",
+ points:[
+  "COW 是一种延迟复制优化：多个使用者先共享同一份物理内存（标记为只读），只有当某一方真正写入时才复制出私有副本。",
+  "进程创建：[[fork]] 不复制父进程的全部内存，父子共享物理页；任一方写入时才触发复制。这使 [[fork]] 变得轻量，与 [[execve]] 配合时几乎是零拷贝。",
+  "文件映射：[[mmap]] 使用 [[MAP_PRIVATE]] 时也是 COW——只读访问共享页缓存，写入时才复制。[[MAP_SHARED]] 则直接修改共享页并回写文件。",
+  "一个经典结论：动态库的只读代码段能被多进程共享，就是因为没人写它；一旦某种机制迫使我们「装载时修改代码段」，就会触发 COW，共享优势荡然无存——这正是 PIC 相对旧方案的胜出点。"
+ ],
+ follow:[
+  {q:"COW 有什么代价？",a:"写入要触发缺页异常与页复制，产生延迟。写密集场景（如 fork 后立刻大量写内存）性能会明显下降，这也是某些高并发服务改用 [[fork]] 之外模型的原因。"},
+  {q:"怎么看进程的内存共享情况？",a:"[[top]] 里看 RES/SHR，或读 [[/proc/<pid>/smaps]] 统计 Pss/Shared，能精确看出哪些内存是独占、哪些是共享。"},
+  {q:"COW 和虚拟内存是什么关系？",a:"COW 完全构建在「虚拟地址可任意映射到物理页」的能力之上，是虚拟内存机制最典型的应用之一；没有虚拟内存就没有 COW。"}
+ ]},
+
+/* ============ 六、编译原理与优化 (7) ============ */
+{cat:"编译原理与优化",diff:2,hot:true,
+ q:"为什么编译器需要中间表示（IR）？它带来了哪些好处？",
+ points:[
+  "IR 是源语言与目标机器之间的公共抽象层，把「M 种语言 × N 种目标机器」的适配问题降为 M + N。",
+  "好处一：前端可复用同一套优化与后端；好处二：优化在中立表示上进行，一次编写可服务多个目标；好处三：便于做跨过程分析与全局优化；好处四：便于构建额外工具（静态分析、插桩、JIT）。",
+  "常见 IR 形式：三地址码、抽象语法树直接解释、控制流图（CFG）、SSA 形式。工业界代表是 LLVM IR（类汇编、强类型、SSA）与 GCC 的 GIMPLE/RTL。",
+  "分层 IR 也很常见：高层 IR 保留较多语言语义便于高层优化，低层 IR 贴近机器便于指令选择与寄存器分配。"
+ ],
+ follow:[
+  {q:"LLVM IR 属于哪一层？",a:"介于中间层偏上。它既支持类型系统与丰富的优化，又可以「真的写成文本文件」——[[clang -emit-llvm -S]] 就能看到人类可读的 IR，这是它极受欢迎的原因之一。"},
+  {q:"为什么不直接在 AST 上做优化？",a:"AST 保留了太多语法细节、树形结构不便做数据流与控制流分析。转换到扁平的 IR 之后，控制流图与数据流分析才容易高效实现。"},
+  {q:"多级 IR 的取舍是什么？",a:"层级越多越灵活（每层做最适合的优化），但每级转换都有开销，会拖慢编译速度并增加实现复杂度，需要在编译时间和优化质量之间权衡。"}
+ ]},
+
+{cat:"编译原理与优化",diff:1,hot:true,
+ q:"常见编译优化有哪些？-O0 / -O1 / -O2 / -O3 有什么区别？",
+ points:[
+  "机器无关优化：常量折叠与传播、死代码消除（DCE）、公共子表达式消除（CSE）、循环不变量外提（LICM）、强度削减、函数内联、循环展开、向量化。",
+  "机器相关优化：指令选择、寄存器分配、指令调度、窥孔优化。",
+  "[[-O0]]：几乎不优化，便于调试；[[-O1]]：基础优化，编译快；[[-O2]]：生产环境常用档，做了大部分安全优化；[[-O3]]：在 O2 之上更激进（循环展开、向量化、更激进的内联），可能增大体积、偶尔反而更慢。",
+  "[[-Os]] 优化体积，[[-Og]] 在「可调试」与「有优化」之间取平衡，[[-Ofast]] 会放松标准合规（如开启 [[-ffast-math]]），浮点语义可能改变。"
+ ],
+ follow:[
+  {q:"为什么开了优化反而变慢？",a:"可能是代码体积膨胀导致指令缓存命中率下降，也可能是内联破坏了原本良好的代码布局，或向量化在边界情形引入了额外开销。优化必须靠 profile 验证。"},
+  {q:"为什么优化过的代码难调试？",a:"变量可能被放进寄存器或被完全消除、语句被重排、函数被内联，gdb 里常看到「变量已被优化掉」。用 [[-Og]] 或 [[-O1 -g]] 能兼顾一部分可调试性。"},
+  {q:"内核为什么多用 -O2 而不是 -O3？",a:"优先考虑体积与行为可预测性。O3 的激进优化在系统代码中收益不稳定，还可能触发编译器缺陷或暴露未定义行为。"}
+ ]},
+
+{cat:"编译原理与优化",diff:3,hot:true,
+ q:"什么是 SSA 形式？为什么现代编译器都采用它？",
+ points:[
+  "SSA（Static Single Assignment，静态单赋值）：IR 中每个变量只被赋值一次，同名变量的多次赋值会分裂成不同版本（如 x1、x2）。",
+  "好处一：定义-使用关系（def-use）变得显式且唯一，数据流分析复杂度大幅下降。",
+  "好处二：大量优化在 SSA 上表达极为简洁——常量传播、死代码消除、全局值编号、稀疏条件常量传播等。",
+  "好处三：支持稀疏化分析，避免在全程序所有程序点上做密集迭代。",
+  "关键概念是 φ 函数：在控制流汇合处合并来自不同路径的值，形式上如 [[x3 = φ(x1 来自 B1, x2 来自 B2)]]。",
+  "实践：LLVM IR 全程是 SSA，GCC 从 4.0 起引入 GIMPLE-SSA。"
+ ],
+ follow:[
+  {q:"φ 函数是真实存在的指令吗？",a:"不是。它是分析用的抽象标记，出 SSA（out-of-SSA）阶段会被消解为实际的寄存器/内存移动或并行复制。"},
+  {q:"SSA 有什么代价？",a:"需要构造与销毁（插入 φ、消除 φ）的额外开销，编译时间增加。这也是很多后端不完全使用 SSA 的原因。"},
+  {q:"和后端的关系是什么？",a:"后端（指令选择、寄存器分配）通常回到非 SSA 形式，因为要处理物理寄存器约束、指令副作用与机器相关细节，SSA 的「每次赋值都是新变量」模型不再合适。"}
+ ]},
+
+{cat:"编译原理与优化",diff:2,hot:true,
+ q:"什么是函数内联？编译器如何决定要不要内联？",
+ points:[
+  "内联是把被调函数的函数体直接嵌入调用处，消除调用开销（保存/恢复寄存器、跳转、建立栈帧），更重要的是让跨过程优化成为可能。",
+  "内联打开「过程边界」后，常量传播、死代码消除、更好的指令调度才能发挥作用，所以它是最重要的优化之一。",
+  "决策依据是成本模型：函数的 IR 指令数、调用次数、是否位于小循环内、是否存在 [[always_inline]] / [[noinline]] 标注、递归深度、是否虚函数（需去虚化后才可能内联）。",
+  "反向代价是代码体积膨胀，可能降低指令缓存命中率，因此内联是「收益与体积」的权衡。",
+  "跨编译单元内联需要 LTO（[[-flto]]），否则编译器看不到其他 .cpp 里的函数体。"
+ ],
+ follow:[
+  {q:"内联一定更好吗？",a:"不一定。代码膨胀会伤害 i-cache，尤其对体积敏感的场景。[[-O2]] 是较稳的折中；确证的热点函数可用 [[__attribute__((always_inline))]] 强制。"},
+  {q:"虚函数能内联吗？",a:"只有当编译器能确定对象的实际类型时才行（例如对象是局部变量、类是 [[final]]、或通过 profile 引导的去虚化 devirtualization）。否则目标地址运行期才知，无法内联。"},
+  {q:"怎么观察内联结果？",a:"GCC 用 [[-fdump-tree-inline]]，Clang 用 [[-Rpass=inline]]，最直接的是看生成汇编里还有没有 [[call]] 指令。"},
+  {q:"LTO 为什么能提升优化效果？",a:"它把整个程序的目标文件（或其中间表示）在链接期一起优化，使跨文件的内联、常量传播、死代码消除成为可能，代价是链接时间与内存占用上升。"}
+ ]},
+
+{cat:"编译原理与优化",diff:2,hot:false,
+ q:"什么是尾调用优化？它对递归有什么意义？",
+ points:[
+  "尾调用：函数的最后一个动作是调用另一个函数，且调用返回后不再需要当前栈帧（返回值直接透传）。",
+  "尾调用优化（TCO）可以复用当前栈帧，把 [[call]] 变成 [[jmp]]，从而使调用不增加栈深度。",
+  "对递归的意义：尾递归可被优化成循环，把 O(n) 的栈空间降为 O(1)，从根本上避免栈溢出。这是函数式语言表达循环的主要方式。",
+  "触发条件较严格：调用必须是最后一步、返回值必须直接返回、调用者与被调者的参数与返回类型需兼容（C ABI 下还对栈清理方式有要求）。",
+  "C++ 中 [[-O2]] 通常会开启，但标准不做保证；这也意味着优化后栈回溯信息可能不再完整。"
+ ],
+ follow:[
+  {q:"为什么 C++ 标准不保证 TCO？",a:"因为它会影响调试与栈回溯信息，还与当前栈帧中局部对象的析构时机有关（必须在尾调用前完成析构），因此留给实现自行决定。"},
+  {q:"尾递归和普通递归的差别在哪？",a:"普通递归每层都占一个独立栈帧，深度大就栈溢出；尾递归经优化后栈深度恒定，等价于循环。"},
+  {q:"怎么确认编译器做了优化？",a:"看汇编里是 [[jmp]] 还是 [[call]]；也可以用 [[-foptimize-sibling-calls]] 显式开启（GCC），并在需要时用 [[-fno-optimize-sibling-calls]] 关闭以便调试。"}
+ ]},
+
+{cat:"编译原理与优化",diff:3,hot:false,
+ q:"什么是数据流分析？编译器怎么做活跃变量分析？",
+ points:[
+  "数据流分析是在控制流图（CFG）上求解「每个程序点上的某种属性」的通用框架。经典问题包括：到达定值、活跃变量、可用表达式、常量传播。",
+  "活跃变量分析回答「某变量在某点之后是否还会被使用」。若不会，就可以安全释放它占用的寄存器，并可对该变量做死代码消除。",
+  "求解方式：为每个基本块计算 def/use 集合，沿控制流方向迭代求解。活跃变量是逆向分析（从后往前传播），不断迭代直到达到不动点。",
+  "效率实践：基础算法复杂度较高（最坏 O(n²)），实际实现用位向量/BitSet 加速，或用 worklist 算法与稀疏化（在 SSA 上做）显著降低开销。",
+  "数据流分析是所有中端优化的基础设施，寄存器分配更是直接依赖它。"
+ ],
+ follow:[
+  {q:"前向分析和后向分析各举一例？",a:"前向（沿控制流方向传播）：到达定值、可用表达式；后向（逆控制流方向）：活跃变量、非常忙表达式。"},
+  {q:"数据流分析和 SSA 有什么关系？",a:"SSA 让 def-use 链显式化，很多数据流问题在 SSA 上可退化为简单的图遍历，从「迭代求解」变成「稀疏传播」，效率高出很多。"},
+  {q:"编译器怎么用活跃信息分配寄存器？",a:"典型做法是图着色：把「同时活跃」的变量连一条边，得到干涉图，再用图着色算法把有限个物理寄存器分配上去，图着色失败的变量溢出到栈上。"}
+ ]},
+
+{cat:"编译原理与优化",diff:2,hot:false,
+ q:"JIT 和 AOT 有什么区别？各自适合什么场景？",
+ points:[
+  "AOT（Ahead-Of-Time）：在运行前把源码全部编译成机器码。代表是 GCC/Clang 编译的 C/C++、Rust。优点：启动快、无运行时编译开销、便于验证与静态分析。缺点：无法利用运行时信息做投机优化。",
+  "JIT（Just-In-Time）：在运行时把字节码或 IR 编译为机器码。代表是 JVM HotSpot、V8、PyPy，以及 LLVM 的 MCJIT/ORC。优点：可以根据真实运行数据做投机优化（类型内联、去虚化、常量特化），特别适合动态语言与长时运行的服务。",
+  "混合模式很常见：AOT 做基础编译 + JIT 对热点做分层优化；或用 AOT 生成 IR、运行时交给 JIT 按需编译加载。",
+  "在 AI 编译器场景中两种都存在：训练框架常用 JIT（图编译 + kernel 缓存），边缘部署则倾向 AOT（提前编译，减小体积与延迟）。"
+ ],
+ follow:[
+  {q:"JIT 为什么可能比 AOT 更快？",a:"它掌握运行时信息（实际类型、分支分布、热点路径），可以做 AOT 不敢做的投机优化，并用去优化（deopt）机制在假设失效时回退以保证正确性。"},
+  {q:"JIT 的代价是什么？",a:"启动预热延迟、运行时编译占用 CPU 与内存、实现复杂度高、代码缓存的可写可执行内存（W^X）带来安全与合规问题，调试也更困难。"},
+  {q:"什么场景不适合 JIT？",a:"冷启动敏感的短命进程（CLI 工具）、内存受限的嵌入式设备，以及有硬实时或安全合规要求的场景。"}
+ ]},
+
+/* ============ 七、工具链与工程实践 (5) ============ */
+{cat:"工具链与工程实践",diff:2,hot:false,
+ q:"GCC、Clang/LLVM、MSVC 有什么区别？",
+ points:[
+  "GCC：GNU 编译器套件，历史最久、平台覆盖最广、优化成熟；内部有多套自有 IR（GIMPLE/RTL），整体式设计；Linux 生态的默认选择。",
+  "Clang/LLVM：模块化、库化设计，前端（clang）与优化后端（LLVM）可独立复用；错误信息友好、编译速度快、工具生态完善（clang-tidy、clangd、sanitizer、libFuzzer）；macOS/iOS、Android，以及大量 AI 编译项目（TVM、MLIR）都构建在它之上。",
+  "MSVC：Windows 原生工具链，与 Windows ABI、调试器（PDB）、IDE 深度集成；C++ 标准特性跟进速度历史上偏慢，近年已明显改善。",
+  "三者遵循的 C++ ABI 不同（MSVC 与 Itanium ABI 不兼容），因此跨编译器或跨平台的二进制复用必须走 C 接口。"
+ ],
+ follow:[
+  {q:"为什么 AI 编译器生态更青睐 LLVM？",a:"因为它的库化设计可以嵌入、IR 与 Pass 基础设施完善、扩展现有后端或新增后端的成本低；MLIR 更是直接在 LLVM 项目下发展出多层 dialect 机制，非常适合领域特定编译器。"},
+  {q:"换编译器会踩哪些坑？",a:"同一段存在未定义行为的代码在不同优化策略下表现不同；语言扩展（如 [[__attribute__]]）不一致；内联汇编与 ABI 差异；标准库实现的细节不同。"},
+  {q:"交叉编译怎么做？",a:"Clang 用 [[--target=]] 配合 [[--sysroot]]，GCC 用工具链前缀（如 [[aarch64-linux-gnu-g++]]），构建系统侧提供 CMake 工具链文件即可。"}
+ ]},
+
+{cat:"工具链与工程实践",diff:1,hot:true,
+ q:"常见编译选项有哪些？分别有什么用？",
+ points:[
+  "预处理与头文件：[[-I dir]] 头文件搜索路径，[[-D NAME=VAL]] 定义宏。",
+  "库与链接：[[-L dir]] 库搜索路径，[[-l name]] 链接库，[[-Wl,...]] 向链接器透传参数，[[-static]] / [[-shared]] / [[-fPIC]] / [[-pie]] / [[-no-pie]]。",
+  "优化与调试：[[-O0 ~ -O3]]、[[-Os]]、[[-Og]]、[[-g]]（调试信息，可配 [[-gdwarf-4]]）、[[-g3]]（含宏定义信息）。",
+  "警告：[[-Wall -Wextra]] 是常用组合，[[-Werror]] 把警告当错误，[[-Wpedantic]] 检查标准合规性，[[-Wno-xxx]] 单项关闭。",
+  "语言标准与特性：[[-std=c++17]] / [[-std=c++20]]、[[-fno-exceptions]]、[[-fno-rtti]]（嵌入式与性能敏感场景）。",
+  "安全与诊断：[[-fsanitize=address,undefined]]、[[-fstack-protector-strong]]、[[-D_FORTIFY_SOURCE=2]]、[[-fvisibility=hidden]]。",
+  "构建效率：[[-flto]]（链接期优化）、[[-pipe]]、[[ccache]] 缓存。"
+ ],
+ follow:[
+  {q:"-g 会影响运行性能吗？",a:"一般不影响生成代码的执行效率（只是额外的调试信息节），但会明显增大体积。发布版可分离调试信息（[[objcopy --only-keep-debug]] 配合 debuglink）。"},
+  {q:"-Wall 就开启所有警告了吗？",a:"不是。它只是「常用警告集合」，很多有价值的警告仍需 [[-Wextra]] 或单独开启；[[-Wpedantic]] 才能检查标准合规性。"},
+  {q:"-fno-exceptions 之后 STL 还能用吗？",a:"要谨慎评估。很多容器在分配失败时会抛异常，去掉异常支持后需配合自定义分配策略，并逐一确认所用标准库组件的兼容性。"},
+  {q:"怎么让代码更快又更安全？",a:"[[-O2]] + [[-flto]] 提升性能；[[-fvisibility=hidden]] 减少导出与间接访问；[[-Wl,-z,relro,-z,now]] 与 [[-fstack-protector-strong]] 提升安全性；CI 里另开一套 [[-fsanitize=address,undefined]] 的构建做检查。"}
+ ]},
+
+{cat:"工具链与工程实践",diff:2,hot:true,
+ q:"如何排查 undefined reference 和 multiple definition？",
+ points:[
+  "[[undefined reference to 'xxx']] 的常见原因：① 忘了链接对应库（[[-lxxx]]）；② 静态库顺序错误（使用它的目标文件必须在库之前）；③ 循环依赖但未用 [[--start-group/--end-group]]；④ 符号名不匹配（C++ 名字修饰，C 库需要 [[extern \"C\"]]）；⑤ 库本身根本没提供该符号；⑥ 只有声明没有定义。",
+  "[[multiple definition of 'xxx']] 的常见原因：① 变量定义写在头文件且未加 [[extern]]；② 头文件缺卫哨导致重复包含；③ 非 inline 的函数定义放在头文件；④ 多个源文件定义了同名全局函数或对象。",
+  "排查心法：先用 [[nm -C]] 确认符号到底在不在、名字对不对；再检查链接命令行顺序；最后用 [[-Wl,--verbose]] 或 [[-Wl,-t]] 观察链接器实际打开了哪些文件。",
+  "现代 CMake 项目中这类问题多来自 [[target_link_libraries]] 的顺序与 [[PUBLIC/PRIVATE]] 传播范围配置错误。"
+ ],
+ follow:[
+  {q:"怎么区分「库里没有」和「库没参与链接」？",a:"[[nm -C libxxx.a | grep 符号名]]。有定义说明库里存在（问题在顺序或没链接）；找不到就说明该库确实不提供这个符号。"},
+  {q:"一次性冒出大量未定义符号怎么找根因？",a:"通常是最底层的一个库没链接上。先修最早出现的、最基础的符号，往往大量连带错误会一起消失。"},
+  {q:"[[-Wl,--no-undefined]] 有什么用？",a:"强制共享库把未定义符号当错误处理，能在构建期就发现「运行时才暴露的缺符号」问题，是共享库构建的推荐选项。"}
+ ]},
+
+{cat:"工具链与工程实践",diff:3,hot:false,
+ q:"什么是 ABI？为什么 C++ 的 ABI 这么不稳定？",
+ points:[
+  "ABI（Application Binary Interface）是二进制层面的约定，包含：函数调用约定（参数放哪、谁清栈）、寄存器使用规则、名字修饰规则、对象内存布局（含 vtable 布局）、异常传播机制、标准库类型的大小与布局。",
+  "只有 ABI 一致，分别编译出来的目标文件与库才能互相链接与调用。",
+  "C++ ABI 不稳定的原因：① 语言标准本身不规定这些细节，交由实现决定；② 模板、内联函数、类布局自由度大；③ 标准库类型（如 [[std::string]]、[[std::list]]）的实现布局随版本变化；④ 新增语言特性（移动语义、[[noexcept]]）会改变既有类型的 ABI 语义。",
+  "工程对策：跨模块边界暴露 C 接口（最常用）、统一编译选项与编译器版本、用 [[inline namespace]] 做版本化（如 libstdc++ 的 [[__cxx11]]）、或者干脆全静态链接。"
+ ],
+ follow:[
+  {q:"为什么升级 GCC 后可能链接失败？",a:"标准库的 ABI 版本与符号版本发生变化（如 [[_GLIBCXX_USE_CXX11_ABI]]），混用不同版本编译出的库就会报未定义符号。"},
+  {q:"[[_GLIBCXX_USE_CXX11_ABI]] 是什么？",a:"libstdc++ 中 [[std::string]] 新老实现的切换开关（0 为旧实现、1 为新实现）。它是「同一份代码在新老 GCC 上互链报错」最典型的原因。"},
+  {q:"怎么判断 ABI 是否兼容？",a:"对比编译器与标准库版本、查看 SOVERSION、用 [[objdump -T]] 看符号版本后缀（[[@@GLIBCXX_3.4.21]]）。最稳妥的做法还是走 C 接口，或者用同一套工具链全量编译。"}
+ ]},
+
+{cat:"工具链与工程实践",diff:2,hot:true,
+ q:"分析目标文件常用哪些工具？各自适合什么场景？",
+ points:[
+  "[[file]]：快速判断文件类型（ELF 32/64 位、是否为 PIE、是否已 strip）。",
+  "[[readelf -a]]：ELF 结构全景（文件头、节头表、程序头表、符号表、重定位表、动态段、版本信息），静态分析首选。",
+  "[[objdump]]：[[-d]] 反汇编、[[-dr]] 带重定位、[[-t]] 看符号表、[[-s]] 看节内容。",
+  "[[nm]] / [[nm -C]]：符号列表（U/T/B/D/W 等类型），排查 undefined reference 的第一工具。",
+  "[[ldd]]：查看动态依赖（注意它可能执行程序）；[[readelf -d]] 更严谨，看 NEEDED 与 RPATH/RUNPATH。",
+  "[[size]]：各段体积概览（text/data/bss），评估代码体积；[[strings]]：提取可读字符串，快速识别版本与路径信息。",
+  "[[c++filt]] 还原修饰名；[[strip]] 裁剪符号；[[patchelf]] 修改 interpreter/rpath，发布时常用。",
+  "运行时观察：[[LD_DEBUG=libs,reloc,bindings]]、[[LD_DEBUG=statistics]]、[[strace]]、[[gdb]]、[[/proc/<pid>/maps]]。"
+ ],
+ follow:[
+  {q:"为什么很多场景更推荐 readelf 而不是 objdump？",a:"[[readelf]] 聚焦 ELF 结构本身、输出更适合人读；[[objdump]] 侧重反汇编，且依赖 BFD 对不同架构的支持，跨架构时可能受限。"},
+  {q:"排查「库找不到」用什么？",a:"先 [[ldd ./prog]] 看缺哪个，再用 [[readelf -d]] 检查 [[NEEDED]] 与 RPATH/RUNPATH；注意 [[$ORIGIN]] 可以写「相对可执行文件自身路径」的搜索目录，最适合分发。"},
+  {q:"排查「加载慢」用什么？",a:"[[LD_DEBUG=statistics ./prog]] 看重定位数量与耗时。符号导出过多是常见原因，可用 [[-fvisibility=hidden]] 精简，能显著减少重定位项。"}
+ ]}
+];
+
+/* ---------- 渲染 ---------- */
+var CATS = ["编译流程与目标文件","符号与重定位","静态链接与可执行文件","动态链接与装载","内存布局与运行时","编译原理与优化","工具链与工程实践"];
+var DIFF = {1:["基础","d1"],2:["进阶","d2"],3:["深入","d3"]};
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(s){return esc(s).replace(/\[\[(.+?)\]\]/g,"<code>$1</code>");}
+
+var listEl = document.getElementById("list");
+var navEl = document.getElementById("nav");
+var opened = {};
+
+function buildCard(it, n){
+  var d = DIFF[it.diff];
+  var div = document.createElement("div");
+  div.className = "q";
+  div.dataset.n = n;
+  div.dataset.cat = it.cat;
+  var pts = it.points.map(function(p){return "<li>"+fmt(p)+"</li>";}).join("");
+  var faq = it.follow.map(function(f){
+    return '<div class="faq"><div class="fq"><span class="mark">追问</span><span>'+fmt(f.q)+'</span></div>'+
+           '<div class="fa">'+fmt(f.a)+'</div></div>';
+  }).join("");
+  div.innerHTML =
+    '<div class="q-head">'+
+      '<div class="num">'+n+'</div>'+
+      '<div class="q-title">'+fmt(it.q)+'</div>'+
+      '<div class="q-tags">'+
+        (it.hot?'<span class="tag hot">高频</span>':'')+
+        '<span class="tag '+d[1]+'">'+d[0]+'</span>'+
+      '</div>'+
+      '<div class="caret">▼</div>'+
+    '</div>'+
+    '<div class="q-body"><div class="inner">'+
+      '<p class="blk-label">回答要点</p><ul class="pts">'+pts+'</ul>'+
+      '<div class="follow-box"><p class="blk-label follow">面试官可能继续追问</p>'+faq+'</div>'+
+    '</div></div>';
+  div.querySelector(".q-head").addEventListener("click", function(){
+    div.classList.toggle("open");
+    opened[n] = div.classList.contains("open");
+    updateProgress();
+  });
+  return div;
+}
+
+var order = 0;
+CATS.forEach(function(cat){
+  var items = DATA.filter(function(x){return x.cat===cat;});
+  if(!items.length) return;
+
+  var sec = document.createElement("div");
+  sec.className = "section";
+  sec.id = "sec-" + CATS.indexOf(cat);
+  sec.dataset.cat = cat;
+  sec.innerHTML = '<div class="section-head"><h2>'+cat+'</h2>'+
+                  '<span class="cnt">'+items.length+' 题</span>'+
+                  '<span class="rule"></span></div><div class="sec-body"></div>';
+  var body = sec.querySelector(".sec-body");
+  items.forEach(function(it){ order++; body.appendChild(buildCard(it, order)); });
+  listEl.appendChild(sec);
+
+  var a = document.createElement("div");
+  a.className = "nav-item";
+  a.innerHTML = '<span>'+cat+'</span><span class="n">'+items.length+'</span>';
+  a.addEventListener("click", function(){
+    document.getElementById("sec-"+CATS.indexOf(cat)).scrollIntoView({behavior:"smooth",block:"start"});
+    document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+    a.classList.add("active");
+  });
+  navEl.appendChild(a);
+});
+
+var total = order;
+
+/* 搜索 */
+var searchInput = document.getElementById("q");
+var emptyEl = document.getElementById("empty");
+
+function doFilter(kw){
+  kw = kw.trim().toLowerCase();
+  var visibleTotal = 0;
+  document.querySelectorAll(".section").forEach(function(sec){
+    var shown = 0;
+    sec.querySelectorAll(".q").forEach(function(card){
+      var txt = card.innerText.toLowerCase();
+      var hit = !kw || txt.indexOf(kw) !== -1;
+      card.style.display = hit ? "" : "none";
+      if(hit) shown++;
+    });
+    sec.style.display = shown ? "" : "none";
+    visibleTotal += shown;
+    var cnt = sec.querySelector(".cnt");
+    cnt.textContent = shown + " 题" + (kw ? "（已筛选）" : "");
+  });
+  emptyEl.classList.toggle("show", visibleTotal === 0);
+}
+searchInput.addEventListener("input", function(){ doFilter(searchInput.value); });
+document.addEventListener("keydown", function(e){
+  if(e.key === "/" && document.activeElement !== searchInput){
+    e.preventDefault(); searchInput.focus(); searchInput.select();
+  }
+  if(e.key === "Escape" && document.activeElement === searchInput){
+    searchInput.value = ""; doFilter(""); searchInput.blur();
+  }
+});
+
+/* 展开 / 收起 */
+var expandBtn = document.getElementById("expandAll");
+var allOpen = false;
+expandBtn.addEventListener("click", function(){
+  allOpen = !allOpen;
+  document.querySelectorAll(".q").forEach(function(c){
+    c.classList.toggle("open", allOpen);
+    opened[c.dataset.n] = allOpen;
+  });
+  expandBtn.textContent = allOpen ? "全部收起" : "展开全部";
+  updateProgress();
+});
+
+/* 进度 */
+function updateProgress(){
+  var c = 0;
+  document.querySelectorAll(".q").forEach(function(q){
+    if(q.classList.contains("open")) c++;
+  });
+  document.getElementById("pv").textContent = c;
+  document.getElementById("pbar").style.width = (c/total*100) + "%";
+}
+updateProgress();
+
+/* 打印 */
+document.getElementById("printBtn").addEventListener("click", function(){
+  document.querySelectorAll(".q").forEach(function(c){ c.classList.add("open"); });
+  window.print();
+});
+
+/* 回到顶部 */
+var toTop = document.getElementById("totop");
+window.addEventListener("scroll", function(){
+  toTop.classList.toggle("show", window.scrollY > 600);
+});
+toTop.addEventListener("click", function(){ window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* 滚动高亮导航 */
+var secs = Array.prototype.slice.call(document.querySelectorAll(".section"));
+var navItems = Array.prototype.slice.call(document.querySelectorAll(".nav-item"));
+window.addEventListener("scroll", function(){
+  var pos = window.scrollY + 120, idx = 0;
+  secs.forEach(function(s, i){ if(s.offsetTop <= pos) idx = i; });
+  navItems.forEach(function(n, i){ n.classList.toggle("active", i === idx); });
+});
+</script>
+</body>
+</html>
