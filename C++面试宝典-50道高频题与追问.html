@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ 面试宝典 · 50 题</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --panel:#ffffff;
+    --panel-2:#fbfcfe;
+    --ink:#1a1d24;
+    --ink-2:#4a5262;
+    --ink-3:#7b8496;
+    --line:#e3e7ee;
+    --line-2:#eef1f6;
+    --brand:#00599c;
+    --brand-2:#0a7bc4;
+    --brand-soft:#e8f2fa;
+    --hot:#d9480f;
+    --hot-soft:#fdeee7;
+    --ok:#0f7b57;
+    --code-bg:#eef2f7;
+    --code-ink:#0b4f7a;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,30,50,.05), 0 8px 24px -12px rgba(20,30,50,.14);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- 顶部 ---------- */
+  header.top{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1240px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px;
+  }
+  .logo{display:flex;align-items:center;gap:11px;flex-shrink:0}
+  .logo-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(145deg,var(--brand),#2e9be0);
+    color:#fff;font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    letter-spacing:-1px;
+    box-shadow:0 4px 12px -4px rgba(0,89,156,.55);
+  }
+  .logo-txt b{display:block;font-size:15.5px;line-height:1.25;letter-spacing:.2px}
+  .logo-txt span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.4px}
+  .search{
+    flex:1; max-width:420px; position:relative; margin-left:auto;
+  }
+  .search input{
+    width:100%; padding:9px 14px 9px 36px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--panel-2); color:var(--ink);
+    font-size:13.5px; font-family:inherit; outline:none;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .search input:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(10,123,196,.13);background:#fff}
+  .search::before{
+    content:"⌕"; position:absolute; left:12px; top:50%; transform:translateY(-52%);
+    color:var(--ink-3); font-size:16px; pointer-events:none;
+  }
+  .search kbd{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:10.5px; color:var(--ink-3); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:5px; padding:1px 5px; background:#fff;
+    font-family:inherit;
+  }
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-2);
+    padding:8px 13px; border-radius:9px; font-size:12.8px; font-family:inherit;
+    cursor:pointer; white-space:nowrap; transition:.16s;
+  }
+  .btn:hover{border-color:#c9d2e0;color:var(--ink);background:var(--panel-2)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#004b85;border-color:#004b85;color:#fff}
+
+  /* ---------- 布局 ---------- */
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 90px;display:flex;gap:26px;align-items:flex-start}
+  aside{
+    width:216px; flex-shrink:0; position:sticky; top:76px;
+  }
+  .side-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 12px; box-shadow:var(--shadow);
+  }
+  .side-title{font-size:11px;letter-spacing:1.2px;color:var(--ink-3);font-weight:700;padding:0 8px 8px}
+  .nav-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:7px 9px; border-radius:9px; font-size:13.2px; color:var(--ink-2);
+    text-decoration:none; cursor:pointer; transition:.15s; border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--brand-soft);color:var(--brand);border-color:#d6e8f5}
+  .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600;border-color:#cbe2f2}
+  .nav-item .n{
+    font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+    background:var(--line-2);border-radius:20px;padding:1px 7px;font-weight:600;
+  }
+  .nav-item.active .n{background:#d3e7f6;color:var(--brand)}
+  .progress-box{margin-top:12px;padding:12px 10px 8px;border-top:1px solid var(--line-2)}
+  .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:7px}
+  .progress-label b{color:var(--brand);font-variant-numeric:tabular-nums}
+  .bar{height:6px;background:var(--line-2);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--brand),#3aa0e0);transition:width .35s ease}
+
+  main{flex:1;min-width:0}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background:linear-gradient(135deg,#00599c 0%,#0a7bc4 55%,#2e9be0 100%);
+    border-radius:18px; padding:26px 28px; color:#fff;
+    box-shadow:0 14px 34px -18px rgba(0,89,156,.75);
+    position:relative; overflow:hidden;
+  }
+  .hero::after{
+    content:"C++"; position:absolute; right:-14px; bottom:-38px;
+    font-size:120px; font-weight:800; color:rgba(255,255,255,.09); letter-spacing:-6px;
+    pointer-events:none;
+  }
+  .hero h1{margin:0 0 8px;font-size:25px;letter-spacing:.3px;font-weight:700}
+  .hero p{margin:0;font-size:13.5px;opacity:.9;max-width:640px;line-height:1.7}
+  .hero .stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;position:relative;z-index:1}
+  .chip{
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+    border-radius:20px; padding:4px 12px; font-size:12.3px; letter-spacing:.2px;
+    backdrop-filter:blur(4px);
+  }
+  .chip b{font-weight:700}
+
+  /* ---------- 章节 ---------- */
+  .section{margin-top:34px;scroll-margin-top:82px}
+  .section-head{display:flex;align-items:baseline;gap:11px;margin-bottom:14px;padding-left:2px}
+  .section-head h2{margin:0;font-size:17.5px;letter-spacing:.2px}
+  .section-head .cnt{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .section-head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);margin-bottom:5px}
+
+  /* ---------- 题目卡片 ---------- */
+  .q{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:11px; box-shadow:var(--shadow); overflow:hidden;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .q.open{border-color:#cfe2f0;box-shadow:0 2px 4px rgba(20,30,50,.05),0 14px 30px -18px rgba(0,89,156,.4)}
+  .q-head{
+    display:flex; align-items:flex-start; gap:13px; padding:14px 18px;
+    cursor:pointer; user-select:none;
+  }
+  .q-head:hover{background:var(--panel-2)}
+  .num{
+    flex-shrink:0; width:29px; height:29px; border-radius:9px;
+    background:var(--brand-soft); color:var(--brand);
+    font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .q.open .num{background:var(--brand);color:#fff}
+  .q-title{flex:1;font-size:14.6px;font-weight:600;line-height:1.6;letter-spacing:.1px}
+  .q-tags{display:flex;align-items:center;gap:7px;flex-shrink:0;margin-top:2px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  .tag.hot{background:var(--hot-soft);color:var(--hot)}
+  .tag.d1{background:#e9f5ee;color:#0f7b57}
+  .tag.d2{background:#fff4e3;color:#b26a00}
+  .tag.d3{background:#f0ecfb;color:#5b3bc4}
+  .caret{
+    flex-shrink:0;color:var(--ink-3);font-size:11px;margin-top:8px;transition:transform .25s;
+  }
+  .q.open .caret{transform:rotate(180deg);color:var(--brand)}
+
+  .q-body{display:none;padding:0 20px 18px 20px;}
+  .q.open .q-body{display:block}
+  .q-body .inner{padding-top:4px;border-top:1px dashed var(--line);padding-top:14px}
+
+  .blk-label{
+    font-size:11px;font-weight:700;letter-spacing:1.3px;color:var(--brand);
+    margin:0 0 8px; display:flex; align-items:center; gap:7px;
+  }
+  .blk-label::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--brand);display:block}
+  .blk-label.follow{color:var(--hot)}
+  .blk-label.follow::before{background:var(--hot)}
+
+  ul.pts{margin:0;padding:0;list-style:none}
+  ul.pts li{
+    position:relative;padding-left:19px;margin-bottom:7px;font-size:13.9px;color:var(--ink-2);line-height:1.75;
+  }
+  ul.pts li::before{
+    content:"";position:absolute;left:5px;top:9px;width:5px;height:5px;border-radius:50%;
+    background:#a9bcd2;
+  }
+  ul.pts li b,ul.pts li strong{color:var(--ink);font-weight:600}
+  ul.pts li em{font-style:normal;color:var(--brand);font-weight:600}
+
+  code{
+    background:var(--code-bg);color:var(--code-ink);
+    padding:1.5px 6px;border-radius:5px;font-size:12.7px;
+    font-family:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    border:1px solid #e0e7f0;
+  }
+
+  .follow-box{
+    margin-top:16px;background:var(--panel-2);border:1px solid var(--line-2);
+    border-left:3px solid #f0a06a;border-radius:10px;padding:14px 16px 6px;
+  }
+  .faq{margin-bottom:11px}
+  .faq .fq{
+    font-size:13.4px;font-weight:600;color:var(--ink);margin-bottom:4px;
+    display:flex;gap:7px;align-items:flex-start;
+  }
+  .faq .fq .mark{color:var(--hot);font-weight:800;flex-shrink:0;font-size:12px;margin-top:1px}
+  .faq .fa{font-size:13.4px;color:var(--ink-2);line-height:1.75;padding-left:19px}
+
+  .empty{
+    display:none;text-align:center;padding:60px 20px;color:var(--ink-3);font-size:14px;
+  }
+  .empty.show{display:block}
+  .empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
+
+  footer{
+    max-width:1240px;margin:0 auto;padding:8px 22px 40px;color:var(--ink-3);font-size:12px;text-align:center;
+  }
+
+  .totop{
+    position:fixed;right:26px;bottom:26px;z-index:40;
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;color:var(--brand);font-size:16px;cursor:pointer;
+    box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;
+  }
+  .totop.show{display:flex}
+
+  @media (max-width:980px){
+    aside{display:none}
+    .wrap{padding:20px 14px 80px}
+    .top-inner{padding:10px 14px;gap:10px;flex-wrap:wrap}
+    .search{max-width:none;margin-left:0;order:3;flex-basis:100%}
+    .logo-txt span{display:none}
+  }
+  @media print{
+    header.top,aside,.totop,.q-tags .tag.d1,.q-tags .tag.d2,.q-tags .tag.d3{display:none!important}
+    body{background:#fff;font-size:11.5pt}
+    .q-body{display:block!important}
+    .q{border:1px solid #ccc;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+    .hero{box-shadow:none}
+    .wrap{display:block;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo">
+      <div class="logo-mark">C++</div>
+      <div class="logo-txt">
+        <b>C++ 面试宝典</b>
+        <span>50 道高频题 · 含面试官追问</span>
+      </div>
+    </div>
+    <div class="search">
+      <input id="q" type="text" placeholder="搜索题目、关键字，如 虚函数 / 智能指针 / 死锁" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <button class="btn" id="expandAll">展开全部</button>
+    <button class="btn primary" id="printBtn">打印 / 存 PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="side-card">
+      <div class="side-title">知 识 模 块</div>
+      <div id="nav"></div>
+      <div class="progress-box">
+        <div class="progress-label"><span>复习进度</span><span><b id="pv">0</b> / 50</span></div>
+        <div class="bar"><i id="pbar"></i></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>C++ 工程师面试宝典</h1>
+      <p>覆盖语言基础、内存管理、面向对象、STL、现代 C++、并发编程、编译链接与系统底层七大模块。每道题给出「回答要点」的组织方式，并附上面试官最可能继续追问什么——让你不止答得上，还接得住。</p>
+      <div class="stats">
+        <span class="chip"><b>50</b> 道高频题</span>
+        <span class="chip"><b>7</b> 大知识模块</span>
+        <span class="chip">要点 + 追问 双栏结构</span>
+        <span class="chip">点击题目展开答案</span>
+      </div>
+    </div>
+
+    <div id="list"></div>
+    <div class="empty" id="empty">
+      <div class="big">⌕</div>
+      没有匹配的题目，换个关键词试试
+    </div>
+  </main>
+</div>
+
+<footer>按 <b>/</b> 快速搜索 · 点击题目展开答案 · 建议按模块逐个吃透，不要只背结论</footer>
+<button class="totop" id="totop">↑</button>
+
+<script>
+var DATA = [
+/* ============ 一、语言基础 (9) ============ */
+{cat:"语言基础",diff:1,hot:false,
+ q:"C++ 和 C 的主要区别是什么？C++ 有哪些特点？",
+ points:[
+  "C 是面向过程的语言；C++ 是多范式语言，同时支持面向过程、面向对象、泛型编程和函数式风格。",
+  "C++ 在 C 之上增加了：类与封装继承多态、模板泛型、异常处理、RAII、运算符重载、命名空间、引用、函数重载。",
+  "C++ 的核心理念是「零开销抽象」：不使用的特性不付出代价，使用的特性手写代码与之等价，因此性能接近 C。",
+  "C++ 不是 C 的严格超集：很多合法 C 代码在 C++ 中编译不过，例如 [[void*]] 不能隐式转 [[T*]]、字符字面量是 [[const char*]]、隐式枚举转换被禁止。"
+ ],
+ follow:[
+  {q:"C++ 为什么能和 C 一样快？",a:"无 GC、手工内存管理、编译期完成多态（模板/内联）避免运行期开销、RAII 让资源管理无额外成本，加上几乎不引入隐藏的运行时机制。"},
+  {q:"C++ 相比 Rust/Go 的取舍是什么？",a:"C++ 生态成熟、零开销抽象强、可控性高，但内存安全依赖程序员自律，缺乏内建并发安全和包管理。这类横评题只要给出「场景决定选择」的判断即可。"}
+ ]},
+
+{cat:"语言基础",diff:1,hot:true,
+ q:"const 有哪些用法？const 成员函数的含义是什么？",
+ points:[
+  "修饰变量：值不可修改，如 [[const int MAX = 100;]]。",
+  "修饰指针：区分顶层 const（指针本身不可变）和底层 const（所指对象不可变）。",
+  "修饰函数参数：避免拷贝开销、防止函数内部误改实参，[[const T&]] 是最常用的传参形式。",
+  "修饰成员函数：写在参数列表后，表示 this 指针是 [[const T*]]，函数内不能修改非 mutable 成员，也不能调用非 const 成员函数。",
+  "修饰返回值：防止返回值被当作左值修改。",
+  "常用来表达接口契约：const 成员函数可被 const 对象调用，是接口设计的重要工具。"
+ ],
+ follow:[
+  {q:"const 成员函数里能修改成员变量吗？",a:"不能，除非该成员被声明为 [[mutable]]（常用于缓存、计数器、互斥锁）。"},
+  {q:"const 和 constexpr 有什么区别？",a:"const 只保证「不可修改」，可以是运行期确定的；constexpr 要求「编译期常量」，可用于数组长度、模板参数、case 标签。"},
+  {q:"const 对象能调用普通成员函数吗？",a:"不能。const 对象只能调用 const 成员函数，这也是设计接口时要成对提供 const/非 const 版本的原因。"}
+ ]},
+
+{cat:"语言基础",diff:2,hot:true,
+ q:"static 关键字在 C++ 中有哪几种用法？",
+ points:[
+  "静态全局变量/函数：具有内部链接，只在当前编译单元可见，避免命名冲突。",
+  "静态局部变量：只在首次执行到时初始化一次，生命周期持续到程序结束，存放在静态存储区（不是栈）。",
+  "静态成员变量：属于类而不属于对象，所有对象共享一份，类内声明、类外定义（C++17 起可用 [[inline static]] 或 [[constexpr]] 就地定义）。",
+  "静态成员函数：没有 this 指针，不能访问非静态成员，不能用 const 修饰，可直接用 [[类名::函数()]] 调用。"
+ ],
+ follow:[
+  {q:"静态局部变量的初始化是线程安全的吗？",a:"C++11 起是。标准要求局部静态变量的初始化具备线程安全保证（俗称 magic static），编译器会插入一次性初始化保护。"},
+  {q:"静态成员变量什么时候初始化？",a:"通常在程序启动阶段完成（静态初始化），不同编译单元之间的初始化顺序未定义，这就是静态初始化顺序问题（SIOF）。"}
+ ]},
+
+{cat:"语言基础",diff:1,hot:false,
+ q:"sizeof 和 strlen 有什么区别？sizeof 空类为什么是 1？",
+ points:[
+  "sizeof 是编译期运算符，返回类型/对象占用的字节数；strlen 是运行期库函数，从指针开始数到 [[\\0]] 为止的字符个数。",
+  "sizeof 数组名得到整个数组大小；数组退化为指针后 sizeof 得到指针大小（64 位为 8）。",
+  "sizeof 包含内存对齐产生的填充字节，strlen 不含结尾的 [[\\0]]。",
+  "空类 sizeof 为 1：标准要求同类型的不同对象必须拥有不同地址，编译器给空类分配 1 字节占位，保证 [[new]] 出来的对象地址唯一。"
+ ],
+ follow:[
+  {q:"sizeof 引用是什么？",a:"返回被引用对象的大小（引用被视为别名），而不是指针大小。这一点常被用来判断「引用是否占内存」的伪命题。"},
+  {q:"sizeof 和 alignof 的关系？",a:"sizeof 是占用大小，alignof 是对齐要求。C++11 引入 [[alignof]] 查询类型对齐，二者配合能算清楚对象布局。"},
+  {q:"空基类优化（EBO）是什么？",a:"派生类中的空基类子对象可以完全不占空间，从而让「无状态基类」不增加派生类体积，这是 [[std::less]] 等空仿函数在标准库里零开销的原因。"}
+ ]},
+
+{cat:"语言基础",diff:1,hot:true,
+ q:"引用和指针有什么区别？",
+ points:[
+  "引用必须在定义时初始化，且之后不能改变绑定的对象；指针可以不初始化、可以重新指向、可以为空。",
+  "引用在语义上是「别名」，不引入新的对象；指针本身是一个独立的对象，有自己的地址和大小。",
+  "不存在引用的引用（模板引用折叠除外）、不存在引用的数组；但存在指针数组、数组指针、函数指针。",
+  "[[sizeof(引用)]] 得到被引用对象的大小，[[sizeof(指针)]] 得到指针宽度（64 位平台 8 字节）。",
+  "引用更安全、语义更清晰；指针更灵活，可以表达「可能为空」「需要改变指向」的语义。"
+ ],
+ follow:[
+  {q:"引用占内存吗？",a:"语义上不引入对象，但是否占用存储是未指定的。作为类成员、或编译器无法优化掉时，实现上通常就是一个指针，会占用空间。"},
+  {q:"函数返回局部变量的引用会怎样？",a:"函数返回后局部对象已销毁，返回的引用是悬空引用，使用它是未定义行为。指针同理。"},
+  {q:"引用能重载吗？",a:"不能按「引用本身」重载，但右值引用 [[T&&]] 与左值引用 [[T&]] 可以构成重载，这正是移动语义的实现方式。"}
+ ]},
+
+{cat:"语言基础",diff:1,hot:false,
+ q:"const 写在 * 的左边和右边分别代表什么？",
+ points:[
+  "[[const int* p]]（或 [[int const* p]]）：指向常量的指针，底层 const，不能通过 p 修改值，但 p 可以指向别处。",
+  "[[int* const p]]：常量指针，顶层 const，p 不能改变指向，但可以通过 p 修改所指的值。",
+  "[[const int* const p]]：既不能改指向，也不能改值，两者都锁死。",
+  "记忆法：const 在 [[*]] 左边修饰「指向的值」，在 [[*]] 右边修饰「指针本身」；从右往左读类型更准确。"
+ ],
+ follow:[
+  {q:"顶层 const 和底层 const 的含义？",a:"顶层 const 表示对象自身是常量；底层 const 表示所指对象是常量。拷贝时顶层 const 可以被忽略，底层 const 必须兼容（不能把 const 指针赋给非 const 指针）。"},
+  {q:"为什么不建议用 C 风格强转去掉 const？",a:"去除 const 后写入原本只读的内存（如字符串字面量所在段）是未定义行为，可能直接崩溃。"}
+ ]},
+
+{cat:"语言基础",diff:2,hot:false,
+ q:"#define 和 const、inline 有什么区别？宏有哪些坑？",
+ points:[
+  "[[#define]] 是预处理阶段的纯文本替换，没有类型检查、不进入符号表、不参与作用域，调试器看不到，出错信息难以定位。",
+  "[[const]] 有类型、有作用域、可调试；[[constexpr]] 进一步保证编译期求值。",
+  "宏函数的典型问题：参数被多次求值导致副作用，例如 [[#define SQ(x) ((x)*(x))]] 传入 [[SQ(i++)]] 会自增两次。",
+  "宏没有命名空间和作用域，容易污染；必须处处加括号保护优先级。",
+  "宏仍然不可替代的场景：条件编译（[[#ifdef]]）、头文件保护、日志/断言宏、字符串化 [[#]] 与拼接 [[##]]。"
+ ],
+ follow:[
+  {q:"inline 函数一定会被内联吗？",a:"不一定，[[inline]] 只是对编译器的建议，编译器有权拒绝；现代编译器会根据成本模型自行决定是否内联，通常不需要手动加。"},
+  {q:"那 inline 的真正语义是什么？",a:"允许同一个函数在多个翻译单元中出现相同定义而不违反 ODR（单一定义规则），这是它写在头文件里的合法性来源。"}
+ ]},
+
+{cat:"语言基础",diff:2,hot:true,
+ q:"C++ 的四种类型转换分别是什么？有什么区别？",
+ points:[
+  "[[static_cast]]：编译期转换。用于基本类型互转、有继承关系的指针/引用上下行转换（下行为不安全）、[[void*]] 转具体指针。",
+  "[[dynamic_cast]]：运行期带类型检查，用于多态类型的向下或交叉转换；指针失败返回 [[nullptr]]，引用失败抛 [[std::bad_cast]]，依赖 RTTI，有运行时开销。",
+  "[[const_cast]]：增删 const / volatile 限定，唯一能去掉 const 的方式，滥用会导致未定义行为。",
+  "[[reinterpret_cast]]：重新解释二进制位，最危险，用于指针与整数互转、底层协议处理，不保证可移植。",
+  "C 风格强转 [[(T)x]] 相当于按顺序尝试上述几种，语义不明确，应在新代码中禁用。"
+ ],
+ follow:[
+  {q:"dynamic_cast 什么时候不能用？",a:"当基类不是多态类型（没有虚函数）时无法使用，因为 RTTI 信息挂在虚表上。"},
+  {q:"为什么 dynamic_cast 比较慢？",a:"它需要在运行时遍历类型信息（RTTI）判断转换是否合法。如果这成为热点，可以通过给基类加虚函数、使用 visitor 模式或标签枚举来替代。"},
+  {q:"static_cast 下行转换安全吗？",a:"不安全。它不做运行期检查，如果对象实际类型不是目标类型，访问成员就是未定义行为。"}
+ ]},
+
+{cat:"语言基础",diff:2,hot:false,
+ q:"extern \"C\" 的作用是什么？为什么 C++ 需要名字修饰？",
+ points:[
+  "C++ 支持函数重载、命名空间等特性，编译器会把参数类型编码进符号名，这个过程叫名字修饰（name mangling），例如 [[add(int,int)]] 可能变成 [[_Z3addii]]。",
+  "C 语言不做名字修饰，符号名就是函数名本身。",
+  "[[extern \"C\"]] 告诉编译器：这段代码按 C 的规则生成和查找符号，因此可以被 C 程序调用，也能正确链接 C 编译出的库。",
+  "典型写法配合宏使用，保证头文件在 C 和 C++ 中都能编译：[[#ifdef __cplusplus extern \"C\" { #endif ... }]]。"
+ ],
+ follow:[
+  {q:"extern \"C\" 的函数能重载吗？",a:"不能。因为不做名字修饰就无法区分同名不同参的函数，重载会直接报冲突。"},
+  {q:"extern \"C\" 影响的是编译还是链接？",a:"主要影响符号的生成与查找（编译期决定符号名），因此是链接能否成功的关键；它不改变函数体的编译方式。"}
+ ]},
+
+/* ============ 二、内存管理 (8) ============ */
+{cat:"内存管理",diff:1,hot:true,
+ q:"C++ 程序的内存分为哪几个区？",
+ points:[
+  "栈区：存放局部变量、函数参数、返回地址，由编译器自动分配释放，速度快、空间小（通常 1~8MB）。",
+  "堆区：由 [[new]] / [[malloc]] 动态分配，需要手动或通过 RAII 释放，空间大、速度慢、容易产生碎片。",
+  "全局/静态区：全局变量与静态变量。已初始化的在 [[.data]]，未初始化（或初始化为 0）的在 [[.bss]]。",
+  "常量区（[[.rodata]]）：字符串字面量、const 全局数据，只读，修改它是未定义行为。",
+  "代码区（[[.text]]）：存放机器指令，只读且可在多个进程间共享。"
+ ],
+ follow:[
+  {q:"字符串字面量存在哪里？能修改吗？",a:"存在常量区，类型是 [[const char*]]，修改它属于未定义行为，可能直接段错误。"},
+  {q:"栈溢出一般是怎么产生的？",a:"递归层数过深、函数内定义了超大局部数组、或在栈上分配大对象。解决方式是改用堆分配或增大栈限制。"},
+  {q:"静态局部变量在哪个区？",a:"全局/静态区，不是栈区，所以它的生命周期与程序一致。"}
+ ]},
+
+{cat:"内存管理",diff:1,hot:true,
+ q:"new/delete 和 malloc/free 有什么区别？",
+ points:[
+  "[[new]] 等于「调用 [[operator new]] 分配内存」+「调用构造函数」；[[delete]] 等于「调用析构函数」+「调用 [[operator delete]] 释放内存」。",
+  "[[malloc]] 只按字节分配内存，返回 [[void*]]，需要手动转型并检查是否为空，不调用构造/析构。",
+  "失败行为不同：[[new]] 失败抛 [[std::bad_alloc]]（使用 nothrow 版本则返回空）；[[malloc]] 失败返回 [[NULL]]。",
+  "必须配对使用：[[new]] 配 [[delete]]，[[new[]]] 配 [[delete[]]]，[[malloc]] 配 [[free]]。混用（如 new 配 free）是未定义行为。",
+  "[[operator new]] 可以被重载，用于自定义内存池；[[malloc]] 不能。"
+ ],
+ follow:[
+  {q:"new 分配的内存一定在堆上吗？",a:"不一定。可以重载 [[operator new]] 或使用 placement new 在指定内存上构造对象，例如内存池、共享内存、栈上缓冲区。"},
+  {q:"delete[] 怎么知道要析构多少个元素？",a:"编译器在分配 [[new[]]] 时会额外记录元素个数（称为 cookie，通常放在返回指针前面），[[delete[]]] 读取它后逐个调用析构。"},
+  {q:"new 比 malloc 安全在哪？",a:"有类型、自动调用构造/析构、失败有明确异常语义。现代 C++ 中两者都应让位于智能指针和容器。"}
+ ]},
+
+{cat:"内存管理",diff:2,hot:true,
+ q:"什么是内存泄漏？如何检测和避免？",
+ points:[
+  "内存泄漏指动态分配的内存失去所有引用，再也无法释放。长期运行的服务会因此内存持续增长直至 OOM。",
+  "常见成因：忘记 [[delete]]、指针被覆盖导致丢失、异常或提前 return 打断了释放路径、[[shared_ptr]] 循环引用。",
+  "检测工具：Valgrind（Linux）、AddressSanitizer（[[-fsanitize=address]]）、Visual Studio 的 CRT 调试堆与 [[_CrtDumpMemoryLeaks]]、CRT 泄漏检测宏。",
+  "避免手段：RAII 与智能指针、用容器替代裸数组、保证异常安全、代码审查与静态分析。",
+  "还要注意「非内存资源」泄漏：文件描述符、socket、锁、数据库连接，同样应交给 RAII 管理。"
+ ],
+ follow:[
+  {q:"智能指针能完全避免内存泄漏吗？",a:"不能。[[shared_ptr]] 循环引用依然泄漏，需要 [[weak_ptr]] 打破环；此外资源类泄漏（fd、句柄）也要单独管理。"},
+  {q:"进程退出时的泄漏有害吗？",a:"操作系统会回收进程的全部内存，所以短命程序影响有限；但长期运行的服务、频繁创建销毁的逻辑会累积，必须治理。"},
+  {q:"ASan 和 Valgrind 怎么选？",a:"ASan 需要重新编译但速度快、能检出越界/悬空；Valgrind 无需重编译但慢很多，常做补充手段。"}
+ ]},
+
+{cat:"内存管理",diff:1,hot:false,
+ q:"野指针和悬空指针是什么？如何避免？",
+ points:[
+  "野指针：指针未初始化，指向一个随机地址，解引用行为不可预测。",
+  "悬空指针：指针曾经有效，但所指内存已被释放或已失效。常见来源：[[delete]] 后未置空、返回局部变量地址、容器扩容后仍在用的旧迭代器/指针。",
+  "避免方式：定义时立即初始化为 [[nullptr]]；[[delete]] 后立刻置空；用智能指针和 RAII 管理生命周期；不返回局部对象的地址或引用。",
+  "使用前判空只是最低要求，判空无法发现悬空指针，因此根本手段仍是所有权设计清晰。"
+ ],
+ follow:[
+  {q:"delete 之后指针会自动变成 nullptr 吗？",a:"不会。[[delete]] 只是释放内存，指针值保持不变，于是成为悬空指针，这也是「double delete」的常见来源。"},
+  {q:"双重 delete 的后果？",a:"未定义行为，可能立即崩溃，也可能悄无声息地破坏堆结构，导致之后更难定位的问题。"}
+ ]},
+
+{cat:"内存管理",diff:2,hot:true,
+ q:"C++ 有哪些智能指针？shared_ptr 的实现原理是什么？",
+ points:[
+  "[[unique_ptr]]：独占所有权，不可拷贝、可移动，默认零开销，是首选。",
+  "[[shared_ptr]]：共享所有权，内部维护引用计数，计数归零时释放对象。",
+  "[[weak_ptr]]：弱引用，不增加强引用计数，用于打破循环引用或观察对象是否存活。",
+  "[[shared_ptr]] 由两部分组成：一个指向对象的指针，加上一个指向控制块的指针；控制块里存放强引用计数、弱引用计数和删除器。因此它的大小是裸指针的两倍。",
+  "引用计数的增减使用原子操作，所以控制块的计数操作是线程安全的。"
+ ],
+ follow:[
+  {q:"shared_ptr 是线程安全的吗？",a:"控制块的引用计数是线程安全的，但「同一个对象的读写」不是。多个线程同时读写同一 [[shared_ptr]] 实例指向的数据仍需自行加锁。"},
+  {q:"引用计数用什么实现？",a:"[[std::atomic<int]]]（或等价的原子操作），保证多线程下不丢失更新。"},
+  {q:"为什么 shared_ptr 比裸指针大一倍？",a:"因为它要同时持有对象指针和控制块指针。若用 [[make_shared]]，对象和控制块在同一块内存中，只需一次分配。"}
+ ]},
+
+{cat:"内存管理",diff:2,hot:true,
+ q:"shared_ptr 的循环引用问题是什么？weak_ptr 如何解决？",
+ points:[
+  "循环引用：对象 A 持有 [[shared_ptr<B>]]，对象 B 同时持有 [[shared_ptr<A>]]，两者计数都不为零，析构永远不会触发，内存泄漏。",
+  "解决方案：让其中一方的持有关系改为 [[weak_ptr]]，不增加强引用计数。需要访问时调用 [[lock()]] 临时提升为 [[shared_ptr]]。",
+  "典型场景：父子双向关系、观察者模式中被观察者持有观察者、图/树结构中的反向指针。",
+  "[[weak_ptr]] 的 [[lock()]] 返回 [[shared_ptr]]，对象已销毁时返回空 [[shared_ptr]]，因此使用前必须判断。"
+ ],
+ follow:[
+  {q:"weak_ptr 如何判断对象是否还活着？",a:"通过检查控制块中的强引用计数（[[use_count()]] 或 [[expired()]]）。注意 expried 与 lock 之间存在竞争，多线程下必须用 [[lock()]] 一次拿到结果。"},
+  {q:"weak_ptr 会增加对象大小吗？",a:"它本身有两个指针（对象指针 + 控制块指针），但它不影响被观察对象的生命周期。"}
+ ]},
+
+{cat:"内存管理",diff:2,hot:false,
+ q:"unique_ptr 和 shared_ptr 有什么区别？make_shared 有什么好处？",
+ points:[
+  "[[unique_ptr]] 独占所有权，不能拷贝、可以移动，[[std::move]] 可以把所有权转移给另一个 unique_ptr，也可以转移到 shared_ptr。",
+  "[[shared_ptr]] 共享所有权，可拷贝，代价是控制块与原子计数。",
+  "[[unique_ptr]] 支持自定义删除器且删除器是类型的一部分，零开销；[[shared_ptr]] 的删除器存在控制块里，有运行时开销。",
+  "选择原则：优先 [[unique_ptr]]，只有确实需要共享所有权时才用 [[shared_ptr]]。",
+  "[[make_shared]] / [[make_unique]] 的好处：一次内存分配（对象与控制块合并）、代码更短、异常安全（避免参数求值顺序导致的泄漏）。"
+ ],
+ follow:[
+  {q:"make_shared 有什么缺点？",a:"对象与控制块在同一块内存，只要还有 [[weak_ptr]] 存活，即使对象已析构，这块内存也不能完全释放。对超大对象要注意。"},
+  {q:"什么时候不能用 make_shared？",a:"需要自定义删除器时；或者对象很大且希望析构后立刻归还内存时。"},
+  {q:"shared_ptr 能从 unique_ptr 构造吗？",a:"C++17 起可以（[[shared_ptr(std::move(u))]]），C++11/14 不支持。"}
+ ]},
+
+{cat:"内存管理",diff:2,hot:true,
+ q:"什么是 RAII？为什么它是 C++ 资源管理的核心？",
+ points:[
+  "RAII = Resource Acquisition Is Initialization：把资源的获取放在构造函数里，把资源的释放放在析构函数里。",
+  "它依赖 C++ 的确定性析构：栈对象的析构是语言保证的，包括异常抛出导致栈展开时，析构函数一定会被调用。",
+  "应用范围很广：内存（智能指针）、文件（[[fstream]]）、互斥锁（[[lock_guard]]）、socket、数据库连接、事务回滚。",
+  "它是 C++ 异常安全的基础。C++ 没有 finally，靠 RAII 保证任何退出路径（正常返回、break、异常）都能释放资源。",
+  "配合「作用域尽量小」的原则，把资源对象的生命周期圈在最小范围内，是最有效的防御性编程。"
+ ],
+ follow:[
+  {q:"RAII 为什么能保证异常安全？",a:"异常抛出时，编译器会沿着调用栈展开，逐个析构已构造完成的栈对象，析构责任由栈对象自己承担，不依赖调用者记得清理。"},
+  {q:"lock_guard 是 RAII 的典型吗？",a:"是。构造时加锁、析构时解锁，因此即使临界区抛异常，锁也一定会被释放，不会死锁。"},
+  {q:"析构函数抛异常会怎样？",a:"如果析构在栈展开过程中抛出异常，程序会直接 [[std::terminate]]。因此析构函数必须 noexcept，内部错误应吞掉或记录日志。"}
+ ]},
+
+/* ============ 三、面向对象 (8) ============ */
+{cat:"面向对象",diff:1,hot:true,
+ q:"封装、继承、多态的含义是什么？多态的实现原理是什么？",
+ points:[
+  "封装：隐藏实现细节，只暴露接口。通过访问控制（public/protected/private）、类、命名空间实现。",
+  "继承：复用并扩展已有类型，表达 is-a 关系；注意优先使用「组合」而不是「继承」来复用实现。",
+  "多态：同一接口，不同实现。静态多态由重载和模板在编译期决定；动态多态由虚函数在运行期决定。",
+  "动态多态原理：含有虚函数的类，编译器为它生成一张虚函数表（vtable）；每个对象内有一个虚表指针（vptr）指向本类虚表；通过基类指针/引用调用虚函数时，用 vptr 查表得到真实函数地址再跳转。",
+  "动态多态的三个条件：继承 + 虚函数重写 + 通过基类指针或引用调用。"
+ ],
+ follow:[
+  {q:"多态的代价是什么？",a:"每个对象多一个 vptr（64 位为 8 字节）、调用需要间接跳转、无法内联，也阻碍了一些优化。"},
+  {q:"构造函数里调用虚函数会多态吗？",a:"不会。基类构造期间对象类型还是基类，vptr 指向基类虚表，只会调用基类版本。"},
+  {q:"静态多态和动态多态怎么选？",a:"对性能极敏感、类型在编译期已知的场景用模板静态多态；需要运行期根据类型派发时用虚函数。"}
+ ]},
+
+{cat:"面向对象",diff:2,hot:true,
+ q:"为什么基类的析构函数要声明为虚函数？纯虚函数是什么？",
+ points:[
+  "如果基类析构不是虚函数，用基类指针 [[delete]] 派生类对象时，只会调用基类析构函数，派生类特有的资源不会被释放，造成泄漏，且行为是未定义行为。",
+  "只要一个类可能被继承、并且可能通过基类指针删除，它的析构函数就必须是虚函数。",
+  "纯虚函数用 [[= 0]] 声明，使类成为抽象类，不能实例化，派生类必须实现。",
+  "注意：虚析构会阻止编译器自动生成移动构造和移动赋值，如果同时需要移动语义，要显式 [[= default]] 出来。"
+ ],
+ follow:[
+  {q:"纯虚函数可以有实现吗？",a:"可以。纯虚函数能提供类外实现，派生类可以通过 [[Base::f()]] 显式调用它，常用于提供默认公共逻辑。"},
+  {q:"抽象类可以有构造函数吗？",a:"可以，且必要时必须有。它不能实例化，但派生类构造时会调用它完成基类部分的初始化。"},
+  {q:"什么情况下不需要虚析构？",a:"类被标记为 [[final]] 不可能被继承时；或者设计上保证绝不会通过基类指针删除对象（如某些轻量接口）。"}
+ ]},
+
+{cat:"面向对象",diff:2,hot:false,
+ q:"构造函数可以是虚函数吗？析构函数可以是虚函数吗？",
+ points:[
+  "构造函数不能是虚函数。原因：虚函数的调用依赖 vptr，而 vptr 正是在构造函数执行时被建立的；在对象构造完成前没有可用的动态类型信息。",
+  "从语义上讲，创建对象时必须明确知道要创建什么类型，虚构造本身也是矛盾的。",
+  "析构函数可以是虚函数，而且在多态基类中通常必须是虚函数。",
+  "在构造函数或析构函数中调用虚函数不会发生动态派发，只会调用当前正在构造/析构的那个类的版本。"
+ ],
+ follow:[
+  {q:"那怎么实现「根据类型创建对象」？",a:"用工厂函数 + 虚 clone 实现原型模式：基类声明 [[virtual Base* clone() const = 0;]]，各派生类返回自己的副本。"},
+  {q:"为什么析构中调用虚函数也不多态？",a:"派生类部分已经析构完毕，vptr 已回退到基类虚表，此时再调用派生类函数会访问已销毁的资源，因此标准规定只调用当前类版本。"}
+ ]},
+
+{cat:"面向对象",diff:3,hot:false,
+ q:"虚函数表和虚表指针在内存中如何布局？对象大小如何计算？",
+ points:[
+  "每个含虚函数的类有一张虚函数表（vtable），编译期生成，存放在只读数据段，被该类的所有对象共享。",
+  "每个对象内部有一个虚表指针（vptr），通常位于对象起始处（具体位置由 ABI 决定），指向所属类的 vtable。",
+  "对象大小 = 非静态成员大小（含对齐填充）+ vptr（若有虚函数）+ 虚基类相关开销。",
+  "64 位平台上，一个只含一个虚函数、没有任何数据成员的空类，sizeof 为 8（仅 vptr）；不含虚函数的空类是 1。",
+  "多重继承时对象内可能有多个 vptr，转换基类指针时还可能插入 this 指针调整（thunk）。"
+ ],
+ follow:[
+  {q:"vtable 是每个对象一份吗？",a:"不是。vtable 按类型生成，属于类级别；vptr 才是每个对象一份。"},
+  {q:"为什么虚函数调用比普通函数慢？",a:"需要从对象读出 vptr，再按索引从 vtable 取函数地址，最后间接调用，无法静态绑定也难以内联，还可能影响 CPU 分支预测。"},
+  {q:"怎么验证这些结论？",a:"可以写小程序打印 [[sizeof]]，用 [[-fdump-class-hierarchy]]（GCC）或调试器观察对象内存布局，这比死记结论更靠谱。"}
+ ]},
+
+{cat:"面向对象",diff:2,hot:false,
+ q:"构造函数和析构函数的调用顺序是怎样的？",
+ points:[
+  "构造顺序：虚基类 → 直接基类（按继承声明顺序）→ 成员变量（按类内声明顺序，与初始化列表书写顺序无关）→ 自身构造函数体。",
+  "析构顺序与构造完全相反：自身析构体 → 成员 → 基类 → 虚基类。",
+  "多继承时基类按继承声明顺序依次构造。",
+  "关键坑：成员初始化顺序由「声明顺序」决定，如果初始化列表里用先声明的成员去初始化后声明的成员，会读到未初始化的值。开启 [[-Wreorder]] 警告可以发现。"
+ ],
+ follow:[
+  {q:"为什么初始化顺序不按初始化列表？",a:"为了让构造顺序与析构顺序严格相反，保证栈式对称，这是标准强制规定的。"},
+  {q:"全局对象什么时候构造？",a:"程序启动时，在 main 之前；跨编译单元的构造顺序未定义，这就是静态初始化顺序问题，跨模块依赖要改用函数内静态局部变量（懒初始化）规避。"}
+ ]},
+
+{cat:"面向对象",diff:3,hot:false,
+ q:"什么是多重继承？菱形继承有什么问题？虚继承如何解决？",
+ points:[
+  "多重继承指一个类同时继承多个基类，会带来名字二义性、对象布局复杂、指针转换需要调整等问题。",
+  "菱形继承：B 和 C 都继承 A，D 又同时继承 B 和 C，此时 D 中会有两份 A 的子对象，导致数据冗余和访问二义性。",
+  "虚继承：让 B、C 以 [[virtual public A]] 的方式继承，则 D 中只保留一份 A 子对象。",
+  "实现上虚继承需要额外的虚基类表/指针来记录偏移，对象会变大，访问虚基类成员也需要间接寻址，有性能成本。",
+  "工程建议：优先组合而非多重继承；确实需要多继承时，用「多个纯虚接口 + 至多一个实现基类」的形式最安全。"
+ ],
+ follow:[
+  {q:"Java 为什么没有菱形问题？",a:"Java 类只允许单继承，多态靠接口多实现（接口只有声明不带来状态）。C++ 用虚继承在语言层面解决了这个问题。"},
+  {q:"虚继承时构造函数怎么调用虚基类？",a:"最派生类负责构造虚基类，中间层对该构造函数的调用会被忽略，避免重复构造。"},
+  {q:"什么时候推荐多重继承？",a:"用于「接口组合」，即多个纯虚基类提供不同能力，实现类一次性满足多个接口。"}
+ ]},
+
+{cat:"面向对象",diff:2,hot:true,
+ q:"重载、重写、隐藏有什么区别？",
+ points:[
+  "重载（overload）：同一作用域内函数名相同、参数列表不同。编译期静态决议，与返回值类型无关。",
+  "重写（override）：派生类重新定义基类的虚函数，签名（含 const 限定）必须一致，运行期动态派发。建议加 [[override]] 让编译器检查。",
+  "隐藏（hide）：派生类出现与基类同名的函数（哪怕参数不同），会遮蔽基类所有同名重载版本。",
+  "要恢复被隐藏的基类版本，需要在派生类中写 [[using Base::f;]]。"
+ ],
+ follow:[
+  {q:"重载能靠返回值类型区分吗？",a:"不能。重载决议只看参数的个数、类型和限定符（const 成员函数的 const 也算），返回类型不参与。"},
+  {q:"override 和 final 的作用？",a:"[[override]] 让编译器校验确实重写了基类虚函数，避免签名写错却静默变成隐藏；[[final]] 禁止继续继承或继续重写。"},
+  {q:"为什么会发生隐藏却不是重写？",a:"最常见是漏写 const、参数类型差一点（如 [[int]] vs [[long]]），编译器认为是新函数，于是基类版本被遮蔽。"}
+ ]},
+
+{cat:"面向对象",diff:3,hot:true,
+ q:"拷贝构造函数和赋值运算符有什么区别？为什么要处理自赋值？三/五法则是什么？",
+ points:[
+  "拷贝构造：用一个已有对象初始化一个新对象，此时对象尚未存在；拷贝赋值：把一个已有对象的值赋给另一个已存在的对象。",
+  "编译器默认生成的是逐成员浅拷贝。若类持有指针/资源，必须自定义为深拷贝，否则两个对象共享同一资源会导致重复释放。",
+  "自赋值 [[a = a]] 若不处理，典型错误是「先释放自己的资源，再从已释放的源拷贝」，需要先判等或采用 copy-and-swap。",
+  "三法则：若需要自定义析构、拷贝构造、拷贝赋值中的任意一个，通常三个都需要。",
+  "五法则：加上移动构造与移动赋值。零法则：让成员全部是 RAII 类型（智能指针、容器、string），编译器默认生成的版本就是正确的。"
+ ],
+ follow:[
+  {q:"为什么赋值运算符要返回 [[*this]] 的引用？",a:"为了支持链式赋值 [[a = b = c]]，同时避免一次不必要的拷贝。"},
+  {q:"copy-and-swap 的好处？",a:"先按值拷贝出临时对象，再与自身交换，天然处理自赋值，并具备强异常安全（失败时原对象不变）。"},
+  {q:"为什么「按值传参 + 内部 move」也很常见？",a:"参数即副本，函数内直接和成员交换，一份代码同时覆盖拷贝和移动两种场景，写法更简洁。"}
+ ]},
+
+/* ============ 四、STL (6) ============ */
+{cat:"STL",diff:2,hot:true,
+ q:"vector 的底层实现和扩容机制是什么？push_back 的复杂度是多少？",
+ points:[
+  "[[vector]] 底层是一块连续的动态数组，内部通常维护三个指针：起始、末尾、容量末尾。",
+  "容量不足时触发扩容：申请一块更大的内存（MSVC 约 1.5 倍，GCC 约 2 倍）→ 把旧元素搬过去（优先移动构造）→ 释放旧内存。",
+  "[[push_back]] 的均摊复杂度是 O(1)，但单次扩容最坏是 O(n)。",
+  "[[reserve(n)]] 预分配容量，避免多次扩容与拷贝；[[resize(n)]] 改变元素个数，可能构造或销毁元素。",
+  "[[size()]] 是元素个数，[[capacity()]] 是不重新分配内存能容纳的最大元素数。"
+ ],
+ follow:[
+  {q:"为什么用倍数扩容而不是固定增量？",a:"倍数增长能保证均摊 O(1)（等比数列求和），固定增量会导致均摊 O(n)。1.5 倍的好处是若干次扩容后新旧内存块可能复用，减少内存碎片。"},
+  {q:"扩容时为什么倾向移动而不是拷贝？",a:"移动构造更高效（只是指针移交）。但如果移动构造不是 [[noexcept]]，为满足强异常安全保证，vector 会退化为拷贝。"},
+  {q:"vector 存 bool 有什么坑？",a:"[[std::vector<bool>]] 是位压缩特化，[[operator[]]] 返回代理对象而不是 [[bool&]]，取地址和引用传参都会失效，通常建议改用 [[deque<bool>]] 或自定义类型。"}
+ ]},
+
+{cat:"STL",diff:2,hot:true,
+ q:"vector 的迭代器什么时候会失效？如何安全地在遍历中删除元素？",
+ points:[
+  "触发扩容时：所有迭代器、指针、引用全部失效（因为元素被搬到新内存）。",
+  "[[insert]] 在中间插入：插入点之后的迭代器失效；[[erase]] 删除：被删位置及其之后的迭代器失效。",
+  "安全删除的惯用写法是无后自增：[[for (auto it = v.begin(); it != v.end(); ) it = v.erase(it);]] 删除时按条件 [[++it]]。",
+  "[[erase]] 的返回值是下一个有效迭代器，利用它可以安全地边遍历边删除。",
+  "预防手段：提前 [[reserve]] 避免扩容；使用下标遍历时注意越界；不同容器的失效规则不同，要分别记忆。"
+ ],
+ follow:[
+  {q:"list 的迭代器什么时候失效？",a:"只有被删除的那个元素的迭代器失效，其余迭代器、引用、指针都保持有效，这是链表相对 vector 的优势之一。"},
+  {q:"deque 的迭代器失效规则？",a:"两端插入/删除会失效迭代器但保留引用；中间插入/删除则全部失效。"},
+  {q:"怎么保证「遍历中删除」不会漏删？",a:"统一用返回值推进迭代器，绝不在循环体里额外 [[++it]]，否则会跳过一个元素。"}
+ ]},
+
+{cat:"STL",diff:2,hot:true,
+ q:"map 和 unordered_map 有什么区别？该如何选择？",
+ points:[
+  "[[map]] 底层是红黑树，元素按 key 有序，查找/插入/删除都是 O(log n)，要求 key 支持严格弱序比较（[[operator<]] 或自定义比较器）。",
+  "[[unordered_map]] 底层是哈希表，无序，平均 O(1)，最坏 O(n)，要求 key 支持哈希和相等比较。",
+  "[[map]] 的迭代器在插入/删除时保持稳定（除被删元素），且支持范围查询（[[lower_bound]]）；[[unordered_map]] 插入可能触发 rehash，导致迭代器全部失效。",
+  "选择原则：需要有序遍历、范围查询、稳定迭代器 → [[map]]；只做等值查找且追求平均速度 → [[unordered_map]]。",
+  "两者都不允许 key 重复，[[multimap]] / [[unordered_multimap]] 允许重复 key。"
+ ],
+ follow:[
+  {q:"为什么 unordered_map 最坏是 O(n)？",a:"当哈希函数很差或对手构造恶意 key 时，所有元素落入同一个桶，退化为链表线性查找。"},
+  {q:"如何自定义 key 的哈希？",a:"提供 [[std::hash]] 的全特化，或在使用时传入自定义哈希仿函数作为模板参数。"},
+  {q:"用下标运算符访问 map 有什么坑？",a:"若 key 不存在会插入一个默认值，可能造成意外的插入和扩容。只读查询应改用 [[find()]] 或 [[at()]]。"}
+ ]},
+
+{cat:"STL",diff:2,hot:false,
+ q:"map 为什么用红黑树而不是 AVL 树？",
+ points:[
+  "红黑树和 AVL 树都是自平衡二叉搜索树，查找都是 O(log n)。",
+  "AVL 树追求严格平衡（左右子树高度差不超过 1），代价是插入/删除后旋转次数多，维护成本高。",
+  "红黑树是「近似平衡」，用颜色约束保证最长路径不超过最短路径的两倍；插入最多 2 次旋转、删除最多 3 次旋转即可恢复平衡。",
+  "标准库是通用容器，读写都不确定，因此选择了「插入删除代价更低、查找也不差」的折中方案。"
+ ],
+ follow:[
+  {q:"红黑树的性质有哪些？",a:"节点为红或黑；根是黑；红节点的子节点必须是黑（不能有连续红节点）；任一节点到其所有叶子的路径上黑节点数量相同。"},
+  {q:"什么时候更适合 AVL？",a:"读多写极少（读远多于写）的场景，因为 AVL 更矮，查找更快。"},
+  {q:"map 和 set 的关系？",a:"两者底层都是红黑树，[[set]] 可以理解为 key 与 value 合一的 [[map]]，头文件与接口也高度相似。"}
+ ]},
+
+{cat:"STL",diff:2,hot:false,
+ q:"什么是哈希冲突？有哪些解决方法？unordered_map 的扩容机制是怎样的？",
+ points:[
+  "哈希冲突指不同的 key 计算出相同的桶下标。解决方式主要有两类：链地址法（每个桶挂链表，过长时转红黑树）和开放定址法（线性探测、二次探测、双散列）。",
+  "装载因子 load_factor = 元素个数 / 桶数量；当它超过 max_load_factor（默认 1.0 左右）时触发 rehash，即重建桶数组并重新分配所有元素。",
+  "GCC 的实现在单个桶的链表长度超过 8 时会把该桶转为红黑树，把最坏查找复杂度从 O(n) 降到 O(log n)。",
+  "rehash 会让所有迭代器失效，且是一次 O(n) 的重分配，因此对规模可预期的场景应提前 [[reserve]]。",
+  "降低冲突的手段：设计分布均匀的哈希函数、选择合适桶数（常见用质数或 2 的幂配合混合）、控制装载因子。"
+ ],
+ follow:[
+  {q:"为什么桶数量常用质数？",a:"当桶数不是质数、又用取模映射时，容易与 key 的公共因子产生聚集；质数能减少这种规律性冲突。"},
+  {q:"rehash 一定会发生吗？",a:"只有装载因子超过阈值或手动调用 [[rehash]] / [[reserve]] 才会。插入是均摊 O(1) 的原因正在于此。"},
+  {q:"自定义 key 时最常见的错误？",a:"hash 与 [[operator==]] 不一致，导致「相等的 key 哈希值不同」，查找直接失败。"}
+ ]},
+
+{cat:"STL",diff:2,hot:false,
+ q:"vector、list、deque 有什么区别？各自适用什么场景？",
+ points:[
+  "[[vector]]：连续内存，随机访问 O(1)，尾部增删均摊 O(1)，中间增删 O(n)，缓存友好，是最通用的默认选择。",
+  "[[list]]：双向链表，任意位置增删 O(1)（前提是已经拿到位置迭代器），不支持随机访问，每个节点额外两个指针开销，缓存不友好。",
+  "[[deque]]：分段连续（中控数组 + 多个固定大小缓冲区），两端增删都是 O(1)，支持随机访问，[[stack]] 和 [[queue]] 默认基于它实现。",
+  "工程经验：绝大多数场景用 [[vector]]；需要两端高效增删用 [[deque]]；只有在「频繁中间插入删除且元素很大」或「要求迭代器稳定」时才考虑 [[list]]。",
+  "现代 CPU 上，由于缓存局部性，[[vector]] 即使做中间插入也常常快于 [[list]]，不要凭「链表增删 O(1)」的教科书结论做选择。"
+ ],
+ follow:[
+  {q:"为什么 vector 一般比 list 快？",a:"连续内存带来极佳的缓存命中率和预取效果，且没有每个节点的指针开销和频繁的小块内存分配。"},
+  {q:"deque 的实现原理？",a:"一个中控数组存放多个缓冲区指针，两端可以动态增删缓冲区，因此两端操作 O(1)、随机访问也接近 O(1)。"},
+  {q:"list 的 [[sort]] 为什么不能用 std::sort？",a:"[[std::sort]] 要求随机访问迭代器，[[list]] 只有双向迭代器，因此 [[list]] 自己提供了成员 [[sort()]]。"}
+ ]},
+
+/* ============ 五、现代 C++ (9) ============ */
+{cat:"现代 C++",diff:2,hot:true,
+ q:"什么是左值、右值和将亡值？左值引用和右值引用有什么区别？",
+ points:[
+  "左值（lvalue）：有名字、可取地址、生命周期较长的表达式，如变量、返回引用的函数结果、解引用结果。",
+  "纯右值（prvalue）：临时的、不可取地址的值，如字面量、返回非引用的函数结果、临时对象。",
+  "将亡值（xvalue）：即将被「移动」的对象，典型是 [[std::move(x)]] 的结果，它仍指向一个真实对象，但允许被掏空。",
+  "左值引用 [[T&]] 只能绑定左值；常量左值引用 [[const T&]] 可以绑定右值并延长其生命周期，这是传参常用 const& 的原因。",
+  "右值引用 [[T&&]] 可以绑定右值（以及 std::move 的结果），语义上表示「这个对象的资源可以被夺取」。"
+ ],
+ follow:[
+  {q:"为什么说「命名了的右值引用是左值」？",a:"因为一旦有了名字就可以反复使用、可以取地址，因此它是左值。这正是移动函数内部必须显式 [[std::move]] 才能继续转移资源的原因。"},
+  {q:"T&& 一定是右值引用吗？",a:"在模板推导上下文中（[[template<class T> void f(T&&)]]），[[T&&]] 是「转发引用」，可以绑定左值也可以绑定右值，需要看推导结果。"},
+  {q:"const T& 绑定临时对象时生命周期多长？",a:"延长到该引用的生命周期结束，与引用同生共死。"}
+ ]},
+
+{cat:"现代 C++",diff:2,hot:true,
+ q:"移动语义是什么？std::move 到底做了什么？为什么说它不移动任何东西？",
+ points:[
+  "移动语义的动机：当源对象是临时值或明确不再使用时，直接把它持有的资源（堆内存、文件句柄等）转移给目标对象，避免深拷贝。",
+  "移动构造函数和移动赋值运算符接收右值引用，把源对象的资源指针「偷」过来，把源对象置为有效但未指定状态（通常是空）。",
+  "[[std::move]] 的本质是一次 [[static_cast<T&&>]]，它只改变表达式的值类别（把左值转成右值），不产生任何实际的移动动作。",
+  "真正的移动发生在被调用的移动构造函数或移动赋值运算符内部，用的是成员 [[std::swap]] 一类的指针交换。",
+  "移动后源对象不应再被使用（除重新赋值或析构），因为它的状态是未指定的。"
+ ],
+ follow:[
+  {q:"std::move 一定能触发移动吗？",a:"不一定。如果类型没有移动构造/移动赋值，或者移动不可用，会回退到拷贝，程序依然正确但性能没有提升。"},
+  {q:"为什么移动构造函数建议标 noexcept？",a:"vector 扩容时需要强异常安全保证：只有当移动构造是 [[noexcept]] 时它才敢用移动而非拷贝。"},
+  {q:"[[return std::move(local);]] 更好吗？",a:"反而更差。这会破坏返回值优化（NRVO），局部变量本来就会被隐式当作右值，直接 [[return local;]] 即可。"}
+ ]},
+
+{cat:"现代 C++",diff:3,hot:true,
+ q:"什么是完美转发和引用折叠？std::forward 和 std::move 有什么区别？",
+ points:[
+  "转发引用（万能引用）形如 [[T&&]]，出现在模板参数推导语境中，可以绑定左值和右值。",
+  "引用折叠规则：[[T& & → T&]]、[[T& && → T&]]、[[T&& & → T&]]、[[T&& && → T&&]]。只有「右值引用叠加右值引用」才是右值引用，其余都折叠为左值引用。",
+  "完美转发就是保持参数的原始值类别（左值仍是左值、右值仍是右值）传递下去，避免多一次拷贝或意外拷贝。",
+  "[[std::forward<T>(x)]] 按模板参数 T 有条件地转换：T 是左值引用时转左值，否则转右值；[[std::move]] 则无条件转成右值。",
+  "典型应用：工厂函数 [[make_unique]]、[[emplace_back]]、包装器 [[std::invoke]]、setter 模板。"
+ ],
+ follow:[
+  {q:"为什么需要引用折叠？",a:"模板推导中 [[T = X&]] 时 [[T&&]] 会展开成 [[X& &&]]，这在语法上是不合法的，必须靠折叠规则归一化。"},
+  {q:"std::forward 用错会怎样？",a:"在 [[T&&]] 上无条件用 [[std::move]] 会把左值实参也「掏空」，造成调用方拿到悬空对象，是最典型的现代 C++ 事故。"},
+  {q:"emplace_back 比 push_back 快在哪？",a:"[[emplace_back]] 直接在容器内存上用完美转发就地构造，省掉临时对象的构造和移动。"}
+ ]},
+
+{cat:"现代 C++",diff:2,hot:false,
+ q:"auto 的类型推导规则是什么？auto 和 decltype 有什么区别？",
+ points:[
+  "[[auto]] 按值推导时会忽略顶层 const 和引用，例如 [[const int& r]] 用 [[auto x = r]] 得到的是 [[int]]。",
+  "要保留引用/常量语义需显式写 [[const auto& x = ...]] 或 [[auto& x = ...]]。",
+  "[[auto&&]] 遵循引用折叠，可以绑定任意值类别，是模板转发引用在局部变量上的类比。",
+  "[[decltype(expr)]] 精确推导表达式的类型和值类别：加括号的 [[decltype((x))]] 得到引用 [[T&]]，不加括号的 [[decltype(x)]] 得到声明类型。",
+  "[[decltype(auto)]] 用于函数返回值或变量，让推导完全遵循 decltype 规则，是保留引用返回的关键。"
+ ],
+ follow:[
+  {q:"[[auto x = {1,2,3};]] 推导出什么？",a:"[[std::initializer_list<int>]]。这是 auto 与初始化列表交互的一个知名陷阱，写显式类型更容易看清。"},
+  {q:"auto 能用于函数参数吗？",a:"普通函数不能（C++20 的简写函数模板除外）；lambda 参数在 C++14 起支持泛型 [[auto]]。"},
+  {q:"编译器怎么实现 auto？",a:"本质是模板类型推导的简化形式，规则与 [[template<class T> void f(T)]] 一致。"}
+ ]},
+
+{cat:"现代 C++",diff:2,hot:true,
+ q:"lambda 表达式的本质是什么？捕获方式有哪些注意事项？",
+ points:[
+  "lambda 是编译器生成的一个匿名仿函数（闭包类），捕获列表对应它的成员变量，函数体对应它的 [[operator()]]，默认是 const 的。",
+  "捕获方式：[[[=]]] 按值捕获全部、[[[&]]] 按引用捕获全部、[[[x]]] / [[[&x]]] 指定捕获、[[[this]]] 捕获当前对象指针、C++14 起支持初始化捕获 [[[p = std::move(ptr)]]]。",
+  "按值捕获的变量在闭包内默认只读，需要加 [[mutable]] 才能修改（修改的是副本）；[[mutable]] 会让 [[operator()]] 失去 const 属性。",
+  "按引用捕获要格外小心生命周期：如果 lambda 被异步执行或存起来延迟调用，被引用的对象可能已经销毁，形成悬空引用。",
+  "无捕获的 lambda 可以隐式转换为函数指针，因此能传给 C 风格的回调接口。"
+ ],
+ follow:[
+  {q:"lambda 对象占多大？",a:"等于它按值捕获的成员总大小（加上对齐），无捕获时为 1 字节（空类）。"},
+  {q:"[[[this]]] 捕获有什么坑？",a:"它捕获的是对象指针，对象析构后调用 lambda 就悬空。C++17 起可用 [[[*this]]] 按值拷贝整个对象。"},
+  {q:"为什么 lambda 默认 operator() 是 const？",a:"让无状态的 lambda 更接近普通函数，也便于内联和优化；需要修改捕获值时才加 [[mutable]]。"}
+ ]},
+
+{cat:"现代 C++",diff:1,hot:false,
+ q:"nullptr 和 NULL 有什么区别？",
+ points:[
+  "[[NULL]] 通常是宏定义出来的 [[0]]（或 [[__null]]），本质是整数常量；[[nullptr]] 是 C++11 引入的关键字，类型是 [[std::nullptr_t]]。",
+  "因为 NULL 是整数，参与重载决议时会产生歧义：有 [[f(int)]] 和 [[f(char*)]] 两个重载时，[[f(NULL)]] 会调用 [[f(int)]]，这几乎肯定是错的。",
+  "[[nullptr]] 可以隐式转换为任意指针类型和 [[bool]]，但不会转换为整数类型，因此类型安全、语义明确。",
+  "现代代码应一律使用 [[nullptr]]，并避免在需要指针的地方写 0 或 NULL。"
+ ],
+ follow:[
+  {q:"[[sizeof(nullptr)]] 是多少？",a:"等于平台指针大小（64 位平台是 8）。"},
+  {q:"[[std::nullptr_t]] 能在模板里用吗？",a:"可以，作为独立类型参与推导，这也是 nullptr 不会「不小心」匹配到整数重载的原因。"},
+  {q:"为什么要专门引入这个关键字？",a:"为了彻底解决 C++03 中空指针常量语义模糊、函数指针传递和模板推导中容易出错的历史问题。"}
+ ]},
+
+{cat:"现代 C++",diff:2,hot:false,
+ q:"constexpr 和 const 有什么区别？什么是编译期计算？",
+ points:[
+  "[[const]] 只表达「不可修改」，其值可以是运行期确定的，例如 [[const int n = rand();]] 合法。",
+  "[[constexpr]] 表达「编译期常量」，可用于数组长度、模板非类型参数、[[case]] 标签等必须编译期已知的位置。",
+  "[[constexpr]] 变量必然是 [[const]] 的；反过来不成立。",
+  "[[constexpr]] 函数在 C++11 只能有一条 return 语句，C++14 放宽到允许循环、分支、局部变量；传入编译期常量参数时在编译期求值，否则退化为运行时求值。",
+  "C++17 的 [[if constexpr]] 提供编译期分支，C++20 的 [[consteval]] 强制编译期求值、[[constinit]] 保证静态初始化顺序。"
+ ],
+ follow:[
+  {q:"constexpr 函数一定在编译期执行吗？",a:"不一定。是否编译期求值取决于调用上下文和实参是否为常量表达式，无法在编译期求值时会退化为普通函数调用。"},
+  {q:"为什么编译期计算更优？",a:"把计算从运行时移到编译期，减少启动开销与指令数，也让编译器能做更多优化，是首选的性能手段之一。"},
+  {q:"consteval 和 constexpr 的区别？",a:"[[consteval]] 声明的函数必须且只能在编译期求值，否则编译报错，用于强约束的编译期工具。"}
+ ]},
+
+{cat:"现代 C++",diff:2,hot:true,
+ q:"C++11/14/17/20 分别有哪些重要新特性？",
+ points:[
+  "C++11：[[auto]]、lambda、右值引用与移动语义、智能指针、[[nullptr]]、范围 for、初始化列表、变参模板、[[thread]]/[[mutex]]、[[using]] 类型别名、[[constexpr]]、[[enum class]]、[[override]]/[[final]]。",
+  "C++14：泛型 lambda、[[decltype(auto)]]、变量模板、[[make_unique]]、放宽 constexpr 限制、二进制字面量。",
+  "C++17：结构化绑定、[[if constexpr]]、[[optional]]/[[variant]]/[[any]]/[[string_view]]、折叠表达式、内联变量、并行算法、文件系统库、类模板参数推导（CTAD）。",
+  "C++20：概念（concepts）、范围库（ranges）、协程、模块（modules）、三路比较运算符 [[<=>]]、[[consteval]]/[[constinit]]、指定初始化。",
+  "回答这题时不要只罗列名词，挑两三个自己真正用过的特性讲清用法和收益，可信度会高很多。"
+ ],
+ follow:[
+  {q:"你在项目里最常用哪些？",a:"结合真实经历回答，例如用智能指针管内存、用 lambda 写回调、用 auto 简化迭代器类型、用 [[string_view]] 避免拷贝、用 [[optional]] 表达「可能没有值」。"},
+  {q:"string_view 有什么坑？",a:"它不拥有数据，只是指针加长度。若指向的 std::string 已销毁或已扩容，[[string_view]] 立刻悬空。不要保存它，也不要返回它。"},
+  {q:"结构化绑定怎么用？",a:"[[for (const auto& [key, value] : m)]] 或 [[auto [a, b] = std::pair{1, 2};]]，让解包代码更清晰。"}
+ ]},
+
+{cat:"现代 C++",diff:3,hot:false,
+ q:"模板是怎么工作的？什么是特化、SFINAE 和 concepts？",
+ points:[
+  "模板是编译期生成代码的蓝图。函数模板和类模板在实例化时用具体类型替换参数，生成真正代码，这就是「编译期多态」，运行期零开销。",
+  "全特化：为某个具体类型提供完全不同的实现，写法 [[template<> class X<int> {...};]]。",
+  "偏特化：只对部分模板参数做特化，例如 [[template<class T> class X<T*> {...};]]。注意函数模板不支持偏特化，只能用重载绕过。",
+  "SFINAE 是「替换失败并非错误」：在重载决议中，模板参数替换产生的非法类型不会导致编译错误，只是该候选被剔除。早期通过 [[enable_if]] / [[void_t]] 做条件启用。",
+  "C++20 的 [[concepts]] 用可读的约束取代 SFINAE，报错信息更友好、代码更清晰，是模板元编程的现代做法。"
+ ],
+ follow:[
+  {q:"为什么模板要定义在头文件里？",a:"实例化时需要看到完整定义才能生成代码。放在 .cpp 里会导致其他翻译单元链接不到实例，除非做显式实例化。"},
+  {q:"模板会导致代码膨胀吗？",a:"会，每种类型实例化一份代码。缓解方式：把与类型无关的公共逻辑提取到非模板基类或普通函数中。"},
+  {q:"变参模板和折叠表达式？",a:"[[template<class...Ts>]] 声明参数包，[[(... + args)]] 折叠表达式（C++17）可以一行完成递归展开，常用于日志、聚合、完美转发。"}
+ ]},
+
+/* ============ 六、并发编程 (6) ============ */
+{cat:"并发编程",diff:1,hot:true,
+ q:"进程、线程、协程有什么区别？",
+ points:[
+  "进程：拥有独立地址空间，是资源分配的基本单位；进程间通信需要 IPC 机制（管道、共享内存、socket），切换开销大。",
+  "线程：同一进程内共享地址空间，是 CPU 调度的基本单位；创建和切换更轻量，但共享数据会带来数据竞争，必须同步。",
+  "线程独享的是栈、寄存器、线程局部存储；共享的是代码段、数据段、堆、文件描述符。",
+  "协程：用户态的轻量级执行单元，协作式调度，切换不经过内核、无系统调用开销，非常适合大量 IO 并发的场景。",
+  "C++20 引入了协程（[[co_await]]/[[co_yield]]/[[co_return]]），但标准只提供语言机制，调度器通常由库（如 asio、cppcoro）实现。"
+ ],
+ follow:[
+  {q:"线程栈默认多大？",a:"常见为 1~8MB（Linux 默认 8MB，Windows 默认 1MB）。递归深或局部数组大时容易栈溢出，需要调大或改用堆。"},
+  {q:"为什么协程切换更快？",a:"线程切换需要陷入内核、保存/恢复完整上下文并可能换页；协程只在用户态保存少量寄存器与栈指针。"},
+  {q:"多进程比多线程更安全的点在哪？",a:"地址空间隔离，一个进程崩溃不会直接拖垮其他进程，因此服务端常用「多进程 + 进程内多线程」的组合来兼顾隔离与性能。"}
+ ]},
+
+{cat:"并发编程",diff:2,hot:true,
+ q:"std::thread 怎么用？为什么析构前必须 join 或 detach？",
+ points:[
+  "声明 [[std::thread t(func, args...)]] 即启动一个线程，参数默认按值拷贝（要传引用需用 [[std::ref]]）。",
+  "线程对象析构前必须调用 [[join()]]（等待结束）或 [[detach()]]（分离），否则 [[std::thread]] 的析构函数会调用 [[std::terminate]] 直接终止程序。",
+  "[[join]] 是阻塞等待；[[detach]] 让线程在后台运行，此时必须保证它访问的资源生命周期长于线程本身。",
+  "线程函数可以是普通函数、函数对象、lambda 或成员函数指针，配合 [[std::bind]] 或 lambda 使用。",
+  "获取线程返回值的方式：[[std::promise]]/[[std::future]]、[[std::async]]，或共享变量加锁。"
+ ],
+ follow:[
+  {q:"为什么参数默认是拷贝？",a:"为了避免实参在线程真正运行前就被销毁造成悬空引用，这是出于安全的设计；需要引用语义时显式 [[std::ref]]。"},
+  {q:"detach 之后有什么风险？",a:"最常见是访问已销毁的对象或已退出的局部变量。因此工程上更推荐 join，或用 [[std::jthread]]（C++20）自动 join 并支持停止令牌。"},
+  {q:"std::async 和 std::thread 的区别？",a:"[[std::async]] 返回 future，可直接拿到返回值，且可选择是否新建线程（[[std::launch::async]] 强制新线程）。"}
+ ]},
+
+{cat:"并发编程",diff:2,hot:true,
+ q:"mutex、lock_guard、unique_lock 有什么区别？死锁的四个条件是什么？",
+ points:[
+  "[[std::mutex]] 是最基本的互斥量；[[recursive_mutex]] 允许同一线程重复加锁；[[timed_mutex]] 支持带超时的尝试加锁。",
+  "[[lock_guard]] 是最简单的 RAII 包装：构造即加锁、析构即解锁，不可手动解锁、不可移动，开销最小。",
+  "[[unique_lock]] 更灵活：支持延迟加锁 [[std::defer_lock]]、手动 [[lock()]]/[[unlock()]]、可移动，是配合条件变量必须用的类型。",
+  "死锁四个必要条件：互斥、持有并等待、不可抢占、循环等待。破坏任意一个即可避免死锁。",
+  "常用手段：统一加锁顺序、用 [[std::scoped_lock]] 一次性锁多个互斥量、设置超时（[[try_lock_for]]）、缩小临界区、避免嵌套持锁。"
+ ],
+ follow:[
+  {q:"std::lock 是怎么避免死锁的？",a:"它内部使用 try_lock 加回退（类似银行家算法）的策略，保证多个互斥量要么全部拿到要么全部释放。C++17 的 [[scoped_lock]] 是它的 RAII 版本。"},
+  {q:"lock_guard 和 unique_lock 该选哪个？",a:"不需要手动解锁和条件变量就用 [[lock_guard]]，更轻量；需要灵活控制锁的时机就用 [[unique_lock]]。"},
+  {q:"读写锁怎么用？",a:"C++17 提供 [[std::shared_mutex]]，读用 [[shared_lock]] 共享持有，写用 [[unique_lock]] 独占持有，适合读多写少。"}
+ ]},
+
+{cat:"并发编程",diff:3,hot:true,
+ q:"条件变量 condition_variable 的作用是什么？为什么要配锁和谓词？什么是虚假唤醒？",
+ points:[
+  "条件变量用于让线程等待某个条件成立，并在条件变化时被其他线程唤醒，是「生产者-消费者」等同步模式的基础设施。",
+  "它必须与 [[std::mutex]] 配合：检查条件、修改条件、等待，都要在锁保护下进行，否则会出现竞态和丢失唤醒。",
+  "标准用法是谓词版本：[[cv.wait(lock, [&]{ return ready; });]]，它内部等价于 [[while (!pred()) wait(lock);]]。",
+  "虚假唤醒（spurious wakeup）：[[wait]] 可能在没有人调用 notify 的情况下返回。因此不用谓词的裸 [[wait]] 必须写成 while 循环重新检查条件。",
+  "唤醒使用 [[notify_one]]（唤醒一个等待者）或 [[notify_all]]（唤醒全部）。通常做法是：持锁修改状态 → 解锁 → 通知（或持锁修改后立即通知）。"
+ ],
+ follow:[
+  {q:"为什么 wait 必须用 while 而不是 if？",a:"一是防虚假唤醒，二是防止条件在你被唤醒后又被其他线程抢先改变（被抢占后条件不再成立）。"},
+  {q:"notify 一定要持锁吗？",a:"不需要，而且先解锁再 notify 常常更好，可避免被唤醒的线程立刻又阻塞在锁上（惊群式无效唤醒）。但必须保证「状态修改」与「通知」之间没有丢失唤醒窗口。"},
+  {q:"为什么 wait 必须用 unique_lock？",a:"因为 [[wait]] 内部需要在等待时释放锁、被唤醒后重新获取锁，[[lock_guard]] 不支持手动解锁。"}
+ ]},
+
+{cat:"并发编程",diff:3,hot:false,
+ q:"什么是原子操作和内存序？什么是无锁编程？ABA 问题是什么？",
+ points:[
+  "[[std::atomic<T>]] 提供不可被打断的原子读改写，避免数据竞争，比加锁更轻量，是构建无锁结构的基础。",
+  "内存序（memory order）决定原子操作周围的可见性与重排约束：[[relaxed]] 只保证原子性；[[acquire]]/[[release]] 建立同步关系；[[seq_cst]] 是默认值，全局顺序一致，最强也最慢。",
+  "无锁编程基于原子操作和 CAS（[[compare_exchange_weak]] / [[compare_exchange_strong]]）实现，避免锁的阻塞与上下文切换，但正确性极难保证。",
+  "ABA 问题：CAS 只比较值，若值经历 A→B→A 的变化，CAS 会误判「从未改变」。解决办法是加版本号或使用带标签指针。",
+  "工程建议：优先用锁和已有的并发库；只有经过 profiling 确认锁是热点、且团队有能力维护时，才上无锁。"
+ ],
+ follow:[
+  {q:"atomic 一定是无锁的吗？",a:"不一定。大对象或平台不支持时，标准库可能内部用锁实现，[[is_lock_free()]] 可以查询。"},
+  {q:"relaxed 用在什么场景？",a:"只要求原子计数、不关心与其他内存操作的顺序时，例如统计计数器，性能最好。"},
+  {q:"为什么无锁代码容易出错？",a:"需要同时考虑原子性、可见性、重排、内存回收（如 [[hazard pointer]]）等多个维度，且错误往往只在特定 CPU 与低概率时序下暴露。"}
+ ]},
+
+{cat:"并发编程",diff:2,hot:true,
+ q:"volatile 和 atomic 有什么区别？volatile 能保证线程安全吗？",
+ points:[
+  "[[volatile]] 的作用是告诉编译器「不要优化对该变量的读写，每次都真实访存」，主要用于内存映射寄存器、被信号处理函数修改的变量。",
+  "[[volatile]] 不保证原子性、不提供内存屏障、不建立线程间同步，因此不能用于多线程同步。",
+  "[[std::atomic]] 保证操作的原子性，并可指定内存序来控制可见性与重排，是并发场景的正确工具。",
+  "在 Java 中 volatile 具备并发语义（可见性、禁止重排），但 C++ 的 volatile 语义完全不同，不要跨语言类比。",
+  "经典反例：[[volatile int i]] 的 [[i++]] 依然不是原子操作（读-改-写三步），多线程下仍会丢失更新。"
+ ],
+ follow:[
+  {q:"什么时候必须用 volatile？",a:"硬件寄存器映射、[[setjmp/longjmp]] 涉及的长跳转变量、可能被信号处理函数修改的变量。"},
+  {q:"volatile 和 atomic 能一起用吗？",a:"[[std::atomic<volatile T>]] 语法上可能合法，但语义混乱，实践中应二选一，按需求选正确的那一个。"},
+  {q:"不用 volatile 会有什么问题？",a:"编译器可能把循环里的读操作提升到循环外，导致「等待某个标志位改变」的死循环无法退出——但这类场景更应使用 [[std::atomic]] 配合正确的内存序。"}
+ ]},
+
+/* ============ 七、编译链接与系统 (4) ============ */
+{cat:"编译与系统",diff:2,hot:true,
+ q:"一个 C++ 程序从源码到可执行文件经历了什么？静态链接和动态链接有什么区别？",
+ points:[
+  "四个阶段：预处理（展开 [[#include]] / [[#define]]，产生 .i 文件）→ 编译（语法分析、优化、生成汇编 .s）→ 汇编（生成目标文件 .o 或 .obj）→ 链接（合并目标文件与库，生成可执行文件）。",
+  "链接做两件事：符号解析（把每个符号引用关联到定义）和重定位（修正地址、调整偏移）。",
+  "静态链接：把库代码直接复制进可执行文件，体积大、无运行时依赖、多个程序各有一份副本；对应 [[.a]] / [[.lib]]。",
+  "动态链接：可执行文件只记录依赖，运行时加载共享库；体积小、多进程可共享同一份代码、可独立升级；对应 [[.so]] / [[.dll]]，但存在版本依赖与「DLL Hell」问题。",
+  "相关概念：[[-fPIC]] 生成位置无关代码使动态库可映射到任意地址；[[LD_LIBRARY_PATH]] 或 rpath 控制运行时搜索路径；[[dlopen]] / [[LoadLibrary]] 支持运行时手动加载。"
+ ],
+ follow:[
+  {q:"在头文件里定义全局变量会怎样？",a:"每个包含它的翻译单元都会生成一份定义，链接期出现重复符号错误。正解是头文件里用 [[extern]] 声明、在某个 .cpp 中定义，C++17 起可以用 [[inline]] 变量。"},
+  {q:"为什么动态库需要 PIC？",a:"位置无关代码使用相对寻址，使共享库可以被映射到进程地址空间的任意位置而不需要重定位修正，是共享的前提。"},
+  {q:"常见链接错误有哪些？",a:"「undefined reference」是符号找不到定义（漏链接库、声明与定义不匹配）；「multiple definition」是重复定义（违反 ODR、头文件放定义）。"}
+ ]},
+
+{cat:"编译与系统",diff:3,hot:true,
+ q:"什么是未定义行为（UB）？为什么它很危险？",
+ points:[
+  "未定义行为指标准没有规定结果的行为，编译器和运行环境可以做任何事：崩溃、静默错误、甚至看起来正常。",
+  "常见例子：数组越界访问、解引用空指针或悬空指针、有符号整数溢出、使用未初始化变量、违反 ODR、返回局部变量引用、同一对象多次 delete、迭代器失效后继续使用。",
+  "最危险的地方在于：编译器可以假设 UB 永不发生来优化代码，于是「看起来多余」的检查可能被整段删掉，导致安全漏洞。",
+  "例如有符号整数溢出是 UB，编译器可能基于「n+1 > n 恒成立」的假设删掉判断，使越界检查失效。",
+  "规避手段：开启 [[-Wall -Wextra]]、使用 UBSan（[[-fsanitize=undefined]]）和 ASan（[[-fsanitize=address]]）、用容器和智能指针替代裸操作、不依赖任何未定义行为。"
+ ],
+ follow:[
+  {q:"有符号溢出为什么是 UB，无符号却不是？",a:"无符号整数运算定义为模 2^n 回绕，结果明确；有符号溢出留给编译器优化空间（如循环归纳变量分析），因此被定义为 UB。"},
+  {q:"UB 和「未指定行为」有什么区别？",a:"未指定行为是标准给出多个合法结果，由实现选择其一（如求值顺序）；UB 是标准对结果完全不做任何保证。"},
+  {q:"怎么在工程中降低 UB 风险？",a:"CI 中固定开启 Sanitizer 和静态分析，代码评审关注裸指针与越界，关键模块做边界检查，把 UB 当缺陷而不是「运气问题」。"}
+ ]},
+
+{cat:"编译与系统",diff:2,hot:false,
+ q:"什么是内存对齐？为什么需要对齐？如何计算结构体大小？",
+ points:[
+  "每个成员按其对齐数（通常是 [[min(成员自身大小, 编译器的 pack 设定)]]）对齐；结构体的总大小必须是其最大对齐数的整数倍。",
+  "对齐的目的是让 CPU 以字长为单位高效访问内存：未对齐的访问可能需要两次总线读、由内核陷入模拟，甚至在某些架构上直接触发异常。",
+  "示例：[[struct {char a; int b; char c;}]] 在 64 位默认对齐下：a 占 1 字节后填充 3 字节，b 占 4 字节，c 占 1 字节后补 3 字节，总计 12 字节。",
+  "控制手段：[[#pragma pack(n)]]、[[alignas(n)]] 指定对齐，[[alignof(T)]] 查询对齐要求。",
+  "优化技巧：把成员按大小从大到小排列通常能减少填充、缩小结构体。"
+ ],
+ follow:[
+  {q:"为什么空结构体大小是 1 而不是 0？",a:"标准要求同类型的不同对象必须有不同的地址，因此编译器给它 1 字节占位。"},
+  {q:"对齐会影响网络协议解析吗？",a:"会。协议报文通常是紧凑打包的，直接按结构体映射解析会因为填充而错位。应使用 [[#pragma pack(1)]] 或手动逐字段解析。"},
+  {q:"如何快速检查一个结构体的大小？",a:"用 [[sizeof]] 打印，并配合 [[offsetof]] 观察各成员偏移，比凭直觉推算可靠得多。"}
+ ]},
+
+{cat:"编译与系统",diff:3,hot:false,
+ q:"什么是缓存友好（cache friendly）的代码？伪共享是什么？",
+ points:[
+  "CPU 访问内存以缓存行为单位（常见 64 字节）。连续访问、顺序遍历的数据结构缓存命中率高，性能远优于随机跳转访问。",
+  "这就是「vector 常比 list 快」的根本原因：数据紧凑连续，能充分利用缓存行、预取器和 SIMD。",
+  "数据布局优化：把「一起使用的字段」放在一起（AoS 改 SoA）、按大小排序减少填充、避免指针追逐（pointer chasing）。",
+  "伪共享（false sharing）：两个线程分别修改同一缓存行内的不同变量时，缓存一致性协议会让该缓存行在核心间来回失效，性能大幅下降。",
+  "解决伪共享：让热点变量各自独占缓存行，用 [[alignas(64)]] 或填充字节把变量隔开，或在同一线程内聚合更新后统一写回。"
+ ],
+ follow:[
+  {q:"怎么发现伪共享？",a:"用性能计数器观察 cache miss / cache-to-cache 传输异常高，或用 perf 的 [[cache-misses]] 定位热点结构体。"},
+  {q:"SoA 和 AoS 是什么？",a:"AoS 是结构体数组（Array of Structs），SoA 是结构的数组化（Struct of Arrays）。批量处理某一字段时 SoA 的缓存利用率更高。"},
+  {q:"这些优化什么时候做？",a:"先测量再优化。只有在 profiling 明确指出缓存瓶颈时才调整布局，否则会牺牲可读性换来看不见的收益。"}
+ ]}
+];
+
+/* ---------- 渲染 ---------- */
+var CATS = ["语言基础","内存管理","面向对象","STL","现代 C++","并发编程","编译与系统"];
+var DIFF = {1:["基础","d1"],2:["进阶","d2"],3:["深入","d3"]};
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(s){return esc(s).replace(/\[\[(.+?)\]\]/g,"<code>$1</code>");}
+
+var listEl = document.getElementById("list");
+var navEl = document.getElementById("nav");
+var opened = {};
+
+function buildCard(it, n){
+  var d = DIFF[it.diff];
+  var div = document.createElement("div");
+  div.className = "q";
+  div.dataset.n = n;
+  div.dataset.cat = it.cat;
+  var pts = it.points.map(function(p){return "<li>"+fmt(p)+"</li>";}).join("");
+  var faq = it.follow.map(function(f){
+    return '<div class="faq"><div class="fq"><span class="mark">追问</span><span>'+fmt(f.q)+'</span></div>'+
+           '<div class="fa">'+fmt(f.a)+'</div></div>';
+  }).join("");
+  div.innerHTML =
+    '<div class="q-head">'+
+      '<div class="num">'+n+'</div>'+
+      '<div class="q-title">'+fmt(it.q)+'</div>'+
+      '<div class="q-tags">'+
+        (it.hot?'<span class="tag hot">高频</span>':'')+
+        '<span class="tag '+d[1]+'">'+d[0]+'</span>'+
+      '</div>'+
+      '<div class="caret">▼</div>'+
+    '</div>'+
+    '<div class="q-body"><div class="inner">'+
+      '<p class="blk-label">回答要点</p><ul class="pts">'+pts+'</ul>'+
+      '<div class="follow-box"><p class="blk-label follow">面试官可能继续追问</p>'+faq+'</div>'+
+    '</div></div>';
+  div.querySelector(".q-head").addEventListener("click", function(){
+    div.classList.toggle("open");
+    opened[n] = div.classList.contains("open");
+    updateProgress();
+  });
+  return div;
+}
+
+var order = 0;
+CATS.forEach(function(cat){
+  var items = DATA.filter(function(x){return x.cat===cat;});
+  if(!items.length) return;
+
+  var sec = document.createElement("div");
+  sec.className = "section";
+  sec.id = "sec-" + CATS.indexOf(cat);
+  sec.dataset.cat = cat;
+  sec.innerHTML = '<div class="section-head"><h2>'+cat+'</h2>'+
+                  '<span class="cnt">'+items.length+' 题</span>'+
+                  '<span class="rule"></span></div><div class="sec-body"></div>';
+  var body = sec.querySelector(".sec-body");
+  items.forEach(function(it){ order++; body.appendChild(buildCard(it, order)); });
+  listEl.appendChild(sec);
+
+  var a = document.createElement("div");
+  a.className = "nav-item";
+  a.innerHTML = '<span>'+cat+'</span><span class="n">'+items.length+'</span>';
+  a.addEventListener("click", function(){
+    document.getElementById("sec-"+CATS.indexOf(cat)).scrollIntoView({behavior:"smooth",block:"start"});
+    document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+    a.classList.add("active");
+  });
+  navEl.appendChild(a);
+});
+
+/* 导航/TOC 数量与总数统计 */
+var total = order;
+
+/* 搜索 */
+var searchInput = document.getElementById("q");
+var emptyEl = document.getElementById("empty");
+
+function doFilter(kw){
+  kw = kw.trim().toLowerCase();
+  var visibleTotal = 0;
+  document.querySelectorAll(".section").forEach(function(sec){
+    var shown = 0;
+    sec.querySelectorAll(".q").forEach(function(card){
+      var txt = card.innerText.toLowerCase();
+      var hit = !kw || txt.indexOf(kw) !== -1;
+      card.style.display = hit ? "" : "none";
+      if(hit) shown++;
+    });
+    sec.style.display = shown ? "" : "none";
+    visibleTotal += shown;
+    var cnt = sec.querySelector(".cnt");
+    cnt.textContent = shown + " 题" + (kw && shown < total ? "（已筛选）" : "");
+  });
+  emptyEl.classList.toggle("show", visibleTotal === 0);
+}
+searchInput.addEventListener("input", function(){ doFilter(searchInput.value); });
+document.addEventListener("keydown", function(e){
+  if(e.key === "/" && document.activeElement !== searchInput){
+    e.preventDefault(); searchInput.focus(); searchInput.select();
+  }
+  if(e.key === "Escape" && document.activeElement === searchInput){
+    searchInput.value = ""; doFilter(""); searchInput.blur();
+  }
+});
+
+/* 展开 / 收起 */
+var expandBtn = document.getElementById("expandAll");
+var allOpen = false;
+expandBtn.addEventListener("click", function(){
+  allOpen = !allOpen;
+  document.querySelectorAll(".q").forEach(function(c){
+    c.classList.toggle("open", allOpen);
+    opened[c.dataset.n] = allOpen;
+  });
+  expandBtn.textContent = allOpen ? "全部收起" : "展开全部";
+  updateProgress();
+});
+
+/* 进度 */
+function updateProgress(){
+  var c = 0;
+  document.querySelectorAll(".q").forEach(function(q){
+    if(q.classList.contains("open")) c++;
+  });
+  document.getElementById("pv").textContent = c;
+  document.getElementById("pbar").style.width = (c/total*100) + "%";
+}
+updateProgress();
+
+/* 打印 */
+document.getElementById("printBtn").addEventListener("click", function(){
+  document.querySelectorAll(".q").forEach(function(c){ c.classList.add("open"); });
+  window.print();
+});
+
+/* 回到顶部 */
+var toTop = document.getElementById("totop");
+window.addEventListener("scroll", function(){
+  toTop.classList.toggle("show", window.scrollY > 600);
+});
+toTop.addEventListener("click", function(){ window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* 滚动高亮导航 */
+var secs = Array.prototype.slice.call(document.querySelectorAll(".section"));
+var navItems = Array.prototype.slice.call(document.querySelectorAll(".nav-item"));
+window.addEventListener("scroll", function(){
+  var pos = window.scrollY + 120, idx = 0;
+  secs.forEach(function(s, i){ if(s.offsetTop <= pos) idx = i; });
+  navItems.forEach(function(n, i){ n.classList.toggle("active", i === idx); });
+});
+</script>
+</body>
+</html>
