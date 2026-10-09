@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIPU 构建工具 · MqBuilder 流程面试官模拟器（50 问）</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --border:#e3e8f0; --text:#1a2332; --text2:#5b6b81;
+    --accent:#d97706; --accent-soft:#fef5e7;
+    --c-arch:#2563eb; --c-flow:#0d9488; --c-pf:#059669; --c-pb:#7c3aed; --c-ct:#0891b2; --c-cache:#db2777; --c-eng:#475569; --c-open:#dc2626;
+    --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.7;font-size:15px}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+  header.site{padding:44px 0 26px;border-bottom:1px solid var(--border);margin-bottom:0}
+  .crumb{font-size:13px;color:var(--text2);letter-spacing:.4px;margin-bottom:10px}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.5px}
+  h1 .hl{color:var(--accent)}
+  .sub{color:var(--text2);margin-top:10px;font-size:15px}
+  .stats{display:flex;gap:26px;margin-top:22px;flex-wrap:wrap}
+  .stat b{font-size:22px;font-weight:800;color:var(--accent);font-family:var(--mono)}
+  .stat span{display:block;font-size:12.5px;color:var(--text2)}
+
+  .toolbar{position:sticky;top:0;z-index:50;background:rgba(245,247,251,.92);backdrop-filter:blur(8px);padding:14px 0 12px;border-bottom:1px solid var(--border);margin-bottom:22px}
+  .toolrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 13px}
+  .search input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent;color:var(--text)}
+  .btn{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:10px;padding:8px 14px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#c2680a}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 13px;font-size:13px;cursor:pointer;transition:.15s;user-select:none}
+  .chip:hover{border-color:var(--accent)}
+  .chip.on{background:var(--text);color:#fff;border-color:var(--text)}
+  .progress{display:flex;align-items:center;gap:12px;margin-top:11px;font-size:12.5px;color:var(--text2)}
+  .pbar{flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+  .pfill{height:100%;width:0%;background:linear-gradient(90deg,#d97706,#059669);border-radius:99px;transition:width .3s}
+
+  .cat-title{display:flex;align-items:center;gap:12px;margin:36px 0 16px;scroll-margin-top:150px}
+  .cat-title h2{font-size:19px;font-weight:800}
+  .cat-bar{width:5px;height:22px;border-radius:3px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;transition:box-shadow .18s,border-color .18s}
+  .card:hover{box-shadow:0 4px 18px rgba(30,50,90,.07)}
+  .card.open{border-color:#f0d5ae}
+  .card.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%,60%{box-shadow:0 0 0 4px rgba(217,119,6,.28)}100%{box-shadow:none}}
+  .chead{display:flex;gap:14px;padding:18px 20px 14px;cursor:pointer;align-items:flex-start}
+  .num{font-family:var(--mono);font-weight:800;font-size:16px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--accent-soft);color:var(--accent);flex:0 0 auto}
+  .qwrap{flex:1;min-width:0}
+  .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+  .tag{font-size:11.5px;padding:2.5px 10px;border-radius:999px;font-weight:600;letter-spacing:.2px}
+  .diff{font-size:12px;font-weight:700;letter-spacing:1px}
+  .d1{color:#16a34a}.d2{color:#d97706}.d3{color:#dc2626}
+  .qtext{font-size:16.5px;font-weight:700;line-height:1.55}
+  .hint{font-size:12.5px;color:var(--text2);margin-top:6px}
+  .caret{transition:transform .2s;color:var(--text2);margin-top:4px;flex:0 0 auto}
+  .card.open .caret{transform:rotate(180deg)}
+
+  .body{display:none;padding:0 20px 20px 78px}
+  .card.open .body{display:block}
+  .blk{background:#f8fafc;border:1px solid #eef2f7;border-left-width:3px;border-radius:10px;padding:14px 16px;margin-top:12px}
+  .blk .lb{font-size:11.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;color:var(--text2)}
+  .blk.ans{border-left-color:var(--accent)}
+  .blk.ans .lb{color:var(--accent)}
+  .blk.fu{border-left-color:#2563eb;background:#f5f9ff;border-color:#dbe8fb}
+  .blk.fu .lb{color:#1d4fd7}
+  .blk.fa{border-left-color:#059669;background:#f6fefb;border-color:#d9f2e8}
+  .blk.fa .lb{color:#047857}
+  .content{font-size:14.5px;white-space:pre-line}
+  .content code{font-family:var(--mono);font-size:13px;background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 6px;color:#92400e}
+  .content strong{color:#0f172a}
+  .content em{color:#b45309;font-style:normal;font-weight:600}
+  .content pre.codebox{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:13px 15px;margin:10px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;white-space:pre;color:#0f172a}
+  .content pre.codebox code{background:transparent;border:none;color:inherit;font-size:inherit;padding:0}
+
+  footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);color:var(--text2);font-size:13px;text-align:center;line-height:2}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  .empty{padding:60px 0;text-align:center;color:var(--text2);display:none}
+
+  @media (max-width:720px){
+    .body{padding-left:20px}
+    .chead{padding:15px 15px 12px}
+    h1{font-size:24px}
+  }
+  @media print{
+    .toolbar{display:none}
+    .card .body{display:block!important}
+    .caret{display:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <div class="crumb">AIPU Building Tool · C++ / AI 编译器后端 · MqBuilder 八阶段流程模拟面试</div>
+    <h1>MqBuilder 流程面试官模拟器：<span class="hl">50 问</span></h1>
+    <p class="sub">聚焦 <strong>mcbuilder.h 声明的八阶段 MQ 构建流水线</strong>（init → optimize → schedule → kernel_adapt → mem_alloc → device_code_gen → assemble → host_code_gen → gen_obj）——
+    全部题目基于对 <code style="font-family:var(--mono);font-size:13px">mcbuilder.h / mqbuilder.cpp / mq_ir_cache.cpp / kernel_adapter / assembler / object_generator / code_generator</code> 的真实阅读。
+    每题含「面试官提问 → 参考回答 → 追问 → 追问解答」。先自己默答，再展开对照。🎯</p>
+    <div class="stats">
+      <div class="stat"><b id="s-total">50</b><span>道题目</span></div>
+      <div class="stat"><b>8</b><span>个分类</span></div>
+      <div class="stat"><b id="s-viewed">0</b><span>已展开作答</span></div>
+      <div class="stat"><b>MQ 专项</b><span>八阶段流程全覆盖</span></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolrow">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5b6b81" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="搜索关键词：缓存 / 阶段 / kernel / stream / 契约 …">
+      </div>
+      <button class="btn" id="btn-random">🎲 随机抽题</button>
+      <button class="btn" id="btn-expand">全部展开</button>
+      <button class="btn" id="btn-collapse">全部收起</button>
+    </div>
+    <div class="chips" id="cats"></div>
+    <div class="chips" id="diffs"></div>
+    <div class="progress">
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <span id="ptext">进度 0 / 50</span>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <div class="empty" id="empty">没有匹配的题目，换个关键词试试。</div>
+
+  <footer>
+    AIPU Building Tool · MqBuilder 流程面试题（50 问）· 基于真实代码阅读生成<br>
+    面试官视角 · 聚焦 mcbuilder.h 八阶段 MQ 构建流水线 · 建议先自答再看参考答案<br>
+    <a href="./AIPU构建工具_面试100问.html">← 配套总集：AIPU 构建工具面试 100 问（MC + MQ 双路径全覆盖）</a><br>
+    <a href="./AIPU构建工具_MC阶段面试50问.html">专题深入：MC 阶段 buildtool 面试 50 问（optimizer.cpp 各阶段优化链）→</a>
+  </footer>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const CATS = {
+  arch:      {name:"架构与接口设计",                     color:"var(--c-arch)"},
+  flow:      {name:"build() 循环与缓存时序",              color:"var(--c-flow)"},
+  phasefront:{name:"前半阶段：优化·调度·Kernel 适配",     color:"var(--c-pf)"},
+  phaseback: {name:"后半阶段：内存·设备码·汇编·产物",     color:"var(--c-pb)"},
+  contract:  {name:"阶段间契约与属性体系",                color:"var(--c-ct)"},
+  cache:     {name:"IR 缓存与序列化深挖",                 color:"var(--c-cache)"},
+  engineer:  {name:"工程化与存量治理",                    color:"var(--c-eng)"},
+  open:      {name:"开放设计题",                          color:"var(--c-open)"}
+};
+
+const QUESTIONS = [
+{id:1,cat:"arch",diff:2,tags:["BuildStage","枚举设计","演进"],
+q:"`mcbuilder.h` 里 `BuildStage` 枚举有 10 个值：INIT、OPTIMIZE、SCHEDULE、KERNEL_ADAPT、MEM_ALLOC、DEVICE_CODE_GEN、ASSEMBLE、HOST_CODE_GEN、GEN_OBJ、DONE。请逐一说明语义，并回答：为什么两端各放一个 INIT 和 DONE？",
+a:"各阶段语义（结合对应实现）：OPTIMIZE=图优化（`optimize_mq()`：DS 预处理 + 符号 shape + GOP 插件应用）；SCHEDULE=性能估算 + 负载均衡分层（产出 `levels`）；KERNEL_ADAPT=算子到 kernel 的适配（收集 const/workspace/surface 与 device/host 库表）；MEM_ALLOC=内存分配（data_slots / const_slots）；DEVICE_CODE_GEN=设备码生成（kernel 库链接进 CpsElf）；ASSEMBLE=汇编（生成任务描述符流 streams、参数区、索引表）；HOST_CODE_GEN=host 代码生成（cpshost 编译进外层 ELF + header）；GEN_OBJ=产物收集（把全部结果写进 CpsElf + CompilerMsg）。\n\n两端哨兵的作用：\n① **DONE 服务于枚举算术**——`build()` 里 `load_stage = (BuildStage)((int)save_stage + 1)`，若 save 发生在最后一个真实阶段 GEN_OBJ，+1 恰好得到 DONE；循环里没有任何 phase 的 stage 等于 DONE，于是「全部跳过」，语义自然闭合。\n② **INIT 表达「构建尚未开始」**——当前 `create_phases()` 不含 INIT，阶段循环从 OPTIMIZE 开始；INIT 作为状态机起点保留（未来可用于「构建前检查」类阶段或外部状态查询）。\n\n注意一个关键事实：这个枚举**顺序即协议**——`<`、`==` 比较与 `+1` 算术都依赖整数值的隐式连续性。",
+fq:"既然顺序即协议，那么「插入新阶段」或「重排枚举」时，有哪些破坏面？",
+fa:"三个破坏面：\n① **算术依赖**——`save_stage + 1` 的含义随插入而变。比如在 DEVICE_CODE_GEN 和 ASSEMBLE 之间插入新阶段，旧的 `mq_ir_stage=device_code_gen` 缓存（按旧约定保存）在新代码里恢复时会多执行/少执行一个阶段；\n② **缓存文件名语义**——缓存目录里的 `*.def/.bin/.attrs.json` 是「stage 名字符串 + 文件后缀」命名的，`from_string`/`to_string` 的映射表若不跟着更新，旧目录会找不到/错配；\n③ **外部契约**——CLI 的 `--mq_ir_stage` 取值、文档、下游脚本都是这套名字。\n\n防护习惯：新阶段一律**追加**在 GEN_OBJ 之前、DONE 之前，并同步更新 from/to_string；缓存侧加构建器版本校验，让不兼容的旧缓存显式失效而不是静默错配。"
+},
+
+{id:2,cat:"arch",diff:2,tags:["BuildPhase","数据驱动","std::function"],
+q:"`BuildPhase{name, stage, execute}` 把流水线变成「数据」，`create_phases()` 返回一个 `std::vector<BuildPhase>`。相比在 `build()` 里顺序写 8 次函数调用，这种数据驱动设计的好处与代价分别是什么？",
+a:"结构：每个 BuildPhase 是一个 `{字符串名, 枚举 stage, std::function<bool()> 闭包}` 三元组，`create_phases()` 用 lambda 捕获 `this` 绑定各 `phase_*` 成员函数。\n\n好处：\n① **可遍历是硬需求**——`build()` 的核心逻辑（缓存跳过/装载/执行/保存）就建立在「能对阶段列表迭代并检查 phase.stage」之上；顺序写死调用做不到这种按阶段位置的条件控制；\n② **与缓存机制天然契合**——「当前阶段相对 save/load 的位置」直接变成枚举比较；\n③ **扩展成本低**——新增阶段 = 加一行 + 写一个函数；\n④ **可观测**——`INFO() << \"====== executing phase: \" << phase.name` 统一打印，日志与列表同源。\n\n代价：\n① **间接层**——std::function 的包装与调用开销（极小，且小闭包走 SBO 不堆分配）；\n② **生命周期约束**——闭包捕获 this，BuildPhase 列表不能比构建器活得久（当前只在 build() 局部使用，安全）；\n③ **弱类型耦合**——name 字符串、stage 枚举、实际函数三者靠约定同步，写错了编译期发现不了（如 name 拼错、枚举贴错，只有运行时行为异常）。",
+fq:"`std::function<bool()>` 而不是虚函数或成员函数指针——如果重写，你会保留吗？",
+fa:"保留（针对这个场景）。需求是「把不同成员绑定为统一可调用体放进容器」：虚函数要为每阶段建类（重）、`std::bind` + 成员指针可读性差。std::function 正好是标准答案。真要压榨性能可换 `bool (MqBuilder::*)()` 成员指针数组 + `(this->*pmf)()`：零分配零间接，代价是列表初始化时要显式写 `&MqBuilder::phase_optimize` 且无法内联参数。判断依据：这是「内部实现细节容器」而非跨模块接口——轻量 lambda 合理；只有将来支持外部注册阶段（插件式阶段）时，才值得升级为一等接口类型（带文档与稳定性承诺）。"
+},
+
+{id:3,cat:"arch",diff:2,tags:["构造函数","HybridELF","CpsElf"],
+q:"`MqBuilder` 构造函数里同时创建了 `CpsElf` 和 `HybridELF`，并 `m_elf->set_cpself(cpself)`。为什么在构造期就把两层 ELF 建好，而不是用到再建？",
+a:"代码：\n```\nauto cpself = std::make_shared<CpsElf>();\nm_elf = std::make_shared<HybridELF>();\nm_elf->set_cpself(cpself);\n```\n\n理由：\n① **m_elf 是整条流水线的「产物累积器」**——device_code_gen 往内层 CpsElf 里链接 kernel（`gen_device_code(m_elf->get_cpself())`）、host_code_gen 写外层 ELF（`gen_host_code(m_elf)`）、gen_obj 再往 CpsElf 写 buffer 表与 CompilerMsg，最后作为 `get_elf()` 的返回值交付。多个阶段都写它，构造期预置 = 「存在性」变成类不变量，各阶段无需再操心「它有没有被创建」。\n② **`get_cpself()` 自带懒加载逻辑**（若 m_cpself 为空则从 cpself note 反序列化）——构造期预置等于跳过懒加载路径，保证「内存中的 cpself 始终有效」，避免「第一个使用它的人负责建」的隐式约定。\n③ 与缓存加载路径配套：从 DEVICE_CODE_GEN 之后恢复时，`load_mq_ir_cache_elf` 会整体替换 m_elf（替换成带设备码的缓存对象）；其余阶段恢复时使用的就是构造期这个空对象——这正是「ELF 只在 device_code_gen 点持久化」设计的语义配套。",
+fq:"`m_elf` 是「一路被写」的累积器——这种 shared_ptr 在多个阶段间累积写入的形态，有什么要警惕的？",
+fa:"三点：\n① **成功/失败的一致性**——某个阶段写了一半失败（`return false`），调用方若无视返回值继续用 m_elf，会拿到「混合了不完整写入」的对象。当前 build() 失败即整体返回，所以安全；若未来支持「部分阶段重试」，必须考虑 ELF 的写入原子性（要么记录起始状态能回滚，要么设计成幂等重写）；\n② **缓存恢复的替换语义**——resume 时用新对象替换 m_elf，任何提前持有其引用（如某阶段缓存了 `CpsElfPtr` 成员的局部拷贝）的代码会拿到旧对象——替换点在 build() 里有且仅有一处（load 分支），要靠纪律维持「不提前长期持有」；\n③ **所有权与别名**——get_cpself() 返回的是裸 shared_ptr 拷贝，任何持有者都可能长期持有并阻止释放；对「构建完就交出产物」的 CLI 形态无所谓，库化场景需要显式清理契约。"
+},
+
+{id:4,cat:"arch",diff:2,tags:["IBuilder","返回类型","虚函数override"],
+q:"`IBuilder::get_header()` 的返回类型在最近一次重构中从 `const std::string&` 改成了 `const std::string`。为什么要改？如果派生类不跟着改会怎样？",
+a:"改动动因（三处同步修改：ibuilder.h 接口 / mcbuilder.h 声明 / mqbuilder.cpp 实现）：新语义下 header 不再存在成员变量里，而是**从图属性读取**——实现变成 `if (m_graph->attrs().count(\"header\")) return m_graph->attrs()[\"header\"];`。`attrs()[\"header\"]` 取出的是 Any，转换到 string 得到的是一个**临时对象**——若接口仍按 `const std::string&` 返回，就会出现「返回局部对象的引用」，调用方一使用就是悬垂引用 UB。所以接口必须改成按值返回。\n\nC++ 规则层面：虚函数 override 要求返回类型完全相同（协变仅限指针/引用的类层次），`const std::string&` **不能**覆盖 `const std::string`。所以旧头文件里保持引用签名的 `get_header()` 声明在新的 IBuilder 下不再构成有效 override——纯虚函数未实现，类变成抽象类，直接编译失败。这也说明了「接口与所有实现必须同步演进」。",
+fq:"按值返回的类类型上写 `const std::string`（顶层 const）有意义吗？现代规范怎么建议？",
+fa:"基本没有意义且有害：调用方拿到的是副本，副本自身是否 const 无关紧要；但顶层 const 会**干扰移动**——`const` 值无法匹配移动构造（只能拷贝），`auto s = get_header();` 在 C++17 前只能拷贝构造，C++17 起有保证的复制消除（prvalue 直接构造到目标）对此有所缓解。所以 Core Guidelines（F.49）建议按值返回不要加顶层 const。保留它的唯一理由是兼容既有风格的签名一致——改动「引用→值」才是真正的演进点，顶层 const 属于历史伴生物。"
+},
+
+{id:5,cat:"arch",diff:2,tags:["成员变量","header","死代码"],
+q:"`MqBuilder` 有三个成员：`m_graph`、`m_elf`、`m_header`。当前代码里哪些还「活着」？`m_header` 处于什么状态？为什么？",
+a:"活性分析：\n① `m_graph`——主数据。每个阶段读写，缓存加载时被整体替换（`m_graph = load_mq_ir_cache(...)`）。\n② `m_elf`——产物累积器。device/host/gen_obj 三个阶段的写入对象，`get_elf()` 的返回源。\n③ `m_header`——**重构遗留的死成员**。当前既没有被写入（phase_host_code_gen 里改为 `m_graph->set_attr(\"header\", header)`），也没有被读取（get_header() 走 attrs）。它保留了「声明」，但整个构建过程不再触碰它。\n\n为什么变成死成员：把「header 的单一事实源」从成员迁到了 graph attrs——因为**缓存恢复**。设想 save=host_code_gen：下次构建从 GEN_OBJ 恢复、不会重跑 host_code_gen，成员永远是空的；而 attrs.json 会带着 header 一起恢复，只有 attrs 才能让「恢复后的 get_header()」返回正确值。成员与 attrs 双份保存是「影子副本」坏味道，所以成员被放弃。\n\n残留死代码的风险：编译器不会报错（成员没被用不触发任何警告级别），后人读代码会以为它有效——误导维护者，甚至有人「顺手」把它恢复成事实源，破坏缓存一致性。应当删除。",
+fq:"除了删掉，如果要保留成员，有什么「不产生双事实源」的方案？",
+fa:"三个折中：\n① **引用式**——把 m_header 改成 `const std::string&` 指向 attrs 里的条目（但 attrs 的 Any 存储不提供稳定引用，不可行）；\n② **访问器缓存 + 失效标记**——成员只是缓存，写点唯一（set_attr 处同时更新），读点唯一（get_header 先查缓存）；但必须保证缓存与 attrs 绝不会漂移（任何直接改 attrs 的路径都要失效缓存），复杂度不值；\n③ **删除成员 + 提供常量名**——`Constants::header` 字符串常量集中管理键名，get/set 全走 attrs。结论：② 的维护成本高于收益，正确选择就是删成员、单事实源。这类「迁移后留残」可以用静态检查（unused-private-field）系统性清扫——把「迁移即删除」当 code review 硬规则。"
+},
+
+{id:6,cat:"arch",diff:3,tags:["头文件","include guard","重构迁移"],
+q:"`include/builder/` 下 `mcbuilder.h` 与 `mqbuilder.h` 并存，两者的 include guard 都是 `BUILDER_MQBUILDER_H`，且都声明 `class MqBuilder`（内容不同：新版 8 个 phase 方法、旧版 7 个）。这会引发什么问题？如何安全完成迁移？",
+a:"问题分析：\n① **guard 撞车 ⇒ 静默丢声明**——同一编译单元里谁先被 include 谁生效，后者的整个内容被预处理器跳过。`tools.cpp` 同时 include 了两个头（mcbuilder.h 在前、mqbuilder.h 在后），实际生效的是 mcbuilder.h——mqbuilder.h 被静默忽略，没有任何警告；\n② **实现与声明失配**——`mqbuilder.cpp` include 的是 `mqbuilder.h`（旧声明），却定义 `phase_device_code_gen/phase_host_code_gen`（新 API）——在当前树里这对组合无法编译，处于手工迁移的中间态；\n③ **同名类两个定义**——如果 guard 不同名，又会变成 ODR 违规（同一 TU 两个类定义）——guard 同名反而「意外地」避免了重定义，但这是靠巧合而不是设计。\n\n安全迁移步骤：\n1. 全库搜索 `MqBuilder` 的真实使用点（当前仅文档与头文件互引，注册表里没有外部实例化）；\n2. 让 `mqbuilder.cpp` 改 include `mcbuilder.h`，本地编译通过；\n3. 更新 `tools.cpp`/`tools.h` 的 include（去掉 mqbuilder.h）；\n4. 独立一次提交删除 `mqbuilder.h`（纯删除，不混逻辑改动）；\n5. 若要更名 `mqbuilder.cpp → mcbuilder.cpp`，用 `git mv` 单独提交保留历史。",
+fq:"「guard 撞车」为什么值得当作面试考点？它暴露了 C++ 预处理体系的什么结构性弱点？",
+fa:"因为它代表了一类**无编译警告的静默故障**：不报错、不告警，只是某份声明神秘地「不见了」。根因是 `#include` 的语义是「文本包含 + 宏去重」，guard 宏是整个全局命名空间里的字符串契约——编译器无法验证两个同名 guard 是否指同一个文件。防护体系：\n① guard 命名规范与路径强绑定（`BUILDER_MCBUILDER_H` 唯一对应 `include/builder/mcbuilder.h`），review 时按路径核对；\n② 用 `#pragma once`（按文件标识去重，天然免疫撞名，主流编译器都支持）；\n③ CI 扫描重复 guard；\n④ 构建系统层面避免「同一模块两个平行头文件」的中间态长期存在。考点价值：候选人是否理解预处理模型（而不是「会写 include」）。"
+},
+
+{id:7,cat:"arch",diff:1,tags:["create_phases","生命周期"],
+q:"`create_phases()` 每次 `build()` 调用时都重新构造 `vector<BuildPhase>`（含 8 个 lambda）。为什么不把它缓存成成员变量（构造时建一次）？",
+a:"事实：`build()` 里 `auto phases = create_phases();` 局部持有。重建成本 = 一次 vector 分配 + 8 个闭包构造（微秒级），相对整个构建（秒级）可忽略。\n\n不缓存的三个理由：\n① **无跨调用状态**——BuildPhase 内容随每次调用确定（lambda 捕获 this，但结构本身无状态）。重建保证「本次 build 用的一定是当前代码定义的那份流水线」；\n② **避免生命周期错位**——成员化后 phases 活得和构建器一样久，还要考虑「构建器被复用/被多线程使用」时的状态安全，凭空引入约束；\n③ **可读性优先**——构造与使用点相邻，读 build() 一眼看全流程。\n\n结论：这是「成本极低时优先可读性」的典型案例——别为微秒级的分配做缓存优化，把复杂度花在该花的地方（如阶段逻辑本身）。",
+fq:"「每个实例只 build 一次」这个契约是显式的还是隐式的？违反了会怎样？",
+fa:"目前是**隐式契约**（无 assert、无文档）。违反（同一构建器第二次 build()）的后果：build() 开头 `global_tensors().clear()` 会清掉第一次构建组装出来的全局资源（stack/print/param 被重建，assemble 阶段补进去的 stream0-3、output_shape 丢失），而图本身已是「被流水线加工过的形态」——第二次构建在错误基线上再跑一遍全部阶段，大概率产出错误结果或崩溃（如 assemble 找不到输出的 kernel note、gen 阶段空 params 报 \"params are empty\"）。\n\n修复习惯：一次性对象要么在接口/文档显式声明，要么加状态标志（`m_built` + assert/ERROR）。更进一步：build() 可设计成幂等（结果缓存）或显式 reset() 后允许重建——但那是需求驱动，别提前复杂化。"
+},
+
+{id:8,cat:"arch",diff:3,tags:["graph attrs","阶段间通信","单一事实源"],
+q:"这条流水线里，**所有**阶段间数据都放在图的属性系统（`m_graph->set_attr(...)` / `attrs()[...]`）里，MqBuilder 没有任何中间产物成员变量。为什么？这样设计的代价是什么？",
+a:"驱动这个决策的**不是美学，而是 IR 缓存机制**：mq_save_ir 保存的内容 =「图（def/bin）+ 属性（attrs.json）」，mq_load_ir 恢复后直接继续执行后续阶段。如果中间产物（levels / const_tensors / ws_map / data_slots / streams / params / 索引表 / header …）放在构建器的成员变量里，恢复执行时这些成员是空的（构建器是新构造的），后续阶段立刻拿到空数据——缓存机制根本立不住。放进 attrs 后，「阶段间通信」与「持久化」共用同一条通道：**一个设计同时解决两个需求**，这正是提交信息「store all the cache data into top graph attrs」的含义。\n\n代价：\n① **类型安全降级**——Any 存取只在运行时校验，读错类型/写错类型编译期无感；\n② **可见性变差**——「谁写谁读」只能靠全库搜索代码，没有编译期的生产者/消费者清单（只能人工维护契约表）；\n③ **内存驻留**——大对象（slots/task 列表/params）挂图上与图同生命周期，构建结束后仍常驻直到图被释放；\n④ **命名空间污染**——attr 键都是字符串常量，冲突/拼写错误无静态检查。",
+fq:"如果要把 attrs 通道「渐进类型化」，你会怎么设计而不重写整个系统？",
+fa:"三层渐进方案：\n① **强类型访问器**——写一个 `MqStageView` 包装类（或一组自由函数），把 `get_attr<...>(Constants::data_slots)` 之类的原始读写收拢成 `stage_view.get_data_slots()`——类型检查集中在一处，调用点全走访问器；\n② **契约键清单 + 编译期检查**——用常量表集中所有键名（项目已有 Constants 体系），加「键 → 类型」的静态映射（模板特化或代码生成），访问器编译期校验；\n③ **可选：结构化 payload**——对进产物的核心数据（slots/streams/params）定义明确的 POD 结构，attrs 里存指针包装（序列化层已有专项处理器）。判断原则：**收益随「消费者数量 × 生命周期跨度」增长**——levels（3 个消费者、跨 3 阶段）最先值得类型化；一次性的小数据不值得。别一步跳到「全面换强类型阶段接口」，那会重写整个序列化层（得不偿失）。"
+},
+
+{id:9,cat:"flow",diff:2,tags:["global_tensors","stack","print","param"],
+q:"`build()` 开头先 `m_graph->global_tensors().clear()`，然后创建 stack、print、param 三个全局 tensor。为什么要 clear？这三个 tensor 各自是什么（形状/类型/用途）？param 的形状为什么是 `{0}`？",
+a:"clear 的目的：把「构建基线资源」变成**确定且幂等**的——无论输入图带来过什么全局 tensor（或复用同一 graph 对象的场景），都先清空再建立固定基线，不依赖上游状态。\n\n三个基线 tensor：\n① `stack`——`TensorShape({8192})`、UINT8，8KB：kernel 执行时的栈空间（kernel 内部函数调用用）；\n② `print`——`{8192}`、UINT8，8KB：printf 调试输出缓冲；\n③ `param`——`{0}`、UINT8：kernel 参数区。\n\n为什么 param 用 `{0}`：参数区的**真实大小要等 assemble 阶段把所有 kernel 参数累积完才知道**（m_params 逐个 push 然后对齐）。这里先建「零长占位对象」的意义在于**建立对象身份**：后续 kernel 参数、地址回填（Placeholder）、索引表（get_tensor_index）都以这个对象为锚点操作，形状/大小随后通过内存对象（memory_offset/base object）实际确定。这属于「先建句柄、后填内容」的常见模式——占位的是对象，不是数据。\n\n另外注意：全局 tensor 全名单不止这三个——`stream0~3` 与 `output_shape` 是 **assembler 阶段**补建的（见后续题），说明「全局资源」是跨阶段累积的。",
+fq:"早期文档（`mqbuilder.md`）写的是「build() 创建 7 个：stack/print/param/stream0-3」——这个漂移说明什么？以代码为准如何快速核查？",
+fa:"漂移说明文档落后于实现：stream0~3 已迁到 `Assembler::assembly()` 创建（它们语义上属于「流」的基址载体，在确定 4 条流时创建更合理），output_shape 是动态 shape 机制的产物。\n\n核查方法：以「谁写 global_tensors」为唯一标准做全库搜索（如搜 `global_tensors()\\[` 的赋值点），得到创建清单，再对照使用点。这个习惯的普适教训：**文档里少写精确数字**（「7 个」），多写「机制 + 搜索方法」——数字会过期，搜索永远有效。面试点：是否有「代码是唯一事实源，文档可能有毒」的工程自觉。"
+},
+
+{id:10,cat:"flow",diff:3,tags:["build循环","save/load时序"],
+q:"请精确描述 `build()` 阶段循环的骨架：`mq_load_ir`/`mq_save_ir` 的判定插在什么位置，`save_stage`、`load_stage` 的关系是什么？装载与执行、执行与保存的先后顺序为什么这样安排？",
+a:"骨架（每轮迭代）：\n```\nfor (phase : phases) {\n  mq_load_ir = 读配置;\n  if (!mq_load_ir.empty()) {\n    if (phase.stage < load_stage)  continue;              // 跳过\n    else if (phase.stage == load_stage) {\n      m_graph = load_mq_ir_cache(...);                    // ① 装载图\n      load_mq_ir_cache_attributes(...);                   // ② 装载属性\n      if (save_stage == DEVICE_CODE_GEN) m_elf = load_..._elf(...); // ③ 装载 ELF\n    }\n  }\n  INFO \"executing phase\";\n  if (!phase.execute()) return false;                     // ④ 执行本阶段\n  if (!mq_save_ir.empty() && phase.stage == save_stage) {\n    save_mq_ir_cache(...);                                // ⑤ 保存\n    if (save_stage == DEVICE_CODE_GEN && !save_..._elf(...)) return false;\n    break;                                                // ⑥ 中断\n  }\n}\n```\n关键约定：`load_stage = (int)save_stage + 1`。语义定义：\n① **保存发生在阶段执行完之后**——缓存内容 =「save_stage 完成后的状态」= 下一个阶段的完整输入；\n② **装载发生在对应阶段执行之前**——所以在 load_stage 上「先装载、再执行」：把跳过的阶段所积累的状态一次性恢复，然后照常跑这一个阶段；\n③ 两个方向的时序是严格对偶的：保存点是「阶段后」，装载点是「阶段前」。",
+fq:"为什么装载不能提前到「循环开始之前统一做」？",
+fa:"因为「该装载什么」取决于**当前跑到哪个阶段**——而这个信息只在遍历中存在。直观地想：缓存 = 某个游标位置的状态快照，恢复 = 把游标快移回那个位置再继续走。\n\n统一前置装载做不到：① load_stage 之前哪些阶段被跳过、装完从哪继续——没有遍历就无从判定；② 前置装载后还是要遍历一遍来找起点（重复逻辑）；③ 更糟的是「装载」本身依赖 m_graph 已被替换（`m_graph = load...`），前置装载让「跳过判定用的图」与「恢复的图」不是同一张，语义混乱。\n\n现在的结构让「普通构建」与「缓存恢复」共享同一条控制流，差异只在两个 if；反面设计（恢复走单独分支）会产生两套流程，日后演进必然漂移。**用数据（游标位置）代替控制流分支**——这是本段代码最值得学的设计手法。"
+},
+
+{id:11,cat:"flow",diff:2,tags:["mq_ir_stage","字符串映射","静默兜底"],
+q:"`--mq_ir_stage` 的取值如何映射到枚举？如果用户传了一个**不认识的字符串**（比如拼错，或旧文档里的 `code_gen`），会发生什么？这个行为有什么风险？",
+a:"`mq_ir_stage_from_string` 是一个手写映射：空串或 `\"optimize\"`→OPTIMIZE；`\"schedule\"`→SCHEDULE；`\"kernel_adapt\"`、`\"mem_alloc\"`、`\"device_code_gen\"`、`\"assemble\"`、`\"host_code_gen\"`、`\"gen_obj\"` 依次；**其余一切返回 OPTIMIZE**（注释：by default）。`to_string` 对称：未知 stage 也输出 `\"optimize\"`。\n\n风险（静默兜底）：\n① **save 路径**——用户想要「存到 device_code_gen 为止」，但字符串拼错；实际按 OPTIMIZE 处理 → 构建在 optimize 之后立即保存并 break——用户得到的是远早于预期的断点，且没有任何报错指出「stage 名不认识」；\n② **load 路径**——发同样的错误时按 OPTIMIZE 处理 → load_stage=SCHEDULE → 去缓存目录找 `schedule.def/.bin`：不存在 → `load_mq_ir_cache` 的 file_exists 检查失败返回 nullptr → 报 \"failed to load cached MQ IR\"。错误最终暴露，但**报错点（找不到文件）离根因（stage 字符串拼错）隔了两层**；\n③ 更隐蔽的变体：如果目录里恰有同名文件（比如用户之前跑过 optimize 阶段的缓存），错误字符串会「碰巧匹配」到别的阶段产物，静默恢复出非预期状态。\n\n这正是「静默兜底」的反模式：**把用户错误折叠进合法默认行为**。正确做法：白名单校验——未知非空字符串立即 ERROR 并列出合法值。",
+fq:"为什么「默认值」只应该响应「未提供」，而不应该响应「提供但非法」？给一个安全默认的设计。",
+fa:"因为两种情况的**意图不同**：未提供 = 用户接受默认行为；提供了但不认识 = 用户明确想做某事但表达错了——此时「猜」几乎必然猜错，且猜错后错误会被推迟到下游以别的形式爆发，诊断成本成倍（时间都花在「为什么找不到文件」而不是「stage 是啥」）。\n\n安全默认设计：\n① 解析函数返回二分结果（值 or 错误消息），**错误在入口立即打印并退出**；\n② 默认值只挂在「键未出现/空值」分支；\n③ 兼容性别名显式化——如旧脚本的 `\"code_gen\"` 若要支持，写进别名表并打 WARN「code_gen 已更名为 device_code_gen」；\n④ 帮助文本自动列全合法值（arg parser 支持枚举校验最理想）。\n\n这个原则适用所有 CLI 枚举参数：**未知值 → 硬错**。唯一的例外是「向前兼容更高版本产生的配置」——但也要可观测（WARN），不能静默。"
+},
+
+{id:12,cat:"flow",diff:2,tags:["break语义","分段构建"],
+q:"保存完成后代码立刻 `break` 跳出阶段循环、返回 true。为什么必须中断？如果不 break 会有什么后果？「返回 true」此时的含义应该怎么理解？",
+a:"必须 break 的推理：\n① **缓存语义 = 阶段区间**——save 的契约是「保存到 save_stage 为止的状态，之后由下一次 load 恢复继续」。若继续跑完剩余阶段：本次进程内该图已经走完全部流水线（等于跑了个完整构建），但缓存里记的仍是中间状态——两者语义不再衔接；\n② **更致命的是「重复执行」**——假设 save=DEVICE_CODE_GEN：不 break 则本次继续跑 assemble/host_code_gen/gen_obj，同时下次（或另一个进程）load 时从 ASSEMBLE 开始**再跑一遍** assemble——任何非幂等阶段被重复执行：assemble 会在 streams 里重复追加任务、device_code_gen 若被重复调用会重复链接……阶段设计假设「每个阶段对一次构建恰好执行一次」；\n③ break 使「一次 build() = 一个阶段区间」成为统一模型：完整构建 = 区间 [OPTIMIZE, GEN_OBJ]，save 构建 = 区间 [OPTIMIZE, save_stage]，load 构建 = 区间 [load_stage, GEN_OBJ]——三段可跨进程拼装。\n\n返回值语义：此时 `return true` 表示「**本次调用的阶段区间成功完成**」（包括保存动作），而不是「整个产物已生成完毕」。调用方需要理解「save 模式下的构建是半程构建」。",
+fq:"这个设计与 mq_load_ir 配合起来构成了什么能力？举一个实际使用场景——以及它当前的一个限制。",
+fa:"构成**增量/分段编译**能力：save（前段）+ load（后段）跨两次进程调用拼出完整构建。实际场景：\n① **缓存复用**——图结构/优化决策稳定、kernel 或后续阶段频繁迭代时，把昂贵的 optimize+schedule 段缓存起来，只重跑后面的段；\n② **调试分段**——在指定阶段停下，用外部工具检查中间产物（def/attrs.json 可读），再从该点继续；\n③ **CI 并行/分布式**——不同机器分担不同段（缓存目录可传输）。\n\n当前限制：可用区间不是「全阶段」——ELF 只在 DEVICE_CODE_GEN 点保存，所以 save=assemble/host_code_gen 这类更晚的组合恢复后会缺 ELF 内容（详见后续「组合可用性」题）。所以实际推荐用法是「缓存到此为止」的断点集中在 DEVICE_CODE_GEN 及之前。"
+},
+
+{id:13,cat:"flow",diff:3,tags:["组合分析","ELF缺口","边界"],
+q:"把 9 个阶段逐一当作 save_stage 分析：`save + load` 的哪些组合**当前真正可用**？哪些组合会因为实现缺口产出「残缺 ELF」？哪个组合是彻底的 no-op？",
+a:"load_stage = save_stage + 1，逐组合分析每个组合「恢复后要跑的阶段」需要什么：\n\n**可用组合（无 ELF 依赖）**：\n- save=OPTIMIZE → 恢复跑 SCHEDULE：Schedule 不需要 ELF，OK；\n- save=SCHEDULE → 恢复跑 KERNEL_ADAPT：OK；\n- save=KERNEL_ADAPT → 恢复跑 MEM_ALLOC：OK；\n- save=MEM_ALLOC → 恢复跑 DEVICE_CODE_GEN：device_code_gen 从零构建设备码（链接 kernel 库进 CpsElf），OK。\n\n**可用且是设计核心的组合**：\n- save=DEVICE_CODE_GEN → 恢复跑 ASSEMBLE：assemble 要读 CpsElf 的 `.note.zhouyi` kernel 元数据与符号表——所以代码专门为这个阶段保存/恢复 HybridELF（`.elf` 文件）。这是**唯一带 ELF 缓存**的组合，「断点接续换 kernel 迭代」就靠它。\n\n**有缺口的组合**：\n- save=ASSEMBLE → 恢复跑 HOST_CODE_GEN：assemble 之后的 ELF 没有被缓存（保存条件 `save_stage == DEVICE_CODE_GEN` 不成立），恢复时 m_elf 是构造期的**空 HybridELF**（无设备码）——host_code_gen 会在空壳上工作，最终产物缺 device 侧内容；\n- save=HOST_CODE_GEN → 恢复跑 GEN_OBJ：同样缺口——gen_obj 往空 CpsElf 写 buffer 表与 CompilerMsg，产出残缺 ELF。\n\n**No-op 组合**：\n- save=GEN_OBJ → load_stage=DONE：循环中没有任何 phase.stage == DONE，所有阶段都满足 `< load_stage` 被 continue——**整个构建什么都不跑**，直接返回 true。缓存一个「已经没有下一段」的状态，语义上空转。",
+fq:"如果你来修复缺口，选「补齐能力」还是「收紧接口」？给出决策依据。",
+fa:"两条路线：\n① **补齐能力**——把 ELF 保存条件从 `== DEVICE_CODE_GEN` 放宽为 `>= DEVICE_CODE_GEN`（assemble/host_code_gen 点也存 HybridELF），load 侧对称。可行性取决于「assemble 之后 ELF 的修改是否可持久化」：assemble 主要写的是图侧 attrs（streams/params 等），对 ELF 是只读（读 note/符号）；host_code_gen 对 ELF 的修改（载入 cpshost.o）本身就是最终外层内容——都可保存；\n② **收紧接口**——from_string 对 `save_stage >= ASSEMBLE` 直接报错（「当前仅支持至 device_code_gen」），文档写明，等①完成再放开。\n\n**决策依据**：看「晚阶段断点的真实需求频率」。若没人需要从 assemble/host 点恢复（典型需求是「缓存昂贵的前半段、重跑轻量的后半段」），就不值得投入①——先做②（错误显式化，几分钟工作量），把①挂在需求侧。反面教材是长期保持现状：能配置、能跑、产出残缺、无人报警。"
+},
+
+{id:14,cat:"flow",diff:3,tags:["错误处理","返回值传播","原子性"],
+q:"盘点 `build()` 链路上各失败点的处理策略：哪些失败会中断（return false），哪些只打日志？这套「不一致」会带来什么具体问题？",
+a:"逐点盘点：\n① `phase.execute()` 或装载失败 → ERROR + `return false`（硬失败，正确）；\n② `load_mq_ir_cache_attributes` 返回 false → 硬失败（正确）；\n③ `save_mq_ir_cache_elf` 失败 → 硬失败（正确）；\n④ **`save_mq_ir_cache`（图缓存主体）失败 → 不中断**——它是 `void` 返回，内部对目录创建失败打 ERROR、对 attrs 保存失败打 WARN，然后**函数直接结束**；build() 无法感知，继续 break 并返回 true——「缓存没写成/写了一半，但构建报成功」；\n⑤ attrs 文件缺失时 `load_mq_ir_cache_attributes` 打 DEBUG「skipping」后返回 **true**——装载静默降级。\n\n具体问题：\n- **半套缓存**：save_mq_ir_cache 先写 def/bin、后写 attrs/payload——中途失败留下「有 def/bin、无 attrs」的目录。下次 load：`load_mq_ir_cache` 的 file_exists 检查（只看 def/bin）通过 → `load_graph_global_tensors` 因 attrs 缺失跳过（只 WARN）→ apply_gopplugins 继续 → `load_mq_ir_cache_attributes` 又「skipping」返回 true → **恢复出一张没有属性契约的图**，后续阶段拿到空 levels/空 slots 等，错误以难以定位的形式爆发；\n- 用户预期「我配了 --mq_save_ir 就会有缓存」，实际可能没有——**静默的契约违反**。",
+fq:"为这套保存/加载设计「失败可见 + 原子性」防线，最少做哪几件事？",
+fa:"三件事（按性价比排序）：\n① **失败传播**——`save_mq_ir_cache` 改为返回 bool 并透传到 build()——保存失败要么让整个 build 返回 false（严格模式），要么至少在 CLI 汇总里打显著的「缓存保存失败」提示。**改动最小、收益最大**；\n② **原子提交**——先写临时文件名（`*.tmp` 或临时子目录），全部写完后统一 rename 为正式名（同文件系统内 rename 原子）；或写一个完成标记文件（如 `stage.complete`），load 侧只认标记——两条任选其一即可消灭「半套缓存」；\n③ **完整性对账**——load 时做轻量一致性校验（attrs 里记录节点数/IO tensor 名单，parse 后核对；def/bin/attrs 三者互查），不满足则**硬失败**并要求重跑（缓存是可再生资产，拒绝加载是安全动作）。\n\n补充习惯：把「skipping」级别的宽容（attrs 缺失继续）限定在显式调试开关下，默认路径改为严格。"
+},
+
+{id:15,cat:"phasefront",diff:2,tags:["optimize_mq","GOP","职责边界"],
+q:"`phase_optimize()` 只做两件事：`optimize_mq(m_graph)` + `check_valid_name()`。请展开 `optimize_mq()` 内部到底做了哪几件事？MQ 为什么不做 MC 那套 lowering/tiling 流水线？",
+a:"`optimize_mq()` 的全部内容（按顺序）：\n① `enable_ds` 时：`pooling_to_globalpool`（1x1 池化改写成 GlobalPool）+ `update_dynamic_max_shape`（用 max_input_shape 重推全图 shape——动态 shape 先按最大参照系静态化）；\n② `init_symbol_shape`——符号系统初始化；\n③ `infer_symbol_shape`——符号 shape 推断；\n④ `apply_gopplugins`——应用 GOP 插件：为每个算子（组）匹配插件实现，封装成带 `plugin_impl` 属性的子图节点。\n\nphase_optimize 额外做 `check_valid_name`：节点名唯一性与合法性检查——名字是后续序列化引用（IR 缓存按名字贴回属性）、插件匹配、tensor 命名链路的公共依赖，所以在流水线入口就把它钉住。\n\n为什么不做 lowering/tiling：MC 路径面向的是一套需要在编译器内完成「算子→硬件指令级适配」的后端，所以有近 200 个 pass 的 lowering 与 tiling；而 MQ 路径的执行模型完全建立在**预编译 kernel** 之上——「每个算子用哪个 kernel、kernel 在哪个库文件」由 GOP 插件声明（`kernel_infos()`/`kernel_cpsbin()`），编译器侧只负责图级整理与资源编排。**tiling 等算子级优化被下放进了 kernel 内部**（kernel 自带 loop/tiling 实现），编译器管的是「选择、编排、装配」而不是「生成算子实现」。",
+fq:"「不做 lowering」是否意味着 MQ 缺失优化能力？哪些问题被转移到了别处？",
+fa:"不是缺失，是**职责边界重画**：MQ 把三件事留在编译期——shape 系统正确性（符号推断）、实现选择（插件匹配）、资源编排（内存/流/参数/产物）；把两件事下放——算子内部实现（kernel 自带的 tiling/循环/向量化）、运行期动态决策（动态 shape 由 output_shape 占位、ParamUpdate 机制在运行期修正）。\n\n代价与补偿：① 编译器对算子内部一无所知 → 无法做跨算子融合优化——补偿是插件侧的模式匹配（pattern 匹配一次封装一组算子）；② 优化空间变小 → 补偿是 kernel 侧专注优化（专家手工/AutoTVM 类离线编译产物），且 kernel 迭代不需要重跑整个编译器（配合 IR 缓存）。面试角度：能讲清「为什么这条路径的选择是与其 kernel 生态协同的结果」比背 pass 名单重要得多。"
+},
+
+{id:16,cat:"phasefront",diff:2,tags:["PerfEstimator","LoadBalancer","估值分离"],
+q:"`phase_schedule()` 里先跑 `PerfEstimator perf; perf(m_graph);` 再跑 `LoadBalancer`。性能估算的结果去了哪里？为什么必须「先 perf 再 schedule」？",
+a:"PerfEstimator 的输出以**节点属性**形式挂在图上（每个节点的计算量/耗时估算），LoadBalancer 的负载均衡与分层决策消费这些估值——「均衡」的前提是能度量每个节点有多重；没有 cost 信息，切分/合批决策无从谈起。\n\n顺序原因还有一层：两者都发生在**插件封装之后**（optimize 阶段已 apply_gopplugins）——按「封装后的节点粒度」估算成本才是准确的（一个插件节点代表一组 kernel 的实际工作量，粒度即执行单元）。如果先 schedule 后 perf，均衡只能基于静态拓扑（层数/度数），无法基于工作量。\n\nLoadBalancer 的产出：`levels`（二维数组：level[i] = 第 i 层节点列表），经 `m_graph->set_attr(\"levels\", levels)` 进入图属性契约，供后续三个阶段消费。",
+fq:"为什么把「性能估算」独立成一步、把结果写进节点属性，而不是内联在 LoadBalancer 内部算？",
+fa:"三层理由：\n① **复用性**——任何需要 cost 的消费者（调度器、将来的 tuner、profiler 对照实验）都读同一份估值，与估算算法解耦；\n② **可观测/可缓存**——估值作为图属性存在，随 IR 缓存序列化；从 SCHEDULE 之后恢复的构建不再重算（省时，且保证两次运行的调度决策一致）；\n③ **单测友好**——perf 模型可以单独用真实硬件数据标定和回归。\n\n工程原则：**把「测量/估值」与「决策」分离**——估值进数据层（可持久、可对比），决策留在算法层（可替换）。这也是为什么很多编译器的 cost model 都做成「先跑一个 pass 打 cost 属性，再跑决策 pass」的两段式。"
+},
+
+{id:17,cat:"phasefront",diff:3,tags:["硬编码配置","强制覆盖"],
+q:"`phase_schedule()` 里有三处「硬编码」：`set(load_balance_strategy, 0)`、`set(disable_dependency, true)`、`set_core(set_mq_num)`。逐一说明含义与动机，并评价「阶段内强制覆盖全局配置」这个模式。",
+a:"三处配置：\n① `load_balance_strategy = 0`——负载均衡策略强制为 0（策略表第一行，MC 路径的 `{0,0,0}/{0,1,0}/{0,1,1}/{0,2,2}` 四行策略里最保守的一档，不做激进切分）；\n② `disable_dependency = true`——关闭依赖驱动的调度动作（MQ 里跨节点依赖由 assembler 的流间同步机制另行处理，调度侧不需要依赖排序的额外干预）；\n③ `set_core(set_mq_num)`——用 `--set_mq_num`（「multi queue number，默认 1」）决定均衡核数，也是 MQ 里唯一向用户开放的调度维度。\n\n动机：MQ 的调度语义是**确定性优先**——把可变性收敛到 `set_mq_num` 一个旋钮，其余维度锁死，减少「组合爆炸式」的行为面（每个未锁维度都意味着测试矩阵翻倍）。这种「先立语义基线，再按需开放」是产品化演进期的常见节奏。\n\n模式评价（阶段内覆盖全局配置）：风险是**隐式性与顺序敏感**——① 配置系统里 `load_balance_strategy` 的值不代表实际行为（被阶段覆盖），调试容易误判；② 谁先 set 谁后 set 决定结果，跨模块覆盖顺序难以审计；③ 外部无法构造「策略≠0」的 MQ 用例，缺少对照实验通道。改进：把「强制覆盖」改成「默认值」——读取时用「未设置才给 0」的语义（承认显式用户配置优先），或把 MQ 的调度参数集中成一个 Options 结构一次初始化；至少打 DEBUG 日志说明「已覆盖」。",
+fq:"这三处都是调用 `BuilderConfig::set` 全局单例——从「可测试性」角度，全局配置单例模式在编译器里有什么优劣？",
+fa:"优势：① 配置入口统一——CLI/前端只需「设键」一次，全流水线任意深度的代码都能取到（else 需要把配置对象一路透传参数，改动面大）；② 与「按需读取」配合——pass/阶段只在需要时读，避免巨型参数结构体；③ 调试友好——一处 dump 全部键值。\n\n劣势：① **隐式依赖**——函数签名上看不出用了哪些配置，测试要构造「全局状态」；② **并行/多实例困难**——全局单例天然反多实例（同一进程要同时编两个不同配置的模型就打架）；③ **生命周期混乱**——谁负责 reset、构建之间如何隔离（项目里有 `BuilderConfig::reset()` 就是为此）。\n\n务实结论：编译器是「单进程单任务」形态时全局单例性价比最高；要往服务化/多实例演进，就得上「配置对象随构建上下文传递」（context 化）的大改造。这是一个典型的「架构随部署形态演进」的决策点。"
+},
+
+{id:18,cat:"phasefront",diff:2,tags:["levels","序列化","NodeRef"],
+q:"`levels` 是 schedule 的产出，被 `set_attr` 到图上供三个阶段消费。请说出消费链，并回答：levels 里装的是 `NodePtr`（裸指针语义），IR 缓存序列化时它怎么「活下来」？",
+a:"消费链（产：SCHEDULE；消：三处）：\n① MEM_ALLOC——`scheduler.set_levels(levels)`：内存分配需要「执行顺序视图」推断生命周期（同层并行、跨层先后）；\n② ASSEMBLE——`assembler.set_level(levels)`：按 level 逐层生成任务，且 level 内的序号参与流分配（`s_id % 4`）；\n③ IR 缓存——levels 是调度决策的核心状态，必须随缓存持久化，否则从 SCHEDULE 之后恢复的构建无法重放内存分配与汇编。\n\n序列化机制：`vector<vector<NodePtr>>` 有**专项处理器**（`serialize_node_ref_levels`）——不写指针值（跨进程无意义、ASLR 下不稳定），而是通过「引用描述」方案：PointerRefTable 为每个节点生成稳定 id（如 `node:0x...` 作为当次进程内的 key），把 levels 转成「id 的二维数组」+ object_table 里的节点描述（`node_name` + `graph_name`）；恢复时按名字在恢复中的图里找回节点，重建出**新的** shared_ptr 集合——语义等价、对象身份不同。",
+fq:"「语义等价、身份不同」在什么场景下会咬人？系统里所有涉及指针的契约都要这样处理吗？",
+fa:"咬人场景：任何**跨「保存/恢复」边界比对指针相等性**的代码。例如：某属性在保存前记录了一个 `NodeRef`，恢复后另存了一个同节点的引用——两者 `.lock()` 后指针值不同，若代码用 `==` 比较（或放进 `std::set<NodePtr>` 做去重/查找）就会「同一节点被当成两个」。这类 bug 的特征：非缓存构建一切正常，恢复构建偶发行为差异——极难定位。\n\n所以纪律是：**跨恢复边界的对象身份只能靠「结构性坐标」（名字/位置）或「引用表 id」对齐**；指针相等性只允许在同一进程、同一生命周期内使用。系统里所有涉及指针的契约（attrs 里的 TensorPtr/NodePtr 集合、map 的键/值、Placeholder 引用）都必须过引用表——这也是 mq_ir_cache.cpp 里 `serialize_any_to_json` 要为那么多容器类型（`map<NodePtr,set<TensorPtr>>`、`map<TensorPtr,NodePtr>`、`vector<ConstTensorPtr>`…）做专项处理的根本原因：**凡是指针，皆需引用化**。"
+},
+
+{id:19,cat:"phasefront",diff:3,tags:["KernelAdapter","契约产出"],
+q:"`phase_kernel_adapt()` 里 `KernelAdapter::kernel_adapt()` 最终产出五组属性。请列全这五组（名字+类型），并各说一句下游消费者。",
+a:"`set_layer_id(m_graph)` 先行（给节点写编号/layer 信息）。然后五组产出（全部 `set_attr` 到图上）：\n① `const_tensors`（`vector<ConstTensorPtr>`）——收集 kernel 引用的常量/权重（`record_tensors` 里按 `p.const_tensor` 入列，`contains` 去重）→ 消费者：MEM_ALLOC 的 `const_allocate`（常量区分配）+ GEN_OBJ 的权重打包/`set_constant`；\n② `ws_map`（`map<NodePtr, set<TensorPtr>>`）——标记了 `is_workspace_tensor` 属性的 tensor 归入对应节点 → 消费者：MEM_ALLOC 的 `scheduler.set_ws`（工作区按节点独占处理，不进普通复用池）；\n③ `surface_tensors`（`map<TensorPtr, NodePtr>`）——`p.surface` 参数的 surface 描述符归到节点 → 消费者：后续 kernel 参数/驱动侧处理；\n④ `device_lib_names`（`map<string,string>`：kernel 名→库路径）——设备端实现的 kernel 库表 → 消费者：DEVICE_CODE_GEN 的 `set_device_lib`；\n⑤ `host_lib_names`（同型）——主机端实现的 kernel 库表 → 消费者：HOST_CODE_GEN 的 `set_host_lib`；且 `host_lib_names.size()` 决定最终 `HAS_HOST_CODE` flag。\n\n另一个细节：`kernel_adapt()` 第一遍 walk 就给**每个带 plugin_impl 的节点**建好 `param_bases` / `stream_bases` 占位符数组（每个 kernel_info 一对）并写入属性——后续 assemble 阶段回填这些占位符（参数区偏移、流内包偏移），是「地址回填」链的起点。",
+fq:"五组产出里，如果 `const_tensors` 收集**漏了**（比如某个权重没入列），最可能在哪个阶段、以什么形式暴露？",
+fa:"链条推演：漏收集 → MEM_ALLOC 的 `const_allocate` 不为它分配 const_slot → GEN_OBJ 打包权重时它不在 `m_constant` 里（不会写进权重 buffer、不进 wt_tab）。而参数侧：kernel 参数仍引用该 ConstTensor（ReadOnlyParam.const_tensor），它的 memory_object 最终要在 object_generator 里映射到「buffer 类型+索引+偏移」——`gen()` 对每个 tensor 查 `buf_map`，查不到就报 **`ERROR() << \"tensor ... is not assigned\"`**。所以暴露点大概率是 **GEN_OBJ 的 not-assigned 检查**——流水线末端、离根因（kernel_adapt 的收集）相隔三个阶段。\n\n教训：收集类阶段（kernel_adapt/apply_gopplugins）本身不做变换、错误面「只出不进」——**应该在收集完成处就近自检**（例如「每个带 plugin_impl 的节点的每个 const 参数都在 const_tensors 里」的循环断言），把末端报错前移到源头。这也是「信息收集器」类组件的通用测试策略：不检查内部逻辑，检查「输入覆盖度」。"
+},
+
+{id:20,cat:"phasefront",diff:3,tags:["device/host拆分","is_host_impl"],
+q:"重构把原来的单一 `kernel_lib` 拆成了 `device_lib_names` 与 `host_lib_names` 两张表。KernelAdapter 如何区分两者？`is_host_impl` 这个属性在后链路被哪些地方消费？",
+a:"区分方式：`kernel_adapt()` 第二遍遍历时对每个带 plugin_impl 的节点读 `is_host_impl` 属性——true 则把该 kernel 名→库路径写进 `m_host_lib`，否则写进 `m_device_lib`（同一节点有多个 kernel_info 时逐个入表）。\n\n`is_host_impl` 的四层消费：\n① KERNEL_ADAPT——分表（如上）；\n② DEVICE_CODE_GEN——`device_lib_names` 交 `CodeGenerator::set_device_lib` → `gen_device_code` 收集库文件链接进 CpsElf；\n③ HOST_CODE_GEN——`host_lib_names` 交 `set_host_lib` → `gen_host_code` 参与 cpshost 编译；且 `gen_host_funcs` 只对 `is_host_impl` 的节点生成 C 包装函数（`aipubt_<node>_<i>`）；\n④ ASSEMBLE——决定任务形态：host 实现**不生成 kernel task**，生成 `BARRIER_SET + BARRIER_WAIT` 一对同步任务（详情见后续题）；\n⑤ GEN_OBJ——`host_lib_names.size()` 决定 `CompilerMsg.flag` 是否置 `HAS_HOST_CODE`。\n\n一个属性贯穿五处——这是 MQ「算子可上（device）可下（host）」的统一机制：同一条流水线、同一套产物，只在「最后一公里」按属性分叉。",
+fq:"为什么把 host 算子放进同一条编译流水线，而不是单独一条 host 编译路径？",
+fa:"因为 host kernel 与 device kernel **共享全部上下文**：同一张图、同一套内存分配（slots/参数区）、同一套参数回填与索引表——唯一不同的是「最终在哪执行」。若单开一条路径：图分析、内存分配、参数编排、索引表、产物打包全部要重复实现，且两条路径的产物必须能互相拼装（这是最大的集成成本），还要维护「哪些算子走哪条路」的分流逻辑与两条路径的一致性测试。\n\n在同一条流水线里用 `is_host_impl` 做「最后分叉」，系统整体保持一套产物格式（HybridELF 天生为 device+host 混合设计——cpself note 装设备码、外层 ELF 装 host 码），维护面小一个数量级。\n\n设计启示：**异构执行单元（NPU/CPU/DSP）的统一表示**是全球编译器生态的通用难题——本项目的答案是「统一到任务流 + 属性分叉」；对照 TVM 的 heterogeneous execution 与 MLIR 的 target 抽象，都是同一个问题的不同解法。"
+},
+
+{id:21,cat:"phasefront",diff:2,tags:["const","workspace","分配语义"],
+q:"`const_tensors` 与 `ws_map` 都是 kernel_adapt 收集、mem_alloc 消费，但走两条不同的分配路径（`const_allocate` vs `set_ws`）。两者的语义差异是什么？为什么 workspace 不能参与普通 buffer 复用？",
+a:"语义差异：\n① **常量**（const_tensors）——只读资产，生命周期贯穿全程，且最终要**进产物**：GEN_OBJ 把所有常量打包成一条连续权重区（BUF_TYPE_WEIGHT），生成 wt_tab 索引；分配上单独走 `const_allocate`（不复用、独立区）。\n② **workspace**（ws_map）——kernel 声明的临时工作缓冲（按节点归类：`m_ws_map[n].insert(p.tensor)`），生命周期与节点绑定，但处理方式是**节点独占标记**（`set_ws` 传给调度器，从普通复用池中豁免）。\n\n一句话对照：常量 =「全局只读资产」（单独分配 + 发布进产物）；workspace =「节点私有暂存」（不进复用池 + 不进产物）。\n\n为什么 workspace 不复用：编译器对 kernel 内部如何使用 workspace **不可见**——可能有多次读写、可能与 DMA 并发、可能持有跨调用的中间状态。复用内存的合法性建立在「编译器能证明生命周期不重叠」之上；对不可见的访问模式，复用无法做安全性证明。收益（省几 KB~几十 KB）与风险（静默数据损坏、只在特定时序爆发）完全不成比例——**看不见就别省**。",
+fq:"如果未来要复用 workspace 省内存，需要补什么能力？",
+fa:"需要把「不可见」变成「可验证」的一条通道，通常是：\n① **声明式契约升级**——插件在 kernel_info 里声明 workspace 的访问模式（只写/读写/是否跨节点保活/是否有对齐与尺寸约束）与生命周期（节点内/多节点共享）；\n② **调度器纳入建模**——有声明后，生命周期不重叠的 workspace 可进复用池，冲突检测复用现有 consumer_cnt/liveness 机制；\n③ **验证兜底**——数值回归 + 压力用例（错峰/并发时序）覆盖，kernel 侧暴露 debug 校验点（如 sentinel 值检查）辅助定位。\n\n这是「从保守到激进」的标准路径：先拿显式声明把风险变成可分析问题，再让调度器吃掉收益——和 MC 路径里 buffer 复用的演进方向（not_reuse 集合的逐步精细化）是同一个故事。"
+},
+
+{id:22,cat:"phasefront",diff:3,tags:["插件覆盖","验证缺口","失败路径"],
+q:"MQ 里「每个算子最终必须落到某个 kernel 上」是硬约束。请追踪：如果一个节点**完全没有插件覆盖**，它是从哪一步开始「消失」的？系统里有没有断言阻止它？",
+a:"追踪（按执行顺序）：\n① `apply_gopplugins`——先按节点类型查 `plugin_map`：**类型完全不在插件表里的节点被 `continue` 静默跳过**（不报错、不封装）；只有「类型在表里、但所有插件 pattern 都没匹配上」的情况才会 `ERROR \"no plugin impl\"` 并整体失败；\n② `kernel_adapt()`——两遍遍历都以 `attrs().count(plugin_impl)` 为门槛：没有 plugin_impl 的节点**没有 kernel_infos、没有 param_bases**，也不进任何库表（静默跳过）；\n③ `assemble()`——内层循环同样以 `plugin_impl` 为门槛：该节点**不生成任何 task**（不落进任何流）；\n④ `gen_obj`——不参与 streams/params/索引表。\n\n结论：**没有任何一处断言**「所有内容节点最终都必须有 kernel_infos」——无插件覆盖的算子会一路静默「漏掉」，产物能正常生成（编译成功），但该算子的计算**从未被执行**——运行期结果错误。这是一个值得审计的验证缺口：建议在流水线尾（或 gen_obj 前）做终检——「图中每个非 Input/ParamUpdate 的内容节点必须在本阶段的某个流里出现过」。",
+fq:"为什么这种「静默漏执行」比「直接报错」危险得多？工程上如何系统性地防住这一类问题？",
+fa:"危险在于**失败后置且伪装成成功**：编译成功、无警告、产物格式完整——错误只在运行期以「结果数值不对」的形式出现，且定位需要从头排查（没人会第一反应怀疑「某个算子根本没被编译」）。修复成本从「编译期一眼」变成「端到端 debug + 熟悉产物格式」。\n\n系统性防护（从编译期到产物的三层）：\n① **覆盖度终检**——流水线尾部对照原始图（或 apply 前后的节点集合）验证「输入全覆盖」：每个内容节点要么被吸收进插件、要么自身有 plugin_impl，缺一即失败；\n② **产物对账**——assemble 后统计「任务数 vs 期望 kernel 数」，gen_obj 后校验 tensor_index_map 的覆盖（现有 \"not assigned\" 检查是同类思路的局部实现）；\n③ **回归基线**——每个算子的「编译→运行→比对」测试矩阵，缺失算子的模型直接跑不通。\n\n原则：对「收集/跳过式」代码路径，**跳过的对象必须可枚举**——静默 continue 之前至少要留下「跳过清单」与最终审计点。"
+},
+
+{id:23,cat:"phaseback",diff:2,tags:["SOMSScheduler","配置","disable_sm"],
+q:"`phase_mem_alloc()` 里对 SOMSScheduler 做了一串配置：`set_graph`、`set_levels(levels)`、`set_gm_size({0})`、`set_ws(ws_map)`、`disable_sm()`。请逐一解释每个配置的含义；`set_gm_size({0})` 和 `disable_sm()` 组合起来说明了 MQ 的什么内存模型？",
+a:"逐项：\n① `set_graph(m_graph)`——绑定图（分配器遍历节点/tensor 的来源）；\n② `set_levels(levels)`——从图属性取 schedule 产出的层次结构传给调度器（生命周期推断依赖执行顺序视图）；\n③ `set_gm_size({0})`——GM 预算传「单个 0」：**没有全局共享内存预算**的占位表达；\n④ `set_ws(ws_map)`——workspace 集合（节点独占标记）；\n⑤ `disable_sm()`——关闭 SOMS 的共享内存分配路径（shared memory 优化不参与本次分配）。\n\n组合语义：MQ 的内存模型是**扁平 slot 模型**——tensor 的生命周期全部用「可复用 slot」描述（分配器产出 data_slots），不做 GM 区域规划、不做共享内存打包；「物理放在哪块内存」被推迟到产物层：slot 以 `buffer_id` 写入 CpsElf 的 buffer 表（BUF_TYPE_SLOT），加载/放置策略交给运行期 driver。编译期只需要保证「逻辑上互不干扰、可复用」。对照 MC 路径那套 gm_region/gm_enhance/preserve_gm_size 的复杂预算体系——MQ 把「在哪放」从编译期决策中整个拿掉了。",
+fq:"「编译期不做物理放置」的收益与代价分别是什么？（提示：从产物可移植性与优化上限两个方向想）",
+fa:"收益：\n① **产物可移植**——同一份 ELF 可以在不同内存布局的设备/板卡上加载（driver 决定实际放置），编译产物与硬件配置解耦；\n② **编译器复杂度下降**——不需要维护每代硬件的内存区域模型，MQ 后端迭代快；\n③ 分配决策更少 = 确定性更高（配合 IR 缓存，两次构建产物完全一致）。\n\n代价：\n① **放弃了全局最优**——没人做跨设备的内存打包/预取布局优化（MC 路径的 gm_enhance 就在做这件事），性能上限让给了运行期启发式与 kernel 侧的调度；\n② 对 driver 的要求变高——driver 承担了分配/放置/回填的复杂度（复杂度守恒：从编译期挪到了运行期）；\n③ 调试更间接——「为什么这个 tensor 放在那」要看 driver 行为而不是编译器日志。\n\n判断这类取舍的标准：**编译器与运行期的能力边界如何分**——kernel 生态强势（MQ）则编译器让位，硬件/指令生态由编译器掌控（MC）则编译器接管。"
+},
+
+{id:24,cat:"phaseback",diff:3,tags:["mem_allocate","四参数","keeps"],
+q:"`scheduler.mem_allocate(not_reuse_tensor, input_tensors, output_tensors, skip_tensors)` 的基类签名是 `mem_allocate(pre_alloc_tensors, inputs, keeps_tensors, skip_tensors)`。请解释四个参数的语义分工，并说明 MQ 传了哪些集合、`skip_tensors` 传空说明什么。",
+a:"四参数语义（结合基类签名与 MQ 用法）：\n① `pre_alloc_tensors`——**预分配/优先处理集合**：MQ 传 `not_reuse_tensor`（= 所有 `mem_size()` 非零的全局 tensor：stack/print/param 及恢复出的其它全局资源）——这些是「不能被复用逻辑处理」的资源，最先安置；\n② `inputs`——模型输入集合：输入的地址由调用方在运行期提供，分配语义特殊（不参与普通生命周期推导）；\n③ `keeps_tensors`——**必须保活**集合：MQ 传 `output_tensors`（模型输出）——输出要交付给调用方读取，绝不能被后续节点的复用覆盖；\n④ `skip_tensors`——跳过分配集合：MQ 传**空集**——本轮没有需要主动跳过的 tensor。\n\n构造方式：input/output 从 `m_graph->get_input_tensors()/get_output_tensors()` 取；not_reuse 遍历 global_tensors，且用 `gt.second && gt.second->mem_size()` 双重过滤——**这层判空是必要的**：`apply_gopplugins` 里对 `global_tensors()[Constants::error_code]` 的 `operator[]` 访问会在 map 里留下一个空（null）条目，如果不过滤会解引用空指针。\n\nskip 传空说明：当前流水线里没有「分配但暂不走分配器」的 tensor 类型（比如外部托管/固定地址的内存）——这个参数是分配器为未来场景预留的接口位。",
+fq:"为什么「输出必须进 keeps」是正确性问题而不是优化问题？漏了会在什么场景下爆？",
+fa:"因为输出是**产物的对外契约**：运行期 driver 回填地址后由用户/上层读取——输出 buffer 在「输出节点之后还有别的节点」的图里，如果被当成普通中间数据参与复用，后续节点的写入就可能覆盖输出（复用判定的依据是「生命周期不重叠」，而输出的生命周期延伸到图外——图内的活跃区间分析看不到这一点）。\n\n漏掉的爆发场景：**多输出且尾部有杂项节点的图**——某个输出在图中「提前算完」，后面的节点被分配器复用同一块内存并写入，用户读到的输出是脏数据。而「输出即末节点」的简单图可能侥幸正常——这是最坏情形：测试集覆盖不到、现象随图结构随机出现。\n\n正确姿态：输出=图内活跃 + 图外保活，keeps 集合是把「图外生命周期」显式告诉分配器的唯一通道——**凡是生命周期超出编译期可见范围的对象，都必须走显式声明**（同类还有 not_reuse 的全局资源）。"
+},
+
+{id:25,cat:"phaseback",diff:2,tags:["buffer_id","产物链"],
+q:"`mem_allocate` 返回 data_slots 后，代码做了一次遍历：`data_slots[i]->buffer_id = i`。buffer_id 是什么？请把它的「消费链」一直追到最终产物。",
+a:"buffer_id 是**slot 在最终分配结果中的稳定编号**——分配完成后的统一回填（不是分配过程中生成）。消费链：\n① GEN_OBJ——`ObjectGenerator::gen`：对每个 slot `elf->set_buffer(BUF_TYPE_SLOT, s->buffer_id, s->size, s->align)`——每个 slot 变成 CpsElf buffer 表里的一条记录（类型=SLOT、索引=buffer_id、尺寸、对齐）；\n② 同阶段 tensor 定位——每个 tensor 的 memory_object 经 `buf_map` 映射到 `buf_loc_t{type, index, offset}`，汇总成 tensor_offset_map 写入 ELF（`set_tensor_offsets`）；\n③ 运行期——driver 按 buffer 表分配实际内存，按 tensor_offset 表回填/寻址；\n④ 调试——日志/转储里的 buffer_id 让「第几号缓冲」可读（如 `set slot as buf 2 index N size 0x...`）。\n\n关键理解：buffer_id 是**「编译期分配结果」与「运行期装载协议」之间的稳定句柄**——一旦它与产物格式（buffer 表/offset 表）绑定，任何重新编号都是格式破坏。对称地，IR 缓存序列化里 MemoryObject 的 `buffer_id` 字段有专门恢复逻辑（restore_memory_fields），保证恢复后编号不变。",
+fq:"为什么统一编号要「分配全部完成后」再做，而不是分配过程中随产随号？",
+fa:"因为分配过程是**动态的**：复用决策会合并/丢弃/重排中间对象——过程中的编号会出现空洞、重号、或「编完又被合并」的失效编号。等最终结果（data_slots 列表）尘埃落定后一次编号，保证三件事一致：**列表序 = 编号序 = 产物索引**。\n\n这是「两阶段提交」思想在编译期的应用：先产集合（决策阶段，允许多次迭代），再定索引（发布阶段，一次固化）。类似的模式在编译器里反复出现：寄存器分配先定分配再定物理编号、指令调度先排顺序再固化地址、本项目的 assemble 也是先在流里排好任务再统一 `get_task_id()`。通用原则：**编号代表承诺，发布承诺前允许探索，发布后只读**。"
+},
+
+{id:26,cat:"phaseback",diff:2,tags:["const_allocate","权重"],
+q:"常量走的是 `const_allocate(const_tensors)` 单独分配（产出 const_slots），而不是和 data_slots 混在一起。为什么必须分开？如果两个节点引用同一个权重对象，会被分配两次吗？",
+a:"必须分开的三个理由：\n① **生命周期不同**——普通 tensor 按活跃区间复用（生命周期结束即可被覆盖），常量全程存活（权重只读、不可覆盖）；混在一个池子里，复用算法要额外建模「不可复用性」，增加出错面；\n② **产物形态不同**——常量最终要打包进**权重区**（BUF_TYPE_WEIGHT 单条连续 buffer + wt_tab 索引），data slot 是若干 **BUF_TYPE_SLOT** 缓冲；两类 buffer 在 ELF 里的类型、索引、消费方完全不同；\n③ **决策问题不同**——data 分配解决「复用最优」，常量分配解决「打包与对齐」（连续打包、按对齐叠加、共享区间）；两个问题解耦后各自简单。\n\n同一个权重对象被多节点引用：**不会分配两次**——`ConstTensorPtr`（shared_ptr）在收集时已按对象去重（`record_tensors` 里 `!contains(m_const_tensors, p.const_tensor)`），打包时同一 memory_object 共享区间（`assigned` 映射缓存「该物理块已分配过的偏移」）。真正会重复的是「内容相同但对象不同」的两个常量——那属于上游常量去重的职责（MC 路径有 HashConstant 类 pass；MQ 依赖 optimize/插件阶段保证对象唯一性）。",
+fq:"「共享区间」（多个常量指向同一 memory_object）在序列化/恢复时怎么保真？",
+fa:"靠 **memory 引用关系的双向序列化**：保存侧，PointerRefTable 的 `add_memory` 把每个 MemoryObject 的字段（relative_offset/m_base/align/mask/size/foot_print/mem_flag/buffer_id/bss_id）连同**引用字段**（base_offset/next_block）一起写入 object_table——引用字段又递归解析为目标 memory 的 id，形成「对象图」；恢复侧 `deserialize_memory_ref` 带 `MqIrCacheContext` 缓存（memory_cache）避免同一对象被重建多次——**共享关系（多个引用指向同一对象）靠「同一 id 只重建一次」保真**。若没有这层缓存，两个引用会各自 new 一个对象，共享语义悄悄丢失（然后 relative_offset 等字段一改，另一方看不到）。\n\n这类「对象图序列化」的两个必备件：① 引用表（id 化）；② 重建缓存（去重实例化）。缺任何一个都会破坏共享结构。"
+},
+
+{id:27,cat:"phaseback",diff:3,tags:["gen_device_code","LinkerCps","DS"],
+q:"`phase_device_code_gen()` 只有三行（set_graph / set_device_lib / gen_device_code），但 `gen_device_code` 内部是一条完整的链接流水线。请描述它的完整步骤，并回答：为什么入参是 `m_elf->get_cpself()` 而不是 `m_elf`？",
+a:"`gen_device_code(CpsElfPtr elf)` 内部步骤：\n① **库定位与去重**——遍历 `m_device_lib`（kernel 名→路径）：已收集过的库跳过（`libs` set 去重 + ARFileReader 检查 .a 内成员）；路径直接存在就收；否则在 `get_all_afiles()` 的候选 .a 集合里找包含该成员的库；找不到打 `cannot find` ——这是一个「库解析器」；\n② **动态 shape 设备码**——`get_ds_device_code()` 若产出非空：写 `ds_impl.cps` 源码 → `cpscc` 编译成 `ds_impl.o` → 加入链接对象列表（编译失败 FATAL）；\n③ **链接**——`LinkerCps linker; linker.link(oss)` 把全部对象链接成 ELF 流；\n④ **装载**——`elf->load(oss.str())` 把结果写进传入的 CpsElf。\n\n为什么传 `m_elf->get_cpself()`（内层）而不是 m_elf（外层）：**设备码属于 device 层**——CpsElf 是设备侧容器（.text + buffer 表 + kernel 元数据 notes），后续 assemble 阶段从它的 `.note.zhouyi` 读 kernel 符号与元数据；而外层 HybridELF 是 host 侧容器（host_code_gen 才写入）。分层各写各的，互不污染——这正是「Hybrid」结构的写入纪律。",
+fq:"库定位一段里「先查路径、再搜 .a、最后报 cannot find」的策略说明 MQ 编译链与 kernel 生态之间是什么关系？",
+fa:"说明编译器是**生态的适配者**而不是定义者：kernel 侧的产物命名/打包方式（.o 直接文件、.a 归档、成员名的约定）不受编译器控制——`kernel_cpsbin()` 可能返回具体路径、也可能返回空（走默认搜索），所以编译器必须实现「宽松的库解析」：直接路径优先（最快路径）、否则全候选归档搜索（兜底路径）。这带来两个后果：\n① **弱约定的代价**——文件名/成员名匹配没有强校验（同名成员出现在多个 .a 里时选谁？当前实现是「第一个找到的」——顺序依赖！），排查「链接了旧 kernel」类问题时需要人工确认库搜索顺序；\n② **健壮性设计空间**——若要加固，应把搜索过程日志化（每个 kernel 最终解析到哪个库文件打 INFO）、并提供显式的库搜索路径配置（类似 `-L`）与优先级规则。\n\n面试延展：这是「编译器与目标生态的耦合边界」问题——凡是与预编译产物对接的环节（kernel 库、运行时库、工具链二进制），都需要一所「解析+定位+版本校验」的适配层，且适配层必须可观测。"
+},
+
+{id:28,cat:"phaseback",diff:3,tags:["assembly","param区","流分配"],
+q:"`Assembler::assembly()` 是流水线里最重的一个阶段。请按执行顺序拆解它的主干：从全局资源创建到任务生成，每一步在做什么？",
+a:"主干（按代码顺序）：\n① **创建四条流的全局 tensor**——`stream0/1/2/3`（形状 `{0}` 的 UINT8）挂进 `global_tensors`——任务流基址的载体（注意：这三个不在 build() 里建，是 assemble 的职责）；\n② **取 ELF 锚点**——从 m_elf（CpsElf）取 `.note.zhouyi` 与 `.symtab` section，缺任何一个直接报错返回（kernel 元数据/符号是任务生成的原材料）；\n③ **param 区布局**——`m_params.resize(64, 0)`（64 个 4 字节字 = 256B 头部保留区）；追加输入 shape 并记 `input_shape_offset`；追加输出 shape 记 `output_shape_offset`；`walk_on_node` 处理动态 shape：带 `output_shape_size` 属性的节点回填 placeholder（`*shape_base = *m_param_base + (output_shape_offset + shape_offset)`）并预留空间；尾部对齐 64，写入头部五元组 `m_params[0..4] = {in_shape_off, in_shape_sz, out_shape_off, out_shape_sz, 0}`；创建 `output_shape` 全局 tensor；\n④ **tensor 索引分配**——为全部 global tensor 调 `get_tensor_index`（进 tensor_index_map，运行期寻址凭据）；\n⑤ **主循环**——对每个 level 的每个节点（序号 s_id）：`stream_id = s_id % 4` 分流、写 `stream_id` 属性；对子图内每个带 plugin_impl 的节点：host 实现生成 BARRIER_SET+WAIT 对、device 实现从 note 读 kernel 元数据生成 kernel task；每个 kernel 前 `*param_base = *m_param_base + m_params.size()*4`（占位符回填参数区偏移）、`*stream_base = *m_stream_base + stream.size()*64`（流内包偏移，PACKET_UNIT_SIZE=64）、参数追加进 m_params；\n⑥ **同步收尾**——`insert_empty_task`（首包 invalidate 场景插空 DMA）与 `setup_stream_sync`（跨流依赖的信号/等待）。\n最后产出 `streams/param_offset_table/params/tensor_index_map/const_index_map` 五组属性写回图。",
+fq:"param 区头部为什么是 64 words 保留区 + 五个元数据字？这个布局是谁和谁的契约？",
+fa:"布局含义：`m_params.resize(64, 0)` 先占 256 字节**头部保留区**，前 5 个 word 写入 `{输入 shape 偏移, 输入 shape 大小, 输出 shape 偏移, 输出 shape 大小, 默认 shape flag(0)}`——运行时/kernel 启动代码约定「从参数区头部读取全局元信息」，kernel 自己的参数块从保留区之后开始（对照 `gen_host_funcs` 里 `param_offset += 8*4`（32 字节）的注释 'real param'——host 侧参数偏移也要跳过这段头部的一个子集）。\n\n这是**编译期与运行期的 ABI 契约**：两边各读一半——编译器负责按布局写入，运行期按固定偏移读取。收益：运行时不需要理解编译器的完整内存模型，只需认识这个「固定入口头」；代价：任何布局改动都是 ABI 破坏（需版本互锁）。此类「固定偏移协议」与 ELF 的 program header、函数调用约定是同一类设计；64 words 的余量也是对「未来往头部加字段」的预留——但注意预留不等于安全：真加字段时仍要过版本协商。"
+},
+
+{id:29,cat:"phaseback",diff:3,tags:["launch_info","kernel note"],
+q:"assemble 为每个 device kernel 生成任务时，从 ELF 里读了两条 note：`kernel.<name>` 的 type=1（`param_info_t`）和 type=2（`launch_info_t`）。这些元数据的字段是什么？它们是谁、在什么时候写进 ELF 的？",
+a:"字段：\n① `param_info_t { uint16_t size; uint16_t kind; }`——kernel 参数的总尺寸与类型（校验用：param 区实际拷贝对不对得上）；\n② `launch_info_t { uint32_t ib_size; uint16_t static_sm_bytes; uint16_t param_size; uint8_t sreg_param_size; uint8_t sreg_cnt; uint8_t vreg_cnt; uint8_t head_wg_vreg_cnt; uint8_t isa_set; uint8_t subnormal_en; uint8_t saturation_en; uint8_t padding; }`——启动一个 kernel 需要的全部硬件配置：指令缓冲（IB）大小、静态共享内存字节数、参数尺寸、标量/向量寄存器用量、ISA 版本、subnormal/saturation 行为开关。这些字段最终进任务描述符（task_t）。\n\n谁写的：kernel **编译产物自带**的元数据——kernel 对象（.o/.a 成员）在被 `LinkerCps` 链接进 CpsElf 时携带这些 note（kernel 侧编译器在编译每个 kernel 时标注自己的启动需求）。所以两条 note 的产生点在 DEVICE_CODE_GEN 的链接过程里，时间点是**链接时**。\n\n这解释了流水线的两个硬依赖：① device_code_gen 必须早于 assemble（否则 note 不存在）；② IR 缓存在 DEVICE_CODE_GEN 点必须保存 ELF（从缓存恢复跑 assemble 时，这些 note 必须还在）。",
+fq:"如果 kernel 库更新了（kernel 作者改了寄存器用量、换了 ISA 版本），这次构建最少要重跑哪些阶段？这个分析对「缓存断点选在哪里」有什么指导？",
+fa:"依赖分析：launch/param note 从链接开始存在于 ELF → assemble 读取并写进任务描述符；host 侧 `gen_host_funcs` 也消费 kernel_infos（`aiputbt_<node>_<i>` 包装）。所以 kernel 库变更的**最小重跑集合** = DEVICE_CODE_GEN → ASSEMBLE → HOST_CODE_GEN → GEN_OBJ；optimize~mem_alloc 可以复用缓存。\n\n对断点选择的指导：**缓存断点应落在「最频繁变更依赖」的边界之前**。kernel 迭代是高频活动（kernel 作者持续提交），所以 DEVICE_CODE_GEN 点是「kernel 不变时能省的最大前缀」与「kernel 变化时需重跑的最小后缀」的最优分割——这也解释了为什么唯一带 ELF 缓存的组合正是 `save=DEVICE_CODE_GEN`：它不是随便选的，而是需求驱动的设计中心。\n\n延伸：如果未来 host 库也开始高频迭代，类似的断点会出现（需要 host 侧产物的缓存）——断点布局本质是对团队工作流的建模。"
+},
+
+{id:30,cat:"phaseback",diff:3,tags:["四流","同步","sync_mask"],
+q:"任务流为什么会分成 4 条（`stream0~3`）？level 内节点按 `s_id % 4` 分配——请描述这个分组逻辑；跨流的依赖同步 `setup_stream_sync` 又是怎么工作的？",
+a:"4 条流的意义：多队列/并行执行——不同流上的任务可以由硬件并发推进，单流串行化会浪费并行度。分组逻辑：对每个 level（一层内节点可并行），第 s_id 个节点分到 `stream_id = s_id % 4`——**轮转均摊**，避免所有节点堆在一条流上；同时把 `stream_id` 写进节点属性（后续任务与同步逻辑都以它为准）。\n\n跨流同步（`setup_stream_sync(first_kernel, sgn, stream, stream_id)`）：\n① 记录 `m_node_last_kernel_map[sgn] = stream.size()-1`——该节点的最后任务在流中的**位置**（把「节点完成」物化为「流内下标」）；\n② `get_depend_nodes` 找该节点的依赖集合，对每个**位于其它流**的依赖 p：`sync_mask |= sync_set(stream_id, p_stream, p_stream_id, m_node_last_kernel_map[p])`——在 p 所在流中「紧跟在 p 的末任务之后」安置一条信号（set）；\n③ `sync_wait(stream, first_kernel, sync_mask)`——在当前节点段的**首任务之前**等待这些信号位（bitmask 一次性等全部依赖）。\n\n一句话总结：生产者流里「干完置位」、消费者流里「开工前等位」；bitmask 把多依赖折叠成一次等待。",
+fq:"`s_id % 4` 的轮转 vs `s_id / 4` 的分块——两种分配对同步需求和负载有什么不同影响？为什么选前者？",
+fa:"对同一层 8 个节点为例：\n- **轮转（%4）**：节点 0,4 同流；1,5 同流……——同一层内相邻节点分散在 4 条流，**层内并行度最大**；代价是层内节点两两之间若有依赖（同层一般无依赖，但跨层残留的细粒度依赖可能出现）会引入跨流同步。\n- **分块（/4）**：节点 0,1 同流；2,3 同流……——连续节点共流，**流内局部性好**（若连续节点有依赖，同流天然顺序满足、不需要同步）；代价是层内长尾：一条流堆 2 个、另一条堆 2 个，若节点重量不均，最重的流成为瓶颈（负载不均）。\n\n选择轮转的理由：MQ 的 level 表示「可并行层」，层内节点理论无依赖（依赖都在层间）——所以轮转「零同步成本」的前提下拿到最好的分配均匀性；分块的优势（同流满足依赖）在这个模型里用不上。\n\n但注意：**负载均匀假设在同层节点重量差异大时不成立**（轮转只均匀数量不均匀重量）——这也是为什么 SCHEDULE 阶段要先跑 PerfEstimator；如果未来要做「按重量分配流」，这套 `%4` 需要升级成带权调度（成本是同步分析变复杂）。"
+},
+
+{id:31,cat:"phaseback",diff:3,tags:["host kernel","barrier","中断"],
+q:"对 host 实现的 kernel（`is_host_impl`），assembler 不生成 kernel task，而是插入一对 `TASK_TYPE_BARRIER_SET` + `TASK_TYPE_BARRIER_WAIT`。请解读两条任务的字段含义，并说明这实现了什么机制。",
+a:"两条任务（同地址 `0x1000000 + 0x24`，即 BARRIER_REG1 寄存器）：\n① **BARRIER_SET**：`data=1`、`wr_be=0xf`（4 字节写使能）、`interrupt=1`（**产生中断**）、`timer_mode=0`、`bar_src=1`（源为寄存器）——把寄存器置 1 并**向主机发中断**；\n② **BARRIER_WAIT**：`ref=1`、`rd_be=0xf`、`func=0`（判等 `==ref_val`）、`bar_src=1`——设备侧轮询/等待同一寄存器等于 1。\n\n机制：这是 **device↔host 的握手对**——设备流的逻辑是「通知主机『该你算了』（置位+中断），然后停下等主机算完（等寄存器复位/改变）」。主机侧（CPU）收到中断后执行对应的 host kernel（`gen_host_funcs` 生成的 `aipubt_<node>_<i>` 包装函数，链接在 cpshost 库里），完成后让条件解除，设备继续。\n\n本质：**把「host 执行」伪装成流里的两个任务**——多流执行引擎看到的仍是一条连续的 task 流（不会「卡在一个不是任务的东西上」），device/host 的边界被翻译成同步原语。这是异构执行统一表示的一个具体实现。",
+fq:"这条握手链在什么情况下会死锁？编译期能否发现？如何兜底？",
+fa:"死锁条件：设备置位并发中断后，**没有任何主机侧响应方**——例如 host_lib_names 里没有该 kernel 的库（部署机没装）、或主机运行时没有注册中断处理。于是 WAIT 永远等不到——运行期挂死（比错误结果更难查：没有报错、没有输出，只是卡住）。\n\n编译期**无法**完全发现：编译器只能验证「生成过 host 包装函数、库文件在编译链路里」，无法验证「目标机器的运行时环境会响应」。能做的三层兜底：\n① **静态标记与传播**——`HAS_HOST_CODE` flag 写进 CompilerMsg，driver 加载时校验「有 host 需求则必须有 host 运行时」，把「静默挂死」转成「加载期明确报错」；\n② **清单对账**——部署清单把「需要哪些 host 库」作为构建产物的一部分输出（现在 host_lib_names 只在编译器内部），上线流程比对；\n③ **超时防护**——运行时给 barrier wait 配超时（若硬件支持 timer_mode/超时中断），把死锁降级为可诊断错误。\n\n通用原则：**跨机器边界的契约，编译期只能做到「声明」，部署与运行期才能「校验」**——契约的每个跨边界环节都要有校验点，不能指望单点发现。"
+},
+
+{id:32,cat:"phaseback",diff:3,tags:["gen_host_code","Hybrid结构"],
+q:"`phase_host_code_gen()` 的完整流程是什么（从遍历节点到 `set_attr(\"header\")`）？为什么 `gen_host_code` 最后一步是把编译出的对象 `elf->load(o_file)` 载入 HybridELF 的**外层**？",
+a:"流程：\n① `set_host_lib(host_lib_names)`；\n② `gen_host_code(m_elf)`：先 `gen_host_funcs()`——遍历每个子图内部「有 plugin_impl 且 is_host_impl」的节点，对每个 kernel_info 生成一个 C 包装函数 `aipubt_<节点名>_<序号>`（参数表按 `info.args` 展开成 void*/int；从 param 区读参数，偏移 = `param_base.offset - param_root.offset + 8*4`——跳过 32 字节的「real param」头部），拼成 cpshost 源码；\n③ 搜索 host 库文件（`get_all_lib_paths` 候选目录）；\n④ `cpshostcc(c_file, objs, o_file)` 编译链接成 `cpshost.o`；\n⑤ `elf->load(o_file)`——**载入 HybridELF 外层**；\n⑥ `get_cpshost_header()` 取 C++ 头（函数声明），`set_attr(\"header\", header)` 存图属性。\n\n为什么是「外层」：Hybrid 结构的分层就是「外层=host 侧 ELF、内层 cpself note=设备侧 ELF」。host 代码天生属于外层（未来的加载者是主机的动态加载器），设备码属于内层（加载者是设备驱动）。host_code_gen 写入外层后，HybridELF 的形态就完整了：外层（cpshost.o 或空壳）+ 内层（device_code_gen 链接好的 CpsElf），保存时两者一起进一个文件。\n\n注意一个「空外壳」情形：没有 host 算子时 `host_code` 为空——不执行 `elf->load`，外层保持构造时的空 ELF——此时 `HAS_HOST_CODE` 不置位，消费者据此判断「外层无有效 host 代码」。",
+fq:"`get_cpshost_header()` 生成的 header 是给谁用的？为什么它与 cpshost.o 必须同源推导？",
+fa:"header 的消费者在**构建之后**：外部工具/上层框架拿 `get_header()` 取走函数原型，用于「在主机应用里正确地调用/链接这些 host kernel」——它是 host 侧可调用性的接口描述文档（哪些 `aipubt_xxx` 函数可调、签名是什么）。\n\n必须同源的原因：header 与 cpshost.o 的函数签名都从**同一份 `get_cpshost_code()` 推导**（cpshost 源码生成器是唯一事实源）。若两者不同源（比如 header 手写或过期），后果是**ABI 级错配**——调用方按旧签名传参、实际函数按新签名取参，栈/寄存器对不上（C 链接下无编译期检查，直接运行期崩）。\n\n工程习惯：接口（header）与实现（.o）由同一生成器产出，中间不允许人工介入——这类「双产物同源」的纪律在协议、绑定、序列化场景都通用（对照：protobuf 从 .proto 同时生成代码与描述符；本项目 IR 缓存从同一图同时生成 def/bin 与 attrs.json）。"
+},
+
+{id:33,cat:"phaseback",diff:2,tags:["ObjectGenerator","清单"],
+q:"`phase_gen_obj()` 里 `ObjectGenerator::gen(cpself)` 把前面各阶段的所有产出汇总写入 CpsElf。请尽量完整列出它的写入清单（8 项左右），并说明「写表」与「写数据」各占哪些。",
+a:"写入清单（按 gen() 代码顺序）：\n① **slot 缓冲表**——每个 data_slot：`set_buffer(BUF_TYPE_SLOT, buffer_id, size, align)`（写表）；同时建立 buf_map（memory_object → buf_loc 映射）；\n② **param / stream 基址登记**——param 与 stream0~3 的基址对象进 buf_map（BUF_TYPE_PARAM / BUF_TYPE_STREAM 0..3）（写表）；\n③ **参数偏移表**——`set_param_tab(param_offset_table)`（写表）；\n④ **任务流**——`set_graph(m_streams)`（写数据：序列化进 CpsElf 的 note）；\n⑤ **参数字节流**——m_params 逐 uint32 转字节，`set_buffer(BUF_TYPE_PARAM, 0, size, 1, buf)`（写数据）；\n⑥ **tensor 表**——输入/输出（+ds 时的 output_shape）的 `tensor_info_t{id, dtype, shape}` 按类别插入 multimap → `set_tensor_tab`（写表）；\n⑦ **权重区**——常量压缩打包成一条连续 buffer（对齐叠加 + 数据拷贝 + 相对偏移回填）→ `set_buffer(BUF_TYPE_WEIGHT, 0, total, align, wt)`（写数据）；\n⑧ **tensor 位置表**——每个 tensor 的 (buffer 类型, 索引, 偏移) → `set_tensor_offsets(tensor_offset_map)`（写表）。\n\n概括：「表」= 运行期寻址所需的索引（slot 表/param 表/tensor 表/位置表），「数据」= 真正的字节内容（任务流/参数/权重）。表指向数据，数据只写一份。",
+fq:"CpsElf 里同时存在 buffer 表（set_buffer）与 tensor 位置表（set_tensor_offsets）——两层索引的分工是什么？为什么不能合并成一层？",
+fa:"两层是**不同粒度的定位问题**：\n- **buffer 表**（BUF_TYPE_SLOT/PARAM/WEIGHT/STREAM + index）回答「有哪些内存块、各自多大、对齐如何」——是**分配结果的清单**（运行期 driver 按它分配/装载：给每个 slot 一块内存、把 param/weight 内容放进去、为 stream 建队列）；\n- **tensor 位置表**回答「某个 tensor 在（哪块 buffer、块内哪个偏移）」——是**对象到存储的映射**（运行期拿 tensor 索引一查就知道去哪读写）。\n\n为什么不能合并：① 一个 buffer 里住多个 tensor（权重区打包几十个权重、slot 被多个复用 tensor 共享）——粒度不同（一对多）；② 生命周期不同——buffer 表服务「装载」（一次性），tensor 表服务「运行期寻址」（反复用）；③ 变化频率不同——重分配只动 buffer 表，重映射 tensor 只动位置表。\n\n这与虚拟内存的「页表 + 段描述」两层结构同构：粗粒度资源清单 + 细粒度对象映射，各司其职。"
+},
+
+{id:34,cat:"phaseback",diff:3,tags:["权重打包","相对偏移"],
+q:"权重打包这段代码（wt_tab / assigned / base_offset / relative_offset）值得逐行理解。请解释：① `assigned` 缓存解决什么；② 为什么要先 `set_base_offset` 再写 `relative_offset`；③ 为什么最终权重区是「一条 buffer」。",
+a:"逐点：\n① **`assigned` 缓存**——`map<MemoryObjectPtr, uint64_t>`：同一个物理块（多个常量共享的 memory_object）只做一次「对齐后分配偏移」，之后所有引用者复用同一偏移（`assigned[ptr]`）。解决的是「共享区的空间只算一次」——若每遇到一个常量就新分配空间，同一块会被重复切多次，数据也会互相覆盖；\n② **base_offset / relative_offset 两步**——`ptr->set_base_offset(weight_ptr)` 把该内存块的**基准**指向「权重区对象」；`ptr->relative_offset = offset` 记录在权重区内的**偏移**。最终逻辑地址 = base + relative——先建「挂在哪」（引用关系）再写「多远」（数值）；顺序上 base 先建立，任何后续「查询该块地址」的代码（如调试打印、后续复用）读到的组合才是完整的。注意这两个字段的恢复逻辑也特殊（restore_memory_fields 里 base_offset 是引用、relative_offset 是数值）——序列化保真度要求它们分开存；\n③ **一条连续 buffer**——所有常量压成单个 `BUF_TYPE_WEIGHT`（index 0）连续区：运行期装载变成「DMA 一块连续内存」——对传输效率（大块连续、减少描述符数量）与实现简单性（一个 buffer 一个基址）都是最优。代价是内部碎片（对齐产生的空隙）与「部分加载不支持」——若未来要支持「按需加载部分权重」，打包策略要升级成分区（可多 buffer）。",
+fq:"权重区基址留给运行期决定（base_offset 指向的对象没有固定地址）——这与「编译期确定性」矛盾吗？怎么理解这个设计？",
+fa:"不矛盾，这是**确定性的分层**：编译期确定的是「结构确定性」（哪些权重、打包顺序、相对偏移、buffer 大小/对齐），运行期确定的是「物理确定性」（把这块 buffer 放在哪）。编译产物因此变成「位置无关资产」——同一 ELF 可以在不同内存布局的设备加载（driver 拿到一块内存就把 buffer 表逐条摆放，所有引用靠 base+relative 自动成立）。\n\n这正是链接器/加载器的经典思想在本项目的映射：ELF 的「虚拟地址、重定位表、加载基址」vs 这里的「buffer 索引、相对偏移、加载时定位」。好处（可移植、可缓存、与部署解耦）与代价（运行期承担重定位工作、调试要叠加两层偏移看问题）与系统软件侧完全同构。\n\n面试延展点：**凡是「同一产物要在多个环境部署」的系统，都会演化出「静态结构 + 动态基址」的两段式设计**——理解了这一层，就能迁移到容器镜像、共享库、JIT 等一大类问题。"
+},
+
+{id:35,cat:"phaseback",diff:2,tags:["save_msg","save_cpself","CompilerMsg"],
+q:"`HybridELF::save()` 做三步：`save_msg()`、`save_cpself()`、`elfio.save()`。请解释每步把什么写到哪里，以及 `CompilerMsg` 四个字段（file_version/build_version/arch/flag）的用途；flag 的扩展方式是什么？",
+a:"三步：\n① **save_msg()**——`remove_note(\"compilermsg\")` 后把 CompilerMsg 结构（4 个 uint32）二进制序列化为 `.note.zhouyi` 里的一条 note；\n② **save_cpself()**——把内层 CpsElf（.text 设备码、buffer 表、tensor 偏移表、kernel 元数据 notes、权重负载等全部设备侧内容）整体序列化，作为 `cpself` note 写入同一 note 段；\n③ **elfio.save()**——把外层 ELF（含 host 侧内容/空壳与 note 段）落盘。\n\nCompilerMsg 字段：\n- `file_version` = `(ELF_MAJOR<<24) | (ELF_MIN<<16)`——产物格式的版本标识（格式级兼容性）；\n- `build_version` = `AIPUBIN_BT_VERSION_NUMBER`——构建器版本（追责/复现凭据）；\n- `arch` = `get_target()->gen_arch_number()`——目标架构号（哪代硬件）；\n- `flag`——位标志：`HAS_HOST_CODE = 1<<0`（外层有有效 host 代码）、`ENABLE_DS = 1<<1`（动态 shape 支持）。\n\nflag 的消费者是**driver/运行期**：加载时先读 CompilerMsg——按 arch 校验硬件匹配、按 build_version 记录/告警、按 HAS_HOST_CODE 决定是否走 host 加载路径、按 ENABLE_DS 决定动态 shape 支持路径。扩展方式：新特性 = 新 bit（低 bit 已用，往后占位），配套更新消费端解读逻辑；格式级不兼容才动 file_version。",
+fq:"为什么把「版本/架构/能力」放在 CompilerMsg（note）里，而不是各写一个独立 section 或文件名约定？",
+fa:"三点权衡：\n① **自描述与原子性**——信息随产物走、单文件交付：driver 打开 ELF 先读一个固定 note 就能做全部前置校验（架构不匹配直接拒绝加载），不需要外部清单文件（外部约定=可错配的第二个事实源）；\n② **结构简单**——CompilerMsg 是 4 个 uint32 的 POD，`load/write` 各四行 read/write——极致的简单意味着极低的解析风险（对比 XML/JSON 元数据的解析面）；\n③ **位置固定**——note 段是 ELF 规范内的一等公民，任何 ELF 工具都能查看（可观测性），且与镜像内容同生命周期（改产物必改 note，不存在「忘了更新元数据文件」）。\n\n代价：note 内容的演进需要消费者同步（新增 bit 的读取方要升级），且 note 无强制 schema——所以「格式版本 + 能力位」的双轨设计是必要的：file_version 管「读得懂读不懂」，flag 管「读得懂之后走哪条路」。"
+},
+
+{id:36,cat:"contract",diff:3,tags:["契约表","接口文档"],
+q:"把 MQ 流水线的「跨阶段属性契约」列成一张表：每个属性的名字、类型、生产者、消费者分别是什么？为什么说这张表就是流水线的「接口文档」？",
+a:"契约表（按生产者分组）：\n| 属性 | 类型 | 生产 | 消费 |\n|---|---|---|---|\n| levels | vector<vector<NodePtr>> | SCHEDULE | MEM_ALLOC / ASSEMBLE / 缓存 |\n| const_tensors | vector<ConstTensorPtr> | KERNEL_ADAPT | MEM_ALLOC / GEN_OBJ |\n| ws_map | map<NodePtr,set<TensorPtr>> | KERNEL_ADAPT | MEM_ALLOC |\n| surface_tensors | map<TensorPtr,NodePtr> | KERNEL_ADAPT | 后续 kernel 参数/驱动侧 |\n| device_lib_names | map<string,string> | KERNEL_ADAPT | DEVICE_CODE_GEN |\n| host_lib_names | map<string,string> | KERNEL_ADAPT | HOST_CODE_GEN / GEN_OBJ(flag) |\n| data_slots / const_slots | vector<MemoryObjectPtr> | MEM_ALLOC | GEN_OBJ |\n| streams | vector<vector<task_t>> | ASSEMBLE | GEN_OBJ |\n| param_offset_table | map<uint32_t,uint32_t> | ASSEMBLE | GEN_OBJ |\n| params | BuilderParams(=vector<ReadOnlyParam>) | ASSEMBLE | GEN_OBJ / HOST_CODE_GEN(偏移计算) |\n| tensor_index_map | map<TensorPtr,uint32_t> | ASSEMBLE | GEN_OBJ / 外部 get_tensor_index_map() |\n| const_index_map | map<ConstTensorPtr,uint32_t> | ASSEMBLE | GEN_OBJ |\n| header | string | HOST_CODE_GEN | 外部 get_header() |\n\n为什么是「接口文档」：① 阶段函数之间**没有参数传递**（全部经 attrs），这张表就是它们真实的耦合面；② 序列化层的类型分发表（serialize_any_to_json 里那串类型分支）逐一对应这些类型的处理器——类型表即契约表的镜像；③ 评审一个新功能的正确提问就变成：它进不进契约表、生产/消费点在哪、序列化支持吗、缓存恢复路径覆盖吗。",
+fq:"这张表里哪一个属性的「消费者跨度」最大？评估这类属性的变更风险时看哪几个维度？",
+fa:"跨度最大的是 levels（跨 SCHEDULE→MEM_ALLOC→ASSEMBLE 三个阶段且进缓存）与 data_slots/streams 这类「进产物」的属性（跨度到运行期）。评估变更风险的三个维度：\n① **消费者数量**——每多一个消费者，改动的影响面线性增加（且分布在不同的模块里）；\n② **是否进产物**——进入 ELF 的属性（slots/streams/params/索引表）炸点延伸到运行期（编译「成功」但设备跑挂/结果错，最难查的一类）；只影响优化决策的属性（ws_map 等）故障通常停留在性能层面；\n③ **是否进缓存**——进缓存的属性有「跨版本」问题（旧缓存恢复出的值在新代码下语义是否仍成立）。\n\n保护策略按维度叠加：进产物的加生成时自检（object_generator 的 not-assigned 检查就是实例）+ 恢复时一致性对账（IO 数/节点数）；进缓存的加版本标记与严格校验；消费者多的做契约测试（每个消费者对同一产物的单元测试）。"
+},
+
+{id:37,cat:"contract",diff:3,tags:["ReadOnlyParam","多态表示"],
+q:"`BuilderParams = std::vector<ReadOnlyParam>` 是参数契约的载体。`ReadOnlyParam` 用「多字段 + 判读规则」表示多态（value/tensor/expr/const_tensor/surface/param_list），而不是 union 或 std::variant。请解释它的判读规则、设计权衡，以及 expr 字段暗示的能力。",
+a:"结构：6 个可选载体字段——`uint64_t value`、`TensorPtr tensor`、`Expr expr`、`ConstTensorPtr const_tensor`、`SurfacePtr surface`、`ParamListPtr param_list`。判读规则（头文件注释）：① tensor 非空且 expr 空 → 是内存参数（tensor）；② expr 非空且 tensor 空 → 是符号表达式；③ 两者都空 → 用 value（标量）；④ 两者都非空 → 由 value 裁决（value!=0 取 tensor，否则取 expr）。构造函数重载负责正确设置组合，保证外部只需「构造即得正确表示」。\n\n设计定位：kernel 参数在编译期是「类型化 IR」（可能引用张量/常量/标量/符号表达式），最终产物是**一串机器字节**（param 区的 32/64bit 数字）——ReadOnlyParam 是这中间的**半展开态**：可携带引用（等待地址回填）也可携带标量。\n\n对比 union/variant：① C++17 前无 std::variant（代码库年代早），自制 union 要手工管理非平凡类型的构造/析构（极易漏）；② 每个字段都是独立 shared_ptr/值，天然带引用计数与生命周期支持；③ 兼容序列化（每类载体有明确类型标签）。代价：判读规则是外部约定（依赖构造函数纪律），手改字段会破坏不变式，且任一时刻只有一个字段有意义的「稀疏结构」浪费空间（几指针宽度，无所谓）。",
+fq:"`expr` 字段（tongue::Expr 符号表达式）让参数可以是「运行时才能定值的符号式」——它和动态 shape 机制如何呼应？",
+fa:"`enable_ds` 打开时，图先按 max_input_shape 静态化（update_dynamic_max_shape）再建符号表达式（init/infer_symbol_shape）——**编译期先用上界做静态决策，同时把「真实值依赖」记录为符号**。运行期真实 shape 到来后：一部分依赖由参数区头部/output_shape 占位区回填（kernel/driver 写入实际 shape），一部分通过 ParamUpdate 节点或 host 侧求值解决。expr 就是这条链上「编译期记账、运行期兑现」的最小载体——它让 RO 参数系统不止支持「指针或数」，还支持「待求值的符号」，是动态 shape 在参数层的表现。\n\n序列化视角：expr 在 mq_ir_cache 里有专属序列化（serialize_expr/deserialize_expr）——因为它是「带结构的表达式对象」而非指针或标量，恢复时必须重建表达式树。这也印证了契约表方法论：**每种载体在序列化层都要有对应处理器，否则缓存往返就丢语义**。"
+},
+
+{id:38,cat:"contract",diff:2,tags:["global_tensors全景","索引表"],
+q:"请给出 MQ 流水线的全局 tensor「全景名单」：每个成员由谁在哪个阶段创建、在产物中的角色是什么？为什么它们必须进 tensor_index_map？",
+a:"全景名单：\n① `stack`（{8192}B，UINT8）——build()；kernel 执行栈，经 get_kernel_params 进参数头部；\n② `print`（{8192}B）——build()；printf 调试缓冲，同上；\n③ `param`（{0}）——build()；kernel 参数区根对象（BUF_TYPE_PARAM 映射、回填基准）；\n④ `stream0~3`（各 {0}）——**Assembler::assembly()**；四条任务流的基址载体（BUF_TYPE_STREAM 0..3，每 kernel 的 stream_base 占位符以此为基准回填包内偏移）；\n⑤ `output_shape`——assembly()（ds 场景）；输出 shape 占位区（TensorType::output_shape 进 tensor_tab，运行期回填真实 shape）。\n\n（另有一个边角条目：apply_gopplugins 里对 `global_tensors()[error_code]` 的 `operator[]` 访问会留下一个空的 null 条目——分配阶段靠 `gt.second` 判空跳过我，这提醒了 operator[] 的插入副作用。）\n\n为什么必须进索引：它们是**运行期可寻址对象**——设备上要按地址访问（kernel 读写 stack/print、driver 装载 param/stream、回填 output_shape）。运行期唯一的寻址凭据就是 tensor_index_map（编译期分配 index、产物携带映射）——**凡是要在设备端被地址化的对象，必须获得 index 进表**；这是「能不能被运行期看见」的分界线。",
+fq:"`output_shape` 依赖 `enable_ds`、`stream0~3` 依赖 assembler 被执行——如果某个组合下它们没被创建，谁会先出错？",
+fa:"分场景：\n① **stream0~3 缺失**——只有「assemble 没跑」时才会缺（正常流水线必建）。但缓存恢复的组合里有一个陷阱：save=HOST_CODE_GEN 从 GEN_OBJ 恢复时 **streams 等属性从 attrs 恢复**（不重跑 assemble），而 global_tensors 也是从 attrs 恢复的（serialize_global_tensors 覆盖全部 globals，含 stream0~3）——所以恢复路径必须保证「global tensors 的序列化是完整的」，否则 GEN_OBJ 的 `global_tensors()[\"stream0\"]` 拿到 null → `->memory_offset()` 解引用崩溃。这也是「契约表里 global tensors 也是契约」的实例：它不是「阶段中间数据」，但同样跨恢复边界。\n② **output_shape 缺失（enable_ds 打开但对象不在）**——GEN_OBJ 里 `m_tensor_index_map.count(t)` 找不到时打 WARN 后继续（但 `at(t)` 会抛……实际代码是先 count 校验再 at？需要复核），更前置的是 assembly 里 `get_tensor_index(output_shape)` 没执行——链路里已有 count 检查兜底，属「可诊断但不应发生」的组合错误。\n\n结论：**全局 tensor 是隐性契约的一部分**——正确的验证点应该在「恢复完成之后、阶段执行之前」做一次全局资源清单校验（该有的名字都在、且非空）。"
+},
+
+{id:39,cat:"contract",diff:3,tags:["schema","版本","兼容"],
+q:"所有契约属性都以「字符串键 + Any 值」存储，没有 schema、没有版本号。当构建器升级（改名/改类型/改语义）后，旧的缓存目录被新的加载端读取，会发生哪些失效模式？如何设计一个轻量的缓存兼容协议？",
+a:"三类失效模式：\n① **改名**——旧缓存 attrs 里是旧键，新代码读新键：`attrs()[\"newkey\"]` 返回空 Any、`get_attr<T>` 返回默认值（空 vector/map/空串）——后续阶段在「空输入」上运行，**静默出错而非崩溃**；\n② **类型变化**——同一键从 `vector<NodePtr>` 变 `vector<vector<NodePtr>>`：序列化的 type 标签不同，新恢复代码按新类型解读旧数据——反序列化失败或错读（好在序列化层对未知类型有「跳过不写」的行为，坏在恢复侧没有对应校验）；\n③ **语义变化**——同键同类型但含义变了（如 buffer_id 编号规则调整、levels 的稀疏表示变化）——旧值继续被使用，产生最难查的逻辑错误。\n\n轻量兼容协议（不动框架）三层：\n① **版本头**——attrs.json 根写 `cache_format_version`（整数）+ `builder_version`（已有 AIPU_BIN_BT_VERSION_NUMBER）+ `stage` 字符串；load 第一步校验：format 不匹配直接拒绝；\n② **schema 指纹**——把所有契约键+类型的清单串接生成 hash（可在常量表处集中维护），存进 attrs；load 时比对，不一致拒绝——**缓存是可再生资产，拒绝加载是安全动作**（回退全量构建，结果是正确的）；\n③ **迁移钩子（可选）**——必须兼容的场景写显式 upgrade 函数（v1→v2 的改名/转换），集中管理、单测覆盖。\n\n原则：允许不兼容，但必须**显式拒绝**而不是静默退化。",
+fq:"「缓存是可再生资产」这个定性对错误处理策略的影响是什么？（对照产品数据的一致性要求）",
+fa:"影响是**策略天平整体偏保守**：\n① 对用户数据（不可再生）——错误处理要尽量保全（尽力恢复、隔离损坏、备份）；\n② 对缓存（可再生）——错误处理的最优解是「快速失败 + 回退重算」：检测到任何可疑（版本不符、校验失败、半套文件）就直接拒绝加载，让流程回到「全量构建」这条永远正确的路径。省时的收益远小于「带着损坏状态跑出错误结果」的成本。\n\n推论：缓存机制的工程质量重点不在「容错恢复」，而在 ①**校验的完备性**（把「可疑」都识别出来）与 ②**失败路径的可靠性**（拒绝后的回退必须干净——构建流程要能无副作用地转全量）。很多缓存实现把精力花在「尽力读懂旧缓存」上，方向就错了。\n\n这条原则可迁移到 build 缓存（ccache）、包管理器缓存、CDN 缓存——它们共同的形态都是「用可再生的加速资产换时间，正确性由回退路径兜底」。"
+},
+
+{id:40,cat:"contract",diff:3,tags:["get_attr","operator[]","防御"],
+q:"代码里读 attrs 有三种形态：`attrs()[\"key\"]`（operator[]）、`get_attr<T>(\"key\")`（模板默认值）、`attrs().count(\"key\")` 先判存在（如 `get_header`）。它们各自的行为边界是什么？哪种最危险？",
+a:"三种行为：\n① **`attrs()[\"key\"]`**——不存在时**插入默认构造值并返回引用**——有副作用！在「只想看看有没有」的只读意图下也可能污染 attrs（给图添了一个空键），且空 Any 后续转换可能崩；\n② **`get_attr<T>(\"key\")`**——不存在时返回 **T 的默认值**（空容器/空串/0）——无副作用但**静默**：调用方分不清「没有这个键」和「键存在且值为空」；\n③ **`count` 先判 + 再读**——最防御（get_header 就是这么写的：有 `header` 键才取，没有返回空串）——语义明确，但要求调用方每次多想一步。\n\n最危险的是 ①：它的入参是 `map::operator[]`，而「读」的意图与「写」的语义冲突——典型事故链：某处为打日志写了 `attrs()[\"levels\"]` → 图上多了一个空 levels 键 → 另一处 `count(\"levels\")` 判断变真（「存在但空」≠「不存在」）→ 按 count 分支的逻辑走错路径；更糟的是这个空键可能被 attrs 序列化进缓存，持续污染。\n\n防御纪律：读用 `count`/`find`/`at`（const 上下文天然禁止 operator[] 插入），写只出现在明确的 `set_attr` 点；评审规则：**每个 `operator[]` 调用都必须能解释「为什么这里允许创建」**。",
+fq:"对「契约属性」而言，`get_attr<T>` 的「静默默认值」为什么是比崩溃更糟的失败方式？",
+fa:"因为**失败被推迟且伪装成正常**：契约属性（levels/slots/streams 等）的「空值」大多不是合法业务状态——比如 mem_alloc 拿到空 levels 会以错误顺序推断生命周期、assemble 拿到空 streams 会产出空任务流。而空容器不会触发任何断言，流水线照常推进，直到产物生成或运行期才以「莫名其妙的行为」暴露。\n\n对比两种失败哲学：\n- **崩溃式**（读缺失契约直接 ERROR/assert）——失败点精确、根因清晰、修复成本低；\n- **默认值式**——失败点模糊、可能远离根因、且**测试可能覆盖不到**（默认值「恰好能用」的场景让 bug 逃逸）。\n\n设计原则：**默认值是给「可选配置」的，不是给「必要契约」的**。区分方式：反问「这个键缺失时，系统有正确的行为吗？」——有 → 用默认值；没有 → 缺失即错误，应当 fail fast（或至少在 debug 构建里 fail）。契约属性应统一走「读取即校验」的访问器（get_or_fail），把默认值的适用面压缩到真正的可选配置（如调试开关类属性）。"
+},
+
+{id:41,cat:"cache",diff:3,tags:["PointerRefTable","指针序列化","缓存"],
+q:"`PointerRefTable` 用 `kind:0x<十六进制地址>` 当对象 ID（`pointer_id`）。地址在每次进程运行、每次构建中都不同——这个 ID 为什么还能用于缓存？请追踪 save→load 全链路，回答「地址到底扮演了什么角色」。",
+a:"关键认知：**地址只做「会话内的唯一键」，从不做「跨进程的身份」**。\n\nsave 链路：属性里的指针字段（TensorPtr/NodePtr）→ `tensor_ref`/`node_ref` → `add_tensor`/`add_node` →\n① 用 `pointer_id(kind, ptr)` 生成 id，查 `m_objects` 是否已有——有则直接复用（**去重**）；\n② 没有则看这个对象「挂在哪里」，生成描述：`role`（global/output/constant/placeholder/named）+ 锚点字段（global_key / owner_node+tensor_index / constant_key / tensor_name），存进 `object_table[id]`；\n③ 属性里只写 `{kind:\"pointer\", id}` 引用。\n\nload 链路：`lookup_tensor_ref` 读 ref → 用 id 取出 `object_table[id]` 的描述 → `lookup_tensor_by_desc` **按角色和名字回查**：\n① role=global → `graph->global_tensors()[global_key]` 直接命中；\n② 有 owner_node → `find_node_by_name` + role 分派到 `find_output_tensor` / `find_constant_tensor` / `find_placeholder_tensor`，按 index/key 在节点内再定位；\n③ 兜底：按 `tensor_name` 全局扫描（global_tensors + 所有节点的 outputs/constants/placeholders）。\n**整个过程从不使用地址**——地址随进程结束即作废，而恢复发生在新进程里，本来就用不了。\n\n所以地址的角色是：**「一次序列化会话内的 interning 句柄」**——作用等同于符号表里的下标：save 期间保证唯一（活对象的地址天然唯一）与可去重；持久化的真正身份是「角色 + 锚点 + 名字」。这和可重定位目标文件（.o）存符号名、链接期再绑定地址是同一套思想：**序列化跨越进程边界，就必须把「运行时才成立的东西（地址）」换成「编译期就稳定的东西（名字+结构位置）」**。",
+fq:"既然恢复靠「角色+名字」，为什么不干脆只存名字、把所有回查统一成名字扫描？",
+fa:"两个理由：\n① **复杂度与确定性**——名字扫描是 O(全图节点 × 每节点张量数)，且同名对象存在时「先扫到的胜出」——顺序依赖、不可预测。角色+锚点把绝大多数回查降为 O(1)（global_key 直接查 map；owner_node 一次按名查找后节点内定位）。**常见路径优化、稀有路径兜底**——named 角色的纯名字扫描只留给少数无锚点对象。\n② **角色本身是有效载荷**——object_table 不只是「指针恢复表」，还兼做了结构索引：你能直接统计「多少常量张量被属性引用」「子图节点引用了哪些外部张量」。纯名字方案拿不到这些分类信息。\n\n但代价必须说清楚：判定顺序（add 端五级）与回查策略（lookup 端三级）是一对**手工维护的对偶逻辑**，分散在 `add_tensor` 与 `lookup_tensor_by_desc` 两个函数里——一边加了新角色或调整了判定优先级，另一边不同步就是静默回查失败。这是当前实现的隐性契约，靠注释与测试维持；更工程化的形态是让两者共享一份「角色策略表」（角色 → 保存的锚点字段 → 恢复的函数）数据驱动化。"
+},
+
+{id:42,cat:"cache",diff:3,tags:["角色分级","回查策略","named兜底"],
+q:"`add_tensor` 把张量身份分为五级角色：global / output / constant / placeholder / named。请说明判定顺序与恢复端的三级回查策略；并回答：`named` 兜底在什么场景出现？为什么它最脆弱？",
+a:"**保存端五级判定**（`add_tensor`，顺序即优先级）：\n① 扫 `graph->global_tensors()`——地址吻合 → `role=global` + `global_key`；\n② 否则看 owner node 的 `outputs[]`——index 吻合 → `role=output` + `tensor_index`；\n③ owner 的 `constants{}` 吻合 → `role=constant` + `constant_key`；\n④ owner 的 `placeholders[]` 吻合 → `role=placeholder` + `tensor_index`；\n⑤ 全不命中 → `role=named`（只剩 tensor_name 和 owner_node）。\n\n**恢复端三级回查**（`lookup_tensor_by_desc`）：\n① `role=global` → 用 global_key 直接查 `graph->global_tensors()`（最快路径）；\n② 有 owner_node → `find_node_by_name` 找节点，再按 role 分派 `find_output_tensor` / `find_constant_tensor` / `find_placeholder_tensor`（节点内按 index/key 精确定位）；\n③ 兜底 → 按名字全局扫描（先 global_tensors，再所有节点的 outputs/constants/placeholders）。\n\n`named` 的场景：张量不属于任何结构锚点——既不是全局对象、也不是某个节点的输出/常量/占位符，但被某个 attrs 属性引用（例如操作内部临时创建、被调试属性捕获的张量）。\n\n它最脆弱的原因：\n- **恢复只能靠全局名字扫描**——若全图存在同名张量，「先扫到的胜出」（顺序依赖）；\n- **图结构轻微变化即失效**——张量被移出、改名，或跨图引用（子图场景需要 `lookup_tensor_by_desc_in_graphs` 扩展到主图+子图搜索）时找不回或找错；\n- **失败是静默的**——找不到返回 nullptr，引用方按空处理，属性「悄悄降级」。\n\n正确姿势：named 是「不丢引用」的保底而非精确恢复通道。工程上应把它当作**告警信号**——序列化时统计 named 角色数量，非零时打日志审视「为什么有张量没有锚点」，能挂进全局或节点结构就挂进去，逐步消灭 named。",
+fq:"为什么判定顺序是「global → output → constant → placeholder → named」，而不是反过来？顺序调换会带来什么实际差异？",
+fa:"顺序背后的原则是**从「最稳定的锚点」到「最弱的锚点」**：\n- global 锚点在 **graph 层级**——只要图的全局表还在，恢复与节点结构无关；\n- output/constant/placeholder 锚点在 **node 层级**——恢复要求 owner 节点仍在且对应槽位结构未变；\n- named 只有名字——最弱。\n\n先命中强锚点意味着**恢复成功率最大化**：一个张量如果是全局对象（比如 stack/print/param），即使它同时被某节点引用，优先记 global 角色——恢复时走最快且最稳的路径。\n\n顺序调换的实际差异（举例）：假设把 output 判定放到 global 前面——同时是全局对象又是某节点输出的张量（实际存在吗？比如输出 tensor 被提升为全局）会被标成 output——恢复依赖 owner node 结构；一旦该节点在图的演化中结构微调（index 变化），恢复失败，而它明明是全局可查的。**角色的选择决定了「恢复的依赖面」——依赖面越小越好**。\n\n另一层考虑是唯一性：同一个张量在多个锚点下存在时，必须有一个确定性优先级，否则 add 端两次调用可能因命中不同角色产生不一致（同一对象、两个描述）——这属于「角色判定必须全序」的要求。"
+},
+
+{id:43,cat:"cache",diff:3,tags:["MqIrCacheContext","环引用","两阶段构造"],
+q:"`MqIrCacheContext` 维护 const_tensor / surface / memory 三类重建缓存。请解释它要解决的两个问题——① 共享对象的身份保持；② 循环引用——并以 `deserialize_memory_ref` 为例说明「先登记后填充」的手法。",
+a:"**问题①：共享对象身份保持**。同一个对象可能被多处引用（多个属性引用同一个 ConstTensorPtr / MemoryObjectPtr）。若无缓存，每处引用都 `make_shared` 新对象 → 恢复后的图里「一个原对象」变成「N 个同内容副本」→ 身份语义破坏：指针比较（`==`）失效、权重共享区逻辑（`base_offset` 链）断裂、内存布局一致性无从谈起。缓存按 id 存「已重建对象」——第二处引用直接命中同一实例。\n\n**问题②：环引用**。memory 对象之间有环（`base_offset`/`next_block` 互指——权重共享区链表就是环/链结构）。重建 A 需要 B、重建 B 需要 A——深度优先递归会直接死循环。\n\n**解法：先登记后填充**（`deserialize_memory_ref`）：\n① 先查缓存——命中即返回；\n② miss → `make_shared<MemoryObject>(0)` **先构空壳并立刻放进缓存**；——此时就算别的路径回头要这个对象，也会命中这个壳；\n③ 再 `restore_memory_fields` **原地填充**字段——填充中遇到对 B 的引用，B 的解析同样先登记自己的壳……环上无论从哪个方向进入，第一次重建都会先登记，引用永远命中壳对象，之后都是原地修改（指针不变），最终所有字段自然完整。\n\n这套手法就是 **two-phase construction（先造壳、后灌内容 / fix-up）**——与垃圾回收的 forwarding pointer、ELF 加载器「先分配 GOT 槽、再回填符号地址」、Java 反序列化的对象注册表同构。\n\n为什么只有三类做缓存：这三类对象是「需要重建 + 有共享/环可能」；而 NodePtr/TensorPtr 的恢复是**查图**（对象已在 parse 出来的图里，回查即得）而非重建——查图不需要缓存，也没有环问题（图本身已建好）。",
+fq:"`restore_memory_fields` 用 `desc.exist(...)` 逐字段可选恢复——字段缺失时对象以默认值存活。这种做法在环结构下最坏会导致什么？如何加固？",
+fa:"最坏情形是**静默半恢复**：`MemoryObject` 被重建出来、指针有效、能参与后续流程，但内容不完整——比如 `size` 恢复成功而 `base_offset` 缺失（默认 0）→ 一个「大小正确但指向错误基址」的共享块。比 nullptr 危险得多：nullptr 会立刻崩或触发显式检查，而半恢复对象会让流水线**带着错误数据一路跑到底**，最终表现为产物的内存布局错误。环结构放大了这个问题：环上任何一个节点的字段缺失，靠它 `next_block` 链下去的节点全部间接受损。\n\n加固方案（按性价比排序）：\n① **必填字段集合检查**——为 MemoryObject 定义恢复后的「完整不变量」（哪些字段必须存在、base_offset/next_block 至少一个方向可闭合），`restore_memory_fields` 完成后校验一次，不满足则返回 nullptr（让上层走「对象缺失」的显式错误路径而不是半残路径）；\n② **环完整性校验**——恢复结束后从若干入口遍历 next_block 链，统计节点数 vs object_table 中 memory 条目数，不匹配报 WARN（捕捉静默丢件）；\n③ **保存端收紧**——`serialize` 时如果发现「角色/字段无法完整描述」，宁可保存失败也不要写出半描述（fail at save 比 fail at load 容易定位）。\n\n原则：**可选字段设计只适用于真可选语义**——「序列化时漏写」和「业务上可缺省」是两回事，前者是 bug，不应该被 `exist` 检查静默吞掉。"
+},
+
+{id:44,cat:"cache",diff:3,tags:["serialize_any","类型分发表","Any"],
+q:"`serialize_any_to_json` 是一张约 20 分支的类型分发表（int/int64/float/bool/string/vector<int>/vector<float>/DataLayout/LayoutList/TensorPtr/NodePtr/vector<vector<NodePtr>>/Expr/KernelInfos/ConstTensor 列表…）。请分析：① 为什么用 `type_id` 比较而不是 RTTI/dynamic_cast？② 为什么 TensorPtr/NodePtr 分支多一个 `ref_table` 守卫？③ 未命中类型的 Any 会怎样？这是不是一个风险？",
+a:"**① 用 type_id**：`Any` 自带 `get_type_id()`（编译期为每个类型生成标识）。整数比较比 dynamic_cast 快一个量级（后者要走 RTTI 链），且不要求类型多态（很多被存的类型如 `vector<NodePtr>` 根本不会有虚表）。这本质是**手工实现的 type-switch**——C++17 没有原生 sum type 模式匹配，tags-dispatch 是最可控的写法。代价：**清单必须手工维护**。\n\n**② `&& ref_table` 守卫**：值类型（int/string/vector<int>…）直接内联进 JSON；而 TensorPtr/NodePtr 是**引用**——对象体在图里、指针值本身无意义，必须经 `PointerRefTable` 转成 `{kind:\"pointer\", id}` 引用对象。所以这些分支额外要求 ref_table 非空：**没有引用表就没有序列化的资格**，守卫空值时就跳过（落到 ③）。这个条件同时是文档：「这些类型必须经由 ref_table 序列化」。\n\n**③ 未命中 → 静默跳过**：函数返回 false / 该键不写进 JSON。表现是**该属性在缓存里凭空消失**——load 后 `get_attr` 拿到默认值。\n\n**这是不是风险：是，而且是当前缓存机制最需要设防的一类风险**。失效链：`新增属性类型忘加分发表 → 属性静默丢失 → 加载端默认值 → 阶段在错误输入上继续跑`。最坏形态是「编译成功、产物存在、行为错误」——没有一处报错。\n\n防御方案：\n① **往返测试**——对分发表支持的每一个类型做「set_attr → save → load → get_attr 一致」的单元测试；\n② **保存端反查**——save 完成后对比「attrs 键数 vs 实际写入 JSON 的键数」，不匹配 WARN（能兜住「忘加分表」这种漏网）；\n③ 或者将未命中升级为 ERROR（至少 debug 构建），把静默变显式。\n\n这题的面试延展：**任何「开放式类型 + 闭合式处理表」的系统都有同样的死角**——Any 序列化、指令选择（IR op → 后端指令）、消息分派。共同对策都是「覆盖度可观测」：让每个未处理项成为显式事件，而不是静默旁路。",
+fq:"如果让你重构这张分发表，你会怎么设计？评价一下「每类型一个 else-if」与「注册表模式」的取舍。",
+fa:"现状（else-if 链）的问题：① 覆盖度不可观测（漏了不报）；② 扩展要改核心函数（开闭原则违背）；③ 与反序列化端手工对偶（`deserialize_attrs_from_json` 也要同步加分支）——双份手工清单。\n\n**注册表模式的设计**：维护 `map<type_id, SerializerEntry>`，每个类型注册 `serialize`/`deserialize` 一对函数（或一个小 trait 结构）；未命中时默认行为可配置（WARN/ERROR/静默）。收益：① 覆盖度可以**枚举比对**（已知类型集合 vs 注册集合，启动时自检——把「忘注册」变成启动报错）；② 新类型在一个地方注册（自带对偶性，不再两份清单）；③ 单测可以按注册表自动生成（per-type 往返测试不用手工列举）。\n\n取舍与实施路径：else-if 链的优势是**零抽象、易读、单文件自足**——对「类型总量稳定（~20 种）、几乎不再增长」的场景，注册表是过度设计。判断标准是**变化率**：若类型集合已收敛，保留 else-if + 加覆盖度自检（小改，收益 80%）；若预期持续增长（新属性类型不断进来），则值得上注册表。\n\n现实折中（也是我推荐的）：保留现有结构，但增加一件东西——**「已知类型清单」常量**（列全所有会被存进 attrs 的类型）。serialize 未命中时与清单比对：清单内未命中 → ERROR（实现漏了）；清单外未命中 → WARN（新类型，提醒补表）。用 20 行代价把「静默」变成「分级告警」。"
+},
+
+{id:45,cat:"cache",diff:3,tags:["object_payloads","tensor数据","去重"],
+q:"缓存目录里有独立的 `.payload.bin`。`serialize_payloads` 做了三个决策：tensor 数据体不进 JSON、按 `data` 裸指针（`std::map<char*,...>`）去重、跳过 `role=constant` 的 tensor。请逐一解释理由，并说明恢复端 `restore_object_payloads` 的做法。",
+a:"**① 为什么不进 JSON**：tensor 数据体是大块连续字节（可达 MB 级）。JSON 只能存文本/数字——把字节序列化成十进制数组体积会涨 5~10 倍且解析慢。业界同构做法：TensorFlow GraphDef + checkpoint 数据文件、ONNX external data、protobuf bytes 外置——**元数据与体数据分离**，元数据要可读可 diff，体数据要紧凑可 mmap。\n\n**② 按 data 裸指针去重**：多个 Tensor 对象可能共享同一块内存（view/别名——`tensor->data<char>()` 返回相同裸指针）。`std::map<char*, JsonObject>` 记录「这块地址已写过」，第二次遇到直接复用同一个 `{file, offset, size}` 描述符——**同一块数据只落盘一次**。省空间之外更重要是保语义：恢复端多个 tensor 按同一描述符读回，共享关系（别名）得以保持。\n\n**③ 跳过 role=constant**：常量张量（权重）在 `graph->serialize(def, bin)` 时**已经写进 `.bin`**——那里就是权重数据的家。payload 机制服务于「.bin 装不下的东西」：被 attrs 引用的、非常量的运行时数据（占位符当前值、属性捕获的中间张量体）。避免双重存储与不一致（两处拷贝若不同步，谁是真相？）。\n\n**恢复端 `restore_object_payloads`**：读 payloads 表 → 对每条记录校验 id 在 object_table 中存在、解析 `data.offset/size`（负值/零值跳过）→ 用 `lookup_tensor_by_desc_in_graphs` 找回 TensorPtr（注意：`_in_graphs` 版本支持跨主图+子图搜索）→ `new char[size]` 读文件 → `tensor->set_data(data, size)` → 统计 `restored` 数量打 INFO。文件缺失时 WARN 后跳过——因为 payload 是「补充性数据」，缺失不致命（但与 ② 的静默风险叠加时需谨慎）。",
+fq:"`restore_object_payloads` 对缺失是「WARN 后跳过」，而契约属性缺失可能是致命的——同一种「文件/数据缺失」为什么需要不同的宽容度？给出你的判定框架。",
+fa:"判定框架的核心问题是三个：**①缺的是什么数据？②缺失后系统还有没有正确的行为？③谁依赖它？**\n\n- payload 数据是「重建辅助」——它服务的 tensor 在图中已经有对象、有元数据，数据体缺失时张量「存在但可能为空」——对于调试/补充用途的属性，后续阶段未必消费。宽容（WARN）成立的前提是「真的可能有合法的不需要 payload 的场景」。\n- 契约属性（levels/streams/slots…）是「流程的决策输入」——缺失即流程错误，无论何时都该 fail。\n\n但严格来说，当前实现给了 payload 「统一宽容」，这本身可以更精细：\n① **按消费方定策略**——如果某个 payload 张量其实会被生成阶段读取（不是纯辅助），那它缺失就应当升级为 ERROR；判定「是否被消费」可以在保存端做（统计哪些 payload 对应的 tensor 有消费者），存进 payloads 表一个标记位；\n② **分级实现**——恢复时统计「请求数 vs 恢复数」，结合标记位决定 WARN 还是 ERROR；\n③ 最简版：至少把跳过的条目名打到日志里（现在只打聚合计数），让「缺了什么」在日志里一眼可见。\n\n通用原则：**宽容度不是全局设定，而是「数据角色 × 消费方依赖」的二维决策**。把宽容当默认值、按角色精细化，是对待一切「可选/必选」数据缺失问题的正确姿势。"
+},
+
+{id:46,cat:"engineer",diff:2,tags:["BoolConfigGuard","RAII","全局配置"],
+q:"`save_mq_ir_cache` 用两个 `BoolConfigGuard` 临时打开 `serialize_scale_zp` 与 `dump_debug_IR` 再序列化。请分析：① guard 的 `m_had_value` 分支为什么重要；② 保存缓存为什么需要临时改这两个开关；③ 这种「全局配置临时改写」的风险，RAII 能解决到什么程度？",
+a:"**① `m_had_value` 分支的语义**：构造时记 `m_old_value` + `exist(key)`；析构时——曾经存在则恢复旧值，**否则 erase**（回到「从未设置」）。这个区分不是洁癖：`exist=false` 时 `get<bool>` 返回的默认 false 与「显式设为 false」在语义上不同（后续代码可能用 `exist` 判断「用户是否配置过」、`keys()` 遍历配置、或 reset 语义）。有 had_value 分支，guard 结束后的配置系统回到**环境还原**（从未被碰过）而不是**值还原**（现值等于旧值）——在「配置存在性可观测」的系统里，两者不等价。\n\n**② 为什么保存要临时打开**：这两个开关都是「保存专用超集」——\n- `serialize_scale_zp`：量化 scale/zero-point 信息平时省略（体积/速度考量），但缓存是**完整快照**——从该 stage 恢复续跑，后续阶段拿到的图必须与全量构建在该点的图**保真等价**，scale/zp 缺了就等价不了；\n- `dump_debug_IR`：让 `graph->serialize` 输出带完整调试信息的文本 IR——.def 是给人看的 diff 对象，信息量越全越好。\n\n模式总结：**正常构建路径走精简（性能优先），保存点走完整（保真优先）**——用临时配置切换实现「同一条序列化代码、两种输出档次」。\n\n**③ 风险与 RAII 的边界**：`BuilderConfig` 是全局单例——guard 作用域内，**任何代码（包括其他线程！）读这两个键都会读到临时值**。RAII 保证的是：异常抛出/提前 return 时也会恢复（比裸 set/set 回写强，这是它解决的核心问题）；**它不保证线程安全**（无锁、无隔离），也不解决「作用域内第三方代码意外读到临时值」的可见性问题。\n\n更彻底的形态是把「序列化选项」变成函数入参（`serialize(path, bin, SerializeOptions{...})`）——消灭隐式环境。现状用 guard 是「既有全局配置架构下的最小侵入解法」，属于可接受的存量妥协——但必须知道妥协的边界在哪。",
+fq:"在不重构 BuilderConfig 的前提下，想让「临时配置」更安全，你会做什么？如果允许重构，目标形态是什么？",
+fa:"**不重构前提下的加固（三层）**：\n① **使用纪律文档化**——明确「BoolConfigGuard 只允许出现在串行上下文（构建主线程阶段之间）」，禁止在可能被并发调用的函数里使用；把这条规则写进代码注释和评审 checklist。\n② **并发检测**——给 guard 构造加 debug 断言：维护一个全局「并行区域计数器」（在并行 for/task 提交处增减），guard 构造时若计数器 >0 则 abort——把「悄悄不正确」变成「测试期爆炸」。\n③ **作用域收窄**——检查每个 guard 的作用域是否已经最小（当前把 `graph->serialize` 单独包在双层花括号里，就是好的实践）；对作用域内调用的函数做审计（有没有可能读到这两个键的间接调用），必要时把风险函数移出作用域。\n\n**允许重构的目标形态**：**配置分层**——\n- 进程级配置（BuilderConfig，启动后只读）：保留现有机制，但支持「冻结」（构建开始后 set 触发警告/断言）；\n- 调用级配置（显式参数 / 作用域对象）：序列化选项、dump 选项等「按调用点不同」的配置，作为函数参数或 Context 对象传递——无全局状态、天然并发安全、可测试。\n\n迁移路径：先加「调用级」通道（新接口用参数，老接口内部转发到 globals 并标记 deprecated）→ 逐步把关键路径（serialize、codegen、dump）迁完 → 最后把 BuilderConfig 收窄为「启动配置 + 兼容层」。判断标准：**任何「随调用变化」的配置都不应驻留在全局单例里**——那是 context 的职责，不是 config 的职责。"
+},
+
+{id:47,cat:"engineer",diff:3,tags:["plugin_impl","apply_gopplugins","确定性"],
+q:"`load_mq_ir_cache` 有一条明确注释：「Rebuild runtime-only GOP plugin metadata before folding subgraphs back from JSON. plugin_impl is a C++ object pointer and is intentionally not serialized.」随后调用 `apply_gopplugins(g)`。请回答：① 为什么 plugin_impl 不能也不该序列化；② 为什么用「再跑一遍插件匹配」代替「恢复状态」；③ 这个设计对缓存机制意味着什么正确性前提？",
+a:"**① 不能也不该序列化**：`plugin_impl` 是插件实例的 C++ 对象指针——跨进程无意义（同函数指针/虚表/文件描述符）。就算序列化了插件内部状态，恢复还得走插件注册/初始化——「状态」与「代码」纠缠，序列化状态而不序列化代码只会得到半残对象。注释里 intentional 一词点明：这是**有意为之的设计**，不是遗漏。\n\n**② 重算代替恢复**：因为插件匹配是**确定性函数**——`apply_gopplugins` 基于 IR 结构 + 规则做匹配（fused 集合计算、get_best_impl 评分、给节点注册 plugin_impl、为 ds 动态节点加 ParamUpdate+dummy、SubGraph::create + as_node）。只要输入图（节点结构/属性/常量）确定，输出（谁挂哪个插件）就是确定的——**恢复 ≡ 重算**。类比：求值缓存（memoization）的正确性前提就是被缓存函数是纯的；纯函数下「重算」与「查表」等效，且重算永远与代码版本同步（不会像存下来的旧状态那样过期）。\n\n**③ 正确性前提：重建幂等性（同构性）**——保存图经过 `parse(.def) → load_graph_global_tensors → apply_gopplugins` 重建出的图，必须与「从未保存、连续运行」到该点的图**同构**：节点集合一致、插件绑定一致、子图结构一致。任何插件引入不确定性（依赖时间/随机/外部文件/全局计数/匹配顺序不稳定），重建结果就会与原运行发散——而**缓存回放不会报错**，只是悄悄跑出另一条路径。\n\n所以这行代码把一个隐含要求摆上台面：**插件系统的确定性是 IR 缓存的前提**。反过来说，缓存也是检验器——缓存能稳定工作，就证明了编译流程在插件层面接近无状态函数。\n\n**顺序契约**：注意调用顺序——`load_mq_ir_cache` 里先 `load_graph_global_tensors`（恢复全局张量）→ 再 `apply_gopplugins`（重建插件元数据）→ 返回后由 `load_mq_ir_cache_attributes` 做 `fold_subgraph_from_metadata`（从 JSON 折叠子图）。三个环节有序依赖：插件匹配需要全局张量就位（匹配过程会访问 global_tensors，如 error_code 的 null 条目）；子图折叠需要重建后的节点/插件元数据。注释特意写了 before folding——这是个**只存在于注释里的顺序契约**，颠倒调试起来会非常痛苦（表现为子图节点找不到、fold 返回 nullptr 的 WARN）。",
+fq:"「重算代替恢复」在上游代码变更时会暴露什么新问题？这种缓存的生命周期为什么天然比「状态快照」短？",
+fa:"核心差异：**重算引入了「代码版本」作为输入**——\n- 状态快照式缓存：缓存的是结果，只要反序列化代码能读懂旧格式，旧缓存就有效（与插件逻辑最新版本无关）；\n- 重算式缓存：缓存的只是「重算的起点」（IR + attrs），重建结果 = 最新插件代码 + 旧 IR 的匹配产物。**插件代码一变，同一份缓存重建出的图就可能与保存时刻不同**。\n\n这带来两种失效模式：\n① **正向**（一般是好事）：插件 bug 修复后，旧缓存回放能自动获得新行为——不用重新跑 optimize 全程；\n② **负向**（必须防）：如果上游变更破坏了匹配前置条件（插件开始依赖一个旧 IR 里不存在的新结构/新属性），重建的图与保存时刻**不同构**——但缓存不会因此拒绝加载，悄悄跑出一条半新半旧的路径。轻则行为差异，重则崩溃。\n\n所以「重算式缓存」的生命周期应与「上游代码 + 序列化格式」绑定：工程做法是**在缓存元数据里记录构建器版本 + 序列化格式版本**（AIPU_BIN_BT_VERSION_NUMBER 已有，format version 待补），加载时版本不匹配 → 拒绝（宁可全量重跑）。这与 ccache 的 hash key（编译命令+源码+工具链）、bazel 的行动指纹是同一逻辑：**重算式缓存的 key 必须覆盖「参与重算的全部输入」**——IR 只是其中之一，代码版本也是输入。"
+},
+
+{id:48,cat:"engineer",diff:2,tags:["文件协议","原子性","半套缓存"],
+q:"缓存目录协议是五件套：`<stage>.def` / `.bin` / `.attrs.json` / `.payload.bin` / `.elf`（仅 DEVICE_CODE_GEN）。请说明每个文件的分工；并分析「save 中途崩溃」与「load 部分缺失」两类半套场景下当前实现的行为与风险。",
+a:"**分工**：\n① `.def`——文本 IR：节点/连接/名字（`graph->serialize` 的第一产物，`Graph::parse` 的输入）；\n② `.bin`——权重/常量数据体（serialize 第二产物；常量 payload 不进 .payload.bin 的原因正因它已在此）；\n③ `.attrs.json`——补充元数据：graph_attrs + 各节点 attrs + tensor attrs + object_table + object_payloads 索引表；\n④ `.payload.bin`——attrs 引用的非常量 tensor 数据体（大块字节）；\n⑤ `.elf`——HybridELF（CpsElf + notes），仅 DEVICE_CODE_GEN 断点产出。\n\n为什么拆五个文件而不是一个容器：**消费方不同**——.def/.bin 走 `Graph::parse`、.attrs.json 走 `load_graph_attributes`、.elf 走 `HybridELF::load`——拆分让各子系统复用现成接口、各读各的（不做单一容器格式的自研成本极低）。**代价是原子性被引入**：五文件之间的一致性没有任何机制保障。\n\n**save 中途崩溃**：假设写完 .def 崩了——目录里留下 .def 而无 .attrs.json。load 端行为：`load_mq_ir_cache` 只检查 .def/.bin 存在（存在即通过）→ `Graph::parse` 成功 → attrs 缺失时 `load_mq_ir_cache_attributes` 走 `file_exists=false → DEBUG 跳过 → return true`——**静默接受**。结果：一张「结构正确、属性全空」的图进入后续阶段——读契约属性全拿默认值，可能一路跑到产物错误或莫名崩溃。\n\n**load 部分缺失**：\n- `.elf` 缺失（save=DEVICE_CODE_GEN 场景）——`load_mq_ir_cache_elf` ERROR 返回 nullptr，mqbuilder.cpp 里 `if (!m_elf) { ERROR; return false; }` **硬失败**（好在有检查；这是配对关系里处理最严的一处）；\n- `.attrs.json` 缺失——如上，静默继续（最危险）；\n- `.payload.bin` 缺失——WARN 后跳过恢复。\n\n**改进方向**：\n① **两阶段提交**——先写全部数据文件，最后写一个「完成标记」（manifest/commit 文件，内含五文件清单+时间戳+大小）；load 端先验标记，无标记视为未完成、拒绝加载；\n② 或者 **临时目录 + rename**——全部写完后目录原子改名——文件系统层面的原子性；\n③ **收紧 load 校验**——attrs 缺失在契约属性语境下几乎总是错误（「结构在、属性空」不是合法状态），应从 DEBUG 升级为 WARN/ERROR；再加「def/bin/attrs 三者互查」（如节点数/名字集合一致性）。\n\n原则：**缓存目录要么完整、要么不存在**——半套状态是不该被接受的状态，load 端宁可拒绝（回退全量构建）也不在半套数据上运行。",
+fq:"「拒绝加载、回退全量」听起来浪费——什么场景下可以考虑「修复半套缓存」？边界在哪里？",
+fa:"先确立边界原则：**修复的前提是「缺失部分可以被确定性地再生」，且再生成本 < 全量重跑成本**。按五件套分类：\n① `.def` 缺失——IR 结构无法从 .bin/attrs 再生（.bin 只有数据），**不可修复**，必须全量；\n② `.attrs.json` 缺失——部分可修复：能从 .def 重算的属性（layout 等结构可导出的）可重建，但 attrs 里大量信息（levels/slots/streams/object_table）是运行时产物，从 IR 文本再生等价于重跑阶段——**修复 ≡ 重跑**，没有优势，不如老实全量；\n③ `.payload.bin` 缺失——常量的数据在 .bin 里（不受影响），非常量 payload 多为补充数据——**可降级修复**（WARN + 缺失容忍），前提是消费方确认「不读它」——需要逐 payload 判定，复杂；\n④ `.elf` 缺失但 def/bin/attrs 完整——**可局部再生**：重跑 device_code_gen 阶段（kernel 库链接）生成 elf，再续跑——这就是「断点前移」：等价于把 save 断点当作 DEVICE_CODE_GEN 的下一个阶段处理。\n\n所以「修复」的正确形态不是「修补文件」，而是**断点级别的降级重跑**：检测到某断点缓存不完整 → 自动退到上一个缓存完整/可用的断点重跑。这要求缓存里存「断点谱系」（每个断点的完成标记与依赖），让工具能自动选择最接近的可用起点。\n\n这也是工业界构建缓存（Bazel remote cache、ccache）的真实形态：**没有「修复缓存」这个动作——只有「缓存命中」与「缓存未命中」两态**。任何「看起来可修复」的场景都被建模成「换个 key 重算」。保持两态模型能让系统逻辑极简、错误路径极少；引入「修复」态则把复杂度爆炸引入错误处理路径——通常不划算。"
+},
+
+{id:49,cat:"engineer",diff:2,tags:["重构中间态","include guard","治理"],
+q:"仓库当前处于重构中间态：`mcbuilder.h`（新 8 阶段 API）与 `mqbuilder.h`（旧 API）并存且 include guard 撞名（同为 `BUILDER_MQBUILDER_H`）；`code_generator.h` 落后于 `.cpp`（头里是 7.20 旧接口，实现里已是 7.31 新方法）；`mqbuilder.md` 文档还写着旧流程（7 tensors / single_core_opt / get_kernel_lib）。如果你是维护者，如何评估风险并制定治理方案？",
+a:"**风险评估（按「会不会咬人」排序）**：\n\n① **include guard 撞名——最高危（编译期静默错误）**：两个头同名 guard 意味着谁先被 include、谁就「吃掉」另一个——后 include 的头内容直接消失（编译单元里表现为「找不到 MqBuilder / GraphELFBuilder」的诡异错误）。更糟的是**顺序依赖**：换一个 .cpp 的 include 顺序，行为变化——这是最难排查的一类 bug。当前不发作只是因为还没有编译单元同时 include 两者；一旦写过渡代码就会爆。**必须最高优先级修**（改 guard 名或 `#pragma once`，半小时的事）。\n\n② **code_generator.h 落后于 .cpp——中危（门面失真）**：头是契约的门面——新方法（set_device_lib / gen_device_code / gen_host_code）没进头，外部调用方看不到：轻则编译报错（别人想用时），重则逼出「绕过头手工声明」的邪门操作。当前风险是误导——读头的人（包括 AI 辅助、新人）以为接口是旧的。修法：头立即补全（声明成本极低），旧声明按剩余调用方决定删/留。\n\n③ **文档漂移——低危但影响面广**：mqbuilder.md 写 7 tensors/single_core_opt/get_kernel_lib，代码是 3 tensors/load_balance_strategy/device+host 分表——按文档理解必然全错。最差的状态是「看起来像最新的旧文档」。修法：要么重写（对照 mcbuilder.h 的 8 阶段写 30 行真流程），要么文首显著标注「已过时，以代码为准 + 日期/commit 号」。\n\n④ **新旧实现并存（mcbuilder.cpp / mqbuilder.cpp）——结构性，不急于删**：这是重构进行时的正常状态；治理不是马上删旧（要有「新链路全场景验证通过」背书），而是：建迁移看板（旧 API 调用方清单 + 迁移状态 + 阻塞点）、给旧 API 打 `[[deprecated]]` 让「谁还在用」在编译告警里自动可见。\n\n**治理方案（一轮 PR 的量）**：\n- Step1 修 guard + 补全头（纯机械，半小时）；\n- Step2 文档重写或加过时声明；\n- Step3 旧 API deprecated 标记 + CI 扫旧符号调用点生成报告；\n- Step4 在 README/AGENTS.md 加「当前重构状态」小节——后来者（包括 AI）第一眼就知道处在迁移中、哪条是新路径。",
+fq:"「include guard 撞名」为什么能长期潜伏不被发现？这个现象暴露了什么更本质的工程问题？",
+fa:"**潜伏机制**：暴露面由调用图决定——只要没有任何编译单元同时 include 两个头（或 include 顺序恰好总是同一个），撞名就不发作。它发作的条件是「两个头必须同时出现在一个 TU 里」——而这类过渡代码恰恰是重构推进到一定阶段才会写的。所以它像定时炸弹：**在重构的某个必然时点爆炸，且爆炸现场（后 include 的头凭空消失）与根因（两个文件的宏重名）距离很远**，排查成本极高。\n\n**暴露的本质问题**：\n① **头文件卫生没有检查机制**——guard 全局唯一性完全可以自动化（构建时扫描所有 guard 的重复项，或统一换 `#pragma once`）。没人做，等于「靠人脑记住全仓库的宏命名」——这在文件数量增长后必然失效。工具链（编译器、linker）都不管这个（它不违反任何语言规则，只是宏系统的碰撞），只能自己加检查。\n② **重构缺「完成标准」的检查清单**——重构的中间态需要配套卫生清单：guard 唯一、头/实现同步、文档状态标注、deprecated 标记。没有清单，所有人都盯着「功能能跑」，卫生债持续积压。\n③ **最根本的：并存的「双胞胎文件」本身就是熵源**——`mcbuilder.h`/`mqbuilder.h` 一字之差、`mcbuilder.cpp`/`mqbuilder.cpp` 一字之差。引用错文件的人**不会收到任何提示**（改名之差全在正常符号范围内）。所以治理动作里，**「尽快消灭双胞胎」的优先级应高于「保持双胞胎整洁」**——重构中间态的第一步就应该是：要么彻底改名（新 API 用新名如 `pipeline_builder.h`），要么保持单一文件内部用 #if 切换——尽量避免两个仅一位字母之差的重名文件长期并存。"
+},
+
+{id:50,cat:"open",diff:3,tags:["系统评价","设计亮点","改进优先级"],
+q:"压轴题（开放）：请以「接手这套流水线的资深工程师」身份，给出对 MqBuilder 八阶段架构的总体评价——**三个设计亮点**（附具体代码证据）与**三个改进项**（按优先级附理由）。考察点是系统性判断，没有标准答案。",
+a:"**三个设计亮点**：\n\n① **数据驱动的阶段表**——`BuildPhase{name, stage, execute}` + `create_phases()`：阶段序列是可遍历的数据结构而不是一坨 if/switch。收益立刻体现在缓存恢复逻辑上：`for (const auto &phase : phases)` + `phase.stage < load_stage` 的整数比较让**所有阶段一视同仁**——新增阶段自动获得缓存支持、日志统一（\"phase failed: <name>\"）、错误处理收口。这是「把流程变成数据」的经典胜利（对照 MC 路径 activate() 的硬编码调用序列——两种风格并存恰恰说明团队在演进）。\n\n② **容器职责分层清晰**——HybridELF（外，host 容器）套 CpsElf（内，device 容器）：`gen_device_code` 只碰内层（传 `m_elf->get_cpself()`）、`gen_host_code` 才写外层；两层通过 ELF notes（compilermsg/kernel 元数据）交换信息。「谁写谁读」纪律明确——这直接决定了缓存设计：设备码住在 CpsElf 里，所以 .elf 缓存只需存一个外层容器，两层的状态一起被保住。\n\n③ **缓存断点与团队工作流对齐**——8 阶段 × 可 save/load 的组合不是暴力全组合，而是需求驱动的最小集：DEVICE_CODE_GEN 是唯一带 ELF 的组合（对应「kernel 库最高频迭代」——缓存要恰好停在 kernel 依赖之前）；MEM_ALLOC 及之前全部可存（图变换稳定期）；ASSEMBLE 之后不存（恢复残缺 ELF 无意义）。断点布局体现的是「对构建工作流的观察」——工程判断而非理论推导的产物。\n\n**三个改进项（优先级排序）**：\n\nP0——**缓存完备性与正确性设防**：类型分发表漏项（静默丢属性）、半套文件被接受（结构在属性空）、重算式缓存缺版本 gate——三类失效的共同特征是**不报错**。动作：per-type 往返测试 + save 端覆盖度反查 + load 端版本校验 + attrs 缺失从 DEBUG 升 WARN。理由：缓存的正确性是「隐身承诺」，破了最难查，值得最高投入。\n\nP1——**统一错误处理策略**：save 失败仅 WARN、save elf 失败 return false、load elf 失败硬返回、attrs 缺失静默继续——四种态度并存。动作：定义策略矩阵（「可恢复→继续+WARN / 契约数据→中断+ERROR」）并逐点对齐。理由：错误处理不一致 = 故障时行为不可预测，是运维事故的温床。\n\nP2——**消灭中间态卫生问题**：guard 撞名、头/实现失同步、文档漂移、双胞胎文件——都是低成本机械修复、但现在不修会在未来每个新加入者身上重复收税（「新人第一个 bug」+「AI 辅助的误导源」）。动作：一轮卫生 PR + 把「重构状态」写进 README。\n\n**收束**：这套架构的演进方向应是「**把隐性契约显性化**」——契约表、缓存完备性、错误策略，这三件事共同把「能跑的系统」变成「可维护的系统」。",
+fq:"只允许留一句「接手须知」给下一位维护者，你说什么？为什么是这句？",
+fa:"「**先读三张表：阶段表（create_phases 的 8 个阶段与各自职责）、契约表（阶段间通过 attrs 传递的 15+ 个属性：levels/slots/streams/param_offset_table…）、断点表（save×load 组合矩阵与 ELF 断点）——代码是三张表的实现，缓存是三张表的快照，bug 是三张表的破洞。**」\n\n为什么是这句：大型编译流水线的认知负担**不在单点代码**（每个阶段函数抽出来都直白可读），而在**跨阶段的信息流**——信息以什么形式、从谁流向谁、在哪断点被快照。这三张表捕获的正是信息流：阶段表回答「谁在什么时候运行」，契约表回答「彼此交换什么」，断点表回答「状态在哪里被冻住/解冻」。\n\n没抓住信息流的人会怎样 debug：在单点函数里打转——「assemble 里 stream 是空的」→ 怀疑 assemble 的代码；而真相往往是上游 kernel_adapt 少产出了属性、或缓存恢复漏了 attrs。**知道信息流的人第一个问题永远是「这个数据是谁产出的、经过哪些断点」**——排查方向立刻收敛。\n\n这句话还有第二层用意：把三张表写在纸上（或 README 里）这个动作本身就会暴露问题——写不出来的表就是没被完全理解的系统。文档不是「给别人的输出」，是「对自己的检验」。"
+},
+];
+
+/* ================= 渲染 ================= */
+(function(){
+  const state = {cat:"all", diff:0, search:"", viewed:new Set()};
+  try{
+    const v = JSON.parse(localStorage.getItem("aipu_mq_itv_viewed")||"[]");
+    state.viewed = new Set(v);
+  }catch(e){}
+
+  const $list = document.getElementById("list");
+  const $empty = document.getElementById("empty");
+  const $cats = document.getElementById("cats");
+  const $diffs = document.getElementById("diffs");
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function md(s){
+    let t = esc(s);
+    t = t.replace(/```[a-zA-Z]*\n([\s\S]*?)\n```/g, function(_m, code){
+      return '<pre class="codebox"><code>' + code + '</code></pre>';
+    });
+    t = t.replace(/`([^`]+)`/g,"<code>$1</code>");
+    t = t.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+    return t;
+  }
+
+  const allBtn = mkChip("全部", "all");
+  $cats.appendChild(allBtn);
+  Object.entries(CATS).forEach(([k,v])=>$cats.appendChild(mkChip(v.name, k)));
+  function mkChip(label, key){
+    const c = document.createElement("span");
+    c.className = "chip" + (key==="all"?" on":"");
+    c.textContent = label;
+    if(CATS[key]) c.style.setProperty("--tc", CATS[key].color);
+    c.onclick = ()=>{
+      state.cat = key;
+      [...$cats.children].forEach(x=>x.classList.toggle("on", x===c));
+      render();
+    };
+    return c;
+  }
+
+  const dLabels = {0:"全部难度", 1:"★ 基础", 2:"★★ 进阶", 3:"★★★ 资深"};
+  Object.entries(dLabels).forEach(([k,label])=>{
+    const c = document.createElement("span");
+    c.className = "chip" + (k==="0"?" on":"");
+    c.textContent = label;
+    c.onclick = ()=>{
+      state.diff = +k;
+      [...$diffs.children].forEach(x=>x.classList.toggle("on", x===c));
+      render();
+    };
+    $diffs.appendChild(c);
+  });
+
+  function diffStars(d){
+    return '<span class="diff ' + ["","d1","d2","d3"][d] + '">' + "★".repeat(d) + "☆".repeat(3-d) + "</span>";
+  }
+
+  function matches(q){
+    if(state.cat!=="all" && q.cat!==state.cat) return false;
+    if(state.diff && q.diff!==state.diff) return false;
+    if(state.search){
+      const s = state.search.toLowerCase();
+      const hay = (q.q+" "+q.a+" "+q.fq+" "+q.fa+" "+(q.tags||[]).join(" ")).toLowerCase();
+      if(!hay.includes(s)) return false;
+    }
+    return true;
+  }
+
+  function render(){
+    const list = QUESTIONS.filter(matches);
+    $list.innerHTML = "";
+    $empty.style.display = list.length ? "none" : "block";
+
+    let lastCat = null;
+    list.forEach(q=>{
+      if(q.cat!==lastCat){
+        lastCat = q.cat;
+        const t = document.createElement("div");
+        t.className = "cat-title";
+        t.id = "cat-" + q.cat;
+        t.innerHTML = '<span class="cat-bar" style="background:' + CATS[q.cat].color + '"></span><h2>' +
+          CATS[q.cat].name + '</h2>';
+        $list.appendChild(t);
+      }
+      $list.appendChild(card(q));
+    });
+    updateProgress();
+  }
+
+  function card(q){
+    const el = document.createElement("article");
+    el.className = "card";
+    el.dataset.id = q.id;
+    el.innerHTML =
+      '<div class="chead">' +
+        '<div class="num" style="background:' + CATS[q.cat].color + '1a;color:' + CATS[q.cat].color + '">' + String(q.id).padStart(2,"0") + "</div>" +
+        '<div class="qwrap">' +
+          '<div class="meta">' +
+            '<span class="tag" style="background:' + CATS[q.cat].color + '1a;color:' + CATS[q.cat].color + '">' + CATS[q.cat].name + "</span>" +
+            diffStars(q.diff) +
+          "</div>" +
+          '<div class="qtext">' + md(q.q) + "</div>" +
+          '<div class="hint">点击展开：参考答案 · 追问 · 追问解答</div>' +
+        "</div>" +
+        '<svg class="caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>' +
+      "</div>" +
+      '<div class="body">' +
+        '<div class="blk ans"><div class="lb">参考回答</div><div class="content">' + md(q.a) + "</div></div>" +
+        '<div class="blk fu"><div class="lb">追问</div><div class="content">' + md(q.fq) + "</div></div>" +
+        '<div class="blk fa"><div class="lb">追问解答</div><div class="content">' + md(q.fa) + "</div></div>" +
+      "</div>";
+
+    el.querySelector(".chead").onclick = ()=>{
+      const open = el.classList.toggle("open");
+      if(open){
+        state.viewed.add(q.id);
+        try{ localStorage.setItem("aipu_mq_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+        updateProgress();
+      }
+    };
+    return el;
+  }
+
+  function updateProgress(){
+    const n = [...state.viewed].filter(id=>QUESTIONS.some(q=>q.id===id)).length;
+    document.getElementById("ptext").textContent = "进度 " + n + " / " + QUESTIONS.length;
+    document.getElementById("pfill").style.width = Math.min(100, n*100/QUESTIONS.length) + "%";
+    document.getElementById("s-viewed").textContent = n;
+  }
+
+  document.getElementById("search").addEventListener("input", e=>{
+    state.search = e.target.value.trim();
+    render();
+  });
+  document.getElementById("btn-expand").onclick = ()=>{
+    document.querySelectorAll(".card").forEach(c=>c.classList.add("open"));
+    QUESTIONS.forEach(q=>state.viewed.add(q.id));
+    try{ localStorage.setItem("aipu_mq_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+    updateProgress();
+  };
+  document.getElementById("btn-collapse").onclick = ()=>{
+    document.querySelectorAll(".card").forEach(c=>c.classList.remove("open"));
+  };
+  document.getElementById("btn-random").onclick = ()=>{
+    const vis = [...document.querySelectorAll(".card")];
+    if(!vis.length) return;
+    const c = vis[Math.floor(Math.random()*vis.length)];
+    c.classList.add("open");
+    c.scrollIntoView({behavior:"smooth", block:"center"});
+    c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash");
+    state.viewed.add(+c.dataset.id);
+    try{ localStorage.setItem("aipu_mq_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+    updateProgress();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

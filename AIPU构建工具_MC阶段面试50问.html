@@ -75,6 +75,8 @@
   .content code{font-family:var(--mono);font-size:13px;background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 6px;color:#92400e}
   .content strong{color:#0f172a}
   .content em{color:#b45309;font-style:normal;font-weight:600}
+  .content pre.codebox{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:13px 15px;margin:10px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;white-space:pre;color:#0f172a}
+  .content pre.codebox code{background:transparent;border:none;color:inherit;font-size:inherit;padding:0}
 
   footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);color:var(--text2);font-size:13px;text-align:center;line-height:2}
   footer a{color:var(--accent);text-decoration:none}
@@ -136,7 +138,8 @@
   <footer>
     AIPU Building Tool · MC 阶段面试题（50 问）· 基于真实代码阅读生成<br>
     面试官视角 · 聚焦 optimizer.cpp 各阶段与 MC 完整流水线 · 建议先自答再看参考答案<br>
-    <a href="./AIPU构建工具_面试100问.html">← 配套总集：AIPU 构建工具面试 100 问（MC + MQ 双路径全覆盖）</a>
+    <a href="./AIPU构建工具_面试100问.html">← 配套总集：AIPU 构建工具面试 100 问（MC + MQ 双路径全覆盖）</a><br>
+    <a href="./AIPU构建工具_MqBuilder流程面试50问.html">专题深入：MqBuilder 八阶段流程面试 50 问（mcbuilder.h 全流程）→</a>
   </footer>
 </div>
 
@@ -473,6 +476,9 @@ fa:"加**「构建差异对比器」**（build diff）：输入两次构建的�
   }
   function md(s){
     let t = esc(s);
+    t = t.replace(/```[a-zA-Z]*\n([\s\S]*?)\n```/g, function(_m, code){
+      return '<pre class="codebox"><code>' + code + '</code></pre>';
+    });
     t = t.replace(/`([^`]+)`/g,"<code>$1</code>");
     t = t.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
     return t;
