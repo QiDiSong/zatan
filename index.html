@@ -55,6 +55,7 @@
   footer { margin-top: 42px; color: var(--muted); font-size: 13px; }
   footer a { color: var(--blue); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
+  #retry { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -63,17 +64,12 @@
     <h1>杂谈</h1>
     <p>学习笔记 · 技术随笔 · 杂项产出 —— 每一篇都是独立页面，点标题即看</p>
     <div class="meta">
-      <span class="badge" id="count">正在读取目录…</span>
+      <span class="badge" id="count">共 0 篇笔记</span>
       <span class="badge t">GitHub Pages 托管</span>
     </div>
   </header>
-  <p class="hint">目录内容实时同步自仓库，新推的笔记会自动出现在下方</p>
-  <ul class="notes" id="list">
-    <li><a href="./%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB-%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E6%B1%87%E7%BC%96-%E8%AE%B0%E5%BF%86%E7%AC%94%E8%AE%B0.html" target="_blank" rel="noopener">
-      <div class="title">程序员的自我修养-编译链接汇编-记忆笔记</div>
-      <div class="sub">HTML 笔记</div>
-    </a></li>
-  </ul>
+  <p class="hint">目录实时同步自仓库；若接口暂时不可用，会自动显示下方内置的完整列表</p>
+  <ul class="notes" id="list"></ul>
   <div class="empty" id="empty" style="display:none">仓库里还没有 HTML 笔记，推一篇就会自动出现在这里</div>
   <footer>
     <span>仓库：</span><a href="https://github.com/QiDiSong/zatan" target="_blank" rel="noopener">github.com/QiDiSong/zatan</a>
@@ -83,40 +79,104 @@
 <script>
 const OWNER = "QiDiSong";
 const REPO = "zatan";
+const BRANCH = "main";
+
+/* ------------------------------------------------------------------
+   内置笔记列表（兜底用）
+   推送新笔记后，把文件名补进这个数组，接口不可用时也能正常显示。
+   顺序无所谓，渲染前会统一按名称排序。
+   ------------------------------------------------------------------ */
+const NOTES = [
+  "程序员的自我修养-编译链接汇编-记忆笔记.html",
+  "C++面试宝典-50道高频题与追问.html"
+];
+
+const list = document.getElementById("list");
+const count = document.getElementById("count");
+const empty = document.getElementById("empty");
+const status = document.getElementById("status");
 
 function titleOf(name) {
   return name.replace(/\.html?$/i, "").replace(/_/g, " ");
 }
 
+function render(notes, withSize) {
+  const sorted = notes.slice().sort(function (a, b) {
+    return a.name.localeCompare(b.name, "zh");
+  });
+  if (!sorted.length) {
+    list.innerHTML = "";
+    empty.style.display = "block";
+    count.textContent = "共 0 篇笔记";
+    return;
+  }
+  empty.style.display = "none";
+  list.innerHTML = sorted.map(function (f) {
+    const sub = withSize && f.size
+      ? "HTML 笔记 · " + (f.size / 1024).toFixed(1) + " KB"
+      : "HTML 笔记";
+    return '<li><a href="./' + encodeURIComponent(f.name) + '" target="_blank" rel="noopener">' +
+      '<div class="title">' + titleOf(f.name) + '</div>' +
+      '<div class="sub">' + sub + '</div>' +
+      '</a></li>';
+  }).join("");
+  count.textContent = "共 " + sorted.length + " 篇笔记";
+}
+
+/* 数据源 1：GitHub 官方接口（最新，但未认证时有 60 次/小时的限流） */
+async function fromGitHub() {
+  const resp = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/");
+  if (!resp.ok) throw new Error("GitHub API HTTP " + resp.status);
+  const files = await resp.json();
+  return files
+    .filter(function (f) { return f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html"; })
+    .map(function (f) { return { name: f.name, size: f.size }; });
+}
+
+/* 数据源 2：jsDelivr 目录接口（不限流，作为限流时的备用） */
+async function fromJsDelivr() {
+  const resp = await fetch("https://data.jsdelivr.com/v1/packages/gh/" + OWNER + "/" + REPO + "@" + BRANCH);
+  if (!resp.ok) throw new Error("jsDelivr HTTP " + resp.status);
+  const data = await resp.json();
+  const out = [];
+  (function walk(nodes) {
+    (nodes || []).forEach(function (f) {
+      if (f.type === "directory" || (f.files && f.files.length)) {
+        walk(f.files);
+      } else {
+        out.push({ name: f.name, size: f.size || 0 });
+      }
+    });
+  })(data.files);
+  return out.filter(function (f) {
+    return /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html";
+  });
+}
+
 async function loadNotes() {
-  const list = document.getElementById("list");
-  const count = document.getElementById("count");
+  status.textContent = " · 正在同步…";
   try {
-    const resp = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/");
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const files = await resp.json();
-    const notes = files
-      .filter(f => f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html")
-      .sort((a, b) => a.name.localeCompare(b.name, "zh"));
-    if (!notes.length) {
-      list.innerHTML = "";
-      document.getElementById("empty").style.display = "block";
-      count.textContent = "共 0 篇笔记";
-    } else {
-      list.innerHTML = notes.map(f =>
-        '<li><a href="./' + encodeURIComponent(f.name) + '" target="_blank" rel="noopener">' +
-        '<div class="title">' + titleOf(f.name) + '</div>' +
-        '<div class="sub">HTML 笔记 · ' + (f.size / 1024).toFixed(1) + ' KB</div>' +
-        '</a></li>'
-      ).join("");
-      count.textContent = "共 " + notes.length + " 篇笔记";
+    const notes = await fromGitHub();
+    render(notes, true);
+    status.textContent = " · 目录已实时同步";
+    return;
+  } catch (e1) {
+    try {
+      const notes = await fromJsDelivr();
+      render(notes, true);
+      status.textContent = " · 目录已同步（备用源）";
+      return;
+    } catch (e2) {
+      /* 两个接口都不可用：保留内置列表 */
+      status.innerHTML = ' · 接口暂不可用，正在显示内置列表（<a href="#" id="retry">重试</a>）';
+      const btn = document.getElementById("retry");
+      if (btn) btn.addEventListener("click", function (ev) { ev.preventDefault(); loadNotes(); });
     }
-    document.getElementById("status").textContent = " · 目录已实时同步";
-  } catch (e) {
-    count.textContent = "目录自动同步暂不可用（下方为内置列表）";
-    document.getElementById("status").textContent = " · 自动同步失败，可刷新重试";
   }
 }
+
+/* 先用内置列表立即渲染，避免白屏；随后再尝试联网刷新 */
+render(NOTES.map(function (n) { return { name: n }; }), false);
 loadNotes();
 </script>
 </body>
