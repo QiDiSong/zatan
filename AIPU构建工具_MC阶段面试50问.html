@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIPU 构建工具 · MC 阶段面试官模拟器（50 问）</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --border:#e3e8f0; --text:#1a2332; --text2:#5b6b81;
+    --accent:#d97706; --accent-soft:#fef5e7;
+    --c-opt:#d97706; --c-flow:#2563eb; --c-mem:#059669; --c-asm:#7c3aed; --c-isa:#dc2626; --c-dbg:#475569;
+    --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.7;font-size:15px}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+
+  header.site{padding:44px 0 26px;border-bottom:1px solid var(--border);margin-bottom:0}
+  .crumb{font-size:13px;color:var(--text2);letter-spacing:.4px;margin-bottom:10px}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.5px}
+  h1 .hl{color:var(--accent)}
+  .sub{color:var(--text2);margin-top:10px;font-size:15px}
+  .stats{display:flex;gap:26px;margin-top:22px;flex-wrap:wrap}
+  .stat b{font-size:22px;font-weight:800;color:var(--accent);font-family:var(--mono)}
+  .stat span{display:block;font-size:12.5px;color:var(--text2)}
+
+  .toolbar{position:sticky;top:0;z-index:50;background:rgba(245,247,251,.92);backdrop-filter:blur(8px);padding:14px 0 12px;border-bottom:1px solid var(--border);margin-bottom:22px}
+  .toolrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 13px}
+  .search input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent;color:var(--text)}
+  .btn{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:10px;padding:8px 14px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#c2680a}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 13px;font-size:13px;cursor:pointer;transition:.15s;user-select:none}
+  .chip:hover{border-color:var(--accent)}
+  .chip.on{background:var(--text);color:#fff;border-color:var(--text)}
+  .progress{display:flex;align-items:center;gap:12px;margin-top:11px;font-size:12.5px;color:var(--text2)}
+  .pbar{flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+  .pfill{height:100%;width:0%;background:linear-gradient(90deg,#d97706,#059669);border-radius:99px;transition:width .3s}
+
+  .cat-title{display:flex;align-items:center;gap:12px;margin:36px 0 16px;scroll-margin-top:150px}
+  .cat-title h2{font-size:19px;font-weight:800}
+  .cat-bar{width:5px;height:22px;border-radius:3px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;transition:box-shadow .18s,border-color .18s}
+  .card:hover{box-shadow:0 4px 18px rgba(30,50,90,.07)}
+  .card.open{border-color:#f0d5ae}
+  .card.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%,60%{box-shadow:0 0 0 4px rgba(217,119,6,.28)}100%{box-shadow:none}}
+  .chead{display:flex;gap:14px;padding:18px 20px 14px;cursor:pointer;align-items:flex-start}
+  .num{font-family:var(--mono);font-weight:800;font-size:16px;min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--accent-soft);color:var(--accent);flex:0 0 auto}
+  .qwrap{flex:1;min-width:0}
+  .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+  .tag{font-size:11.5px;padding:2.5px 10px;border-radius:999px;font-weight:600;letter-spacing:.2px}
+  .diff{font-size:12px;font-weight:700;letter-spacing:1px}
+  .d1{color:#16a34a}.d2{color:#d97706}.d3{color:#dc2626}
+  .qtext{font-size:16.5px;font-weight:700;line-height:1.55}
+  .hint{font-size:12.5px;color:var(--text2);margin-top:6px}
+  .caret{transition:transform .2s;color:var(--text2);margin-top:4px;flex:0 0 auto}
+  .card.open .caret{transform:rotate(180deg)}
+
+  .body{display:none;padding:0 20px 20px 78px}
+  .card.open .body{display:block}
+  .blk{background:#f8fafc;border:1px solid #eef2f7;border-left-width:3px;border-radius:10px;padding:14px 16px;margin-top:12px}
+  .blk .lb{font-size:11.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;color:var(--text2)}
+  .blk.ans{border-left-color:var(--accent)}
+  .blk.ans .lb{color:var(--accent)}
+  .blk.fu{border-left-color:#2563eb;background:#f5f9ff;border-color:#dbe8fb}
+  .blk.fu .lb{color:#1d4fd7}
+  .blk.fa{border-left-color:#059669;background:#f6fefb;border-color:#d9f2e8}
+  .blk.fa .lb{color:#047857}
+  .content{font-size:14.5px;white-space:pre-line}
+  .content code{font-family:var(--mono);font-size:13px;background:#eef2f7;border:1px solid #e2e8f0;border-radius:5px;padding:1px 6px;color:#92400e}
+  .content strong{color:#0f172a}
+  .content em{color:#b45309;font-style:normal;font-weight:600}
+
+  footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);color:var(--text2);font-size:13px;text-align:center;line-height:2}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  .empty{padding:60px 0;text-align:center;color:var(--text2);display:none}
+
+  @media (max-width:720px){
+    .body{padding-left:20px}
+    .chead{padding:15px 15px 12px}
+    h1{font-size:24px}
+  }
+  @media print{
+    .toolbar{display:none}
+    .card .body{display:block!important}
+    .caret{display:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <div class="crumb">AIPU Building Tool · C++ / AI 编译器后端 · MC 阶段模拟面试</div>
+    <h1>MC 阶段面试官模拟器：<span class="hl">50 问</span></h1>
+    <p class="sub">聚焦 <strong>MC 路径</strong>（旧硬件版本的 buildtool · 完整 lowering 编译链）与 <strong>optimizer.cpp 各阶段</strong>（buildtool 的核心）——
+    全部题目基于对 <code style="font-family:var(--mono);font-size:13px">optimizer.cpp / lowering/ / builder.cpp / mcbuilder.cpp / scheduler / load_balancer</code> 的真实阅读。
+    每题含「面试官提问 → 参考回答 → 追问 → 追问解答」。先自己默答，再展开对照。🎯</p>
+    <div class="stats">
+      <div class="stat"><b id="s-total">50</b><span>道题目</span></div>
+      <div class="stat"><b>6</b><span>个分类</span></div>
+      <div class="stat"><b id="s-viewed">0</b><span>已展开作答</span></div>
+      <div class="stat"><b>MC 专项</b><span>optimizer 阶段全覆盖</span></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolrow">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5b6b81" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="搜索关键词：tiling / pass / scheduler / BSS / 常量 …">
+      </div>
+      <button class="btn" id="btn-random">🎲 随机抽题</button>
+      <button class="btn" id="btn-expand">全部展开</button>
+      <button class="btn" id="btn-collapse">全部收起</button>
+    </div>
+    <div class="chips" id="cats"></div>
+    <div class="chips" id="diffs"></div>
+    <div class="progress">
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <span id="ptext">进度 0 / 50</span>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <div class="empty" id="empty">没有匹配的题目，换个关键词试试。</div>
+
+  <footer>
+    AIPU Building Tool · MC 阶段面试题（50 问）· 基于真实代码阅读生成<br>
+    面试官视角 · 聚焦 optimizer.cpp 各阶段与 MC 完整流水线 · 建议先自答再看参考答案<br>
+    <a href="./AIPU构建工具_面试100问.html">← 配套总集：AIPU 构建工具面试 100 问（MC + MQ 双路径全覆盖）</a>
+  </footer>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const CATS = {
+  optstages:{name:"optimizer 阶段专项（核心）", color:"var(--c-opt)"},
+  mcflow:   {name:"MC 构建主流程",     color:"var(--c-flow)"},
+  mcmem:    {name:"内存分配与调度",     color:"var(--c-mem)"},
+  mcasm:    {name:"汇编与产物格式",     color:"var(--c-asm)"},
+  mcisa:    {name:"硬件适配细节",       color:"var(--c-isa)"},
+  mcdebug:  {name:"调试与工程化",       color:"var(--c-dbg)"}
+};
+
+const QUESTIONS = [
+{id:1,cat:"optstages",diff:2,tags:["optimizer","流水线","总览"],
+q:"请按执行顺序完整列出 MC 路径 `optimize()` 的阶段序列（含 `enable_ds` 打开时的额外步骤），并指出其中「可配置」的环节。",
+a:"按 optimizer.cpp 逐行，序列为：\n\n① ds 预处理：`pooling_to_globalpool`（1x1 kernel 的池化改写成 GlobalPool）+ `update_dynamic_max_shape`（用 max_input_shape 重推全图 shape）；\n② `init_symbol_shape` / `infer_symbol_shape`（符号 shape 初始化 + 推断）；\n③ `update_disable_passes()`（按 --disable-pass / --enable-pass 计算本次构建的禁用集合）；\n④ `lower_before_all` → `lower_before_tiling` →（show_raw_graph 时导出 graph_raw.svg）→ `lower_run_tiling`；\n⑤ ds 时 `divide_graph`（按 dynamic 属性划分子图），并把主图从 all_graphs 剔除；\n⑥ 逐图 `lower_before_optimize`；\n⑦ `unfold_graph` → `lower_after_unfold` → 再一次 `infer_symbol_shape` → `lower_before_plugin` → `apply_plugins`；\n⑧ ds 时 all_graphs 收敛为主图，逐图 `lower_after_optimize` → `apply_internal_plugins`；\n⑨ 刷新所有子图 real nodes + 校验所有输出 tensor 仍在图中。\n\n可配置环节：enable_ds、disable/enable-pass、pass-before-tiling、show_raw_graph、disable_plugins（以及调试用的 svg-before/after-pass）。\n\n这个序列就是 MC 编译链的**骨架**——阶段组（pass tuple）与单点动作（直接函数调用）混编而成，顺序本身就是设计文档。",
+fq:"这条序列里留了这么多可配置口子，代价是什么？工程上靠什么兜底？",
+fa:"代价是「流水线排列组合」爆炸：每个开关都可能组合出别人没测过的路径，组合错误往往不报错、只是静默地少做/错做某步。工程上靠三件套兜底：① 集中式清单——disabled_passes 常量表把「默认关闭 + 原因」写在一处，而不是散落在各 pass 里；② 调试旁路——find_pass_by_name 支持按名字单跑任意 pass，把整条流水线拆成可实验的单元；③ 可视化对比——svg-before-pass / svg-after-pass 在任意 pass 前后导图。没有这三件套，配置口就是 bug 温床。"},
+
+{id:2,cat:"optstages",diff:2,tags:["symbol shape","ds","infer"],
+q:"`infer_symbol_shape` 在开头执行一次后，`unfold_graph` 之后又执行了一次。为什么符号 shape 要推断两遍？",
+a:"第一遍（开头）：给整个优化流水线建立 shape 参照系——init 初始化符号系统，infer 把每个节点的输出 shape 用符号表达式推导出来，让后续 shape 敏感型 pass（reshape / split / quantize 系）有可靠输入。\n\n第二遍（unfold 之后）：① unfold 打开子图边界，节点间真实连接关系发生了变化；② 前面近 200 个 pass 大量改写过图（插节点、改 shape、分解算子），符号表达式需要在**新图**上重新求值；③ 下一站是 apply_plugins 与 lower_after_optimize，插件匹配和布局调度都依赖最新 shape。\n\n一般规律：凡是「大幅改写图结构」的阶段之后，都要重新 infer。这也是为什么 infer_symbol_shape 被设计成可重复调用的推断动作，而不是一次性初始化。",
+fq:"ds 打开时，开头还先跑了一个 `update_dynamic_max_shape`——它和 infer_symbol_shape 的分工是什么？",
+fa:"update_dynamic_max_shape 先把输入 shape 覆盖为 max_input_shape（配置提供），然后逐节点 infer_shape 得到「最大参照系」下的静态 shape；infer_symbol_shape 拿到的就是这一套上界形状去建立/求解符号表达式。分工：前者负责**设定参照系**（把动态问题先转化成一个静态问题），后者负责**推导符号关系**（记录哪些维度是符号、表达式长什么样）。运行时真实 shape 到来后，按这份符号关系回填——动态 shape 的「编译期静态待遇最大化 + 运行期修正」就靠这两步配合。"},
+
+{id:3,cat:"optstages",diff:2,tags:["record_original_param","通道对齐"],
+q:"`lower_before_all` 阶段只有一个 pass：`record_original_param`。它记录了什么？为什么必须抢在所有 pass 之前执行？",
+a:"它对 Conv / ConvTranspose / DepthwiseConv / FC 记录**原始通道数**：原始输入/输出 C（original_input_c / original_output_c，取自输入输出的 shape.c()），并判定三个属性：is_dwconv（是否 DepthwiseConv）、per_channel_quant（group==1 且存在 scale/shift 常量）、以及 group 的默认值 1。\n\n必须最先执行的原因：后续大量通道相关 pass 会把 C 改成硬件对齐值（hwa_conv_inc_adaptor / hwa_conv_outc_adaptor / split_conv_input_c / split_conv_output_c），原始 C 一旦被覆盖就找不回来。而「pad / crop 到对齐」的计算恰恰需要以原始 C 为基准——差了多少、补了多少。这属于典型的**审计信息前置留存**：在破坏性变换开始前，把后面必须回溯的事实先记下来。",
+fq:"为什么用「节点属性」记录，而不是保留一份原始图备份去查？",
+fa:"备份图方案的代价：要么整张 origin graph 常驻（内存与生命周期管理负担），要么维护「原值↔新值」映射表（同步负担，一处漏更新就错）。属性记录把信息**钉在节点自己身上**：随节点走、随 clone 走、随序列化走（attrs 可被 IR 缓存机制持久化），访问路径最短。这是图 IR 处理「历史事实」的惯例——layer_id、hash 等元信息同样是挂在 attrs 上的。"},
+
+{id:4,cat:"optstages",diff:2,tags:["pass-before-tiling","配置机制"],
+q:"`lower_before_tiling` 用 `get_pass_before_tiling()` 把 `passes_before_optimize` 里的一些 pass 提前到 tiling 之前。请解释 `all` 的语义，以及为什么它要显式排除 `tile_graph`、还要跳过被禁用的 pass？",
+a:"--pass-before-tiling 接受一组 pass 名，运行时把 passes_before_optimize 中同名 pass 按原相对顺序挑出来，组成临时 PassManager 先跑（set_recursive(true)）。\n\n① 普通模式：逐个名字线性查找，找到就加入；找不到打 DEBUG「invalid」。\n② all 模式：把其余 pass 整体提前——但有两条边界必须处理：\n  - **显式排除 tile_graph**：tile_graph 就是 tiling 的执行体本身，把「tiling」当成「tiling 之前要跑的 pass」是语义自指；\n  - **跳过被 disable 的 pass**：用户显式禁用的 pass 不应因为 all 而又被执行（先查 get_disable_passes()）。\n\n这个机制本质是**运行时可调的 pass 顺序切片**——把「tiling 前该做哪些准备」从编译期硬编码变成可实验参数。",
+fq:"如果某 pass 实际只有在 tiling 之后跑才正确，却被 all 提前了，会怎样？怎么防？",
+fa:"最坏情况：编译通过、多数模型数值正常，只在特定结构上静默出错——因为错误不是崩溃而是「顺序语义错」。防护思路：① 该配置应定位为 tuner / 专家通道，默认不开；② 提前执行时打 DEBUG 审计日志（现实现如此：The pass X will be executed before tiling），留下轨迹；③ 回归基准集覆盖 all 组合。更彻底的方案是给 pass 声明「允许提前」的静态属性，框架在配置违反时直接拒绝——把正确性从「使用者责任」收回到「框架责任」。"},
+
+{id:5,cat:"optstages",diff:2,tags:["tiling","流水线顺序"],
+q:"为什么 tiling 必须放在 `lower_before_tiling` 之后、`lower_before_optimize` 之前？把顺序反过来会怎样？",
+a:"两个分组各司其职：\n\n**tiling 之前**（lower_before_tiling 可提前的 pass）：解决「什么该被切」——把 reshape / transpose 提升、消除冗余结构、规整算子形态，让 tiling 面对一张干净的图。\n\n**tiling 之后**（193 项 passes_before_optimize）：解决「切完怎么适配硬件」——tiling 会插入 crop / concat / split 等边界算子，需要大量 fuse / eliminate / adaptor 去清理和对齐（hwa_*_adaptor、fuse_crop、eliminate_crop 等都定位于此）。\n\n如果反过来（先全量优化再 tiling）：tiling 引入的裁剪/拼接结构没有任何 pass 负责清理，硬件对齐规则也要重新适配——前面针对大图做的形状/布局优化很大一部分作废。所以流水线把 tiling 当作「结构改写分水岭」：之前做形态整理，之后做切分适配。",
+fq:"如果某张图最后判定不需要 tiling，后面的 193 项 pass 会白跑吗？",
+fa:"不会白跑——pass 框架是「匹配器驱动」的：绝大多数 pass 入口先做图匹配，match 不到目标直接返回，近似零开销；lower_before_tiling 在无配置时也是空转空 PassManager。这体现了统一流水线哲学：不做「运行时 if 需要tiling」的分支编排，而是让每个 pass 自己发现无事可做——分支逻辑内化到匹配器里。收益是流水线永远线性、行为可预测、每个 pass 可单测；代价是 pass 数量膨胀后固定遍历开销上升，靠匹配器的剪枝效率兜底。"},
+
+{id:6,cat:"optstages",diff:2,tags:["tile_graph","自动/手动"],
+q:"`tile_graph` 如何决定走手动还是自动 tiling？`g_auto_mode` 何时被关掉？",
+a:"流程：\n① 读 tile_cfg 配置。若以 .json 结尾且文件存在 → parse_tile_cfg 解析成五个维度的切割计划（n/h/w/c/nhw 各自的 TileSubGraphMap 与 max_num 限制）；\n② **关键判定**：若解析后没有配置任何 disable_op（排除名单为空），说明用户提供的是一份「完整计划」——把 g_auto_mode 置 false，进入**纯手动模式**；否则保留自动模式（用户只排除了一些算子，其余交给编译器自动搜索）；\n③ 非自动模式还会 append_schedule_flag：把 keep_isolate_when_scheduling 标记写进切片相关节点，通知调度器尊重切分边界；\n④ 自动模式先 check_batched_graph_tile_n 处理 batched 特例，然后走自动搜索（各轴 make_plan + update/收缩）；\n⑤ 结束前 config_tiled_graph 配置收尾 + IRChecker 校验，失败回滚。",
+fq:"为什么用「disable_op 名单是否为空」来判定手动/自动？这个设计可靠吗？",
+fa:"它假设：用户若给出了一份没有排除项的完整计划，就是想要完全掌控；只要他排除了任何算子，就说明他接受/需要自动搜索去补全。简单直觉且零额外配置字段。隐患是边界语义模糊：用户可能只是排除一个算子但期望其余全手动复刻——当前会被当成半自动。更严谨的做法是显式 mode 字段（auto / manual / hybrid）。这个例子说明：**用配置的「形状」推断意图，永远不如显式声明意图**——但前者在迭代速度上有优势，属于典型的快速演进期妥协。"},
+
+{id:7,cat:"optstages",diff:3,tags:["tiling","多轴计划"],
+q:"tiling 为什么要做成 tile_n / tile_h / tile_w / tile_c / tile_nhw 五个维度、外加 max_num 限制的「多轴计划」结构？",
+a:"原因：不同算子的可切分轴和收益模型不同——\n- Conv 系：H/W 切分（流式处理大特征图）、C 切分（适配 SRAM 容量）、N 切分（batch/core 并行）；\n- MatMul/FC：沿 N（或 K/C）切分以适配 large_inc / large_outc 限制；\n- Eltwise / 元素级：跟随上游切分，自身不能主导；\n- 多维多轴（nhw）：需要同时按多个维度分块的特殊算子。\n\n五套 map（切点→切分计划）加 max_num 上限 = 允许同一张图的不同分支各自选轴选粒度。make_plan_n/h/w/c/nhw 生成候选，update_mp_bp_map / update_tile_plan 做**多轴冲突合并与收缩**（把局部候选收敛成全局一致的方案），最后 apply_tile_* 逐一落地。",
+fq:"为什么「合并与收缩」这一步不可避免？（提示：同一算子可能同时出现在多个轴的候选里）",
+fa:"一个算子既可能被 H 计划选中、又被 C 计划选中；不同分支对同一公共子节点的切分数也可能不一致。若不做合并收缩，下游会面对「同一个 tensor 有两套切分描述」的矛盾状态。收缩的常见语义是取约束交集/最大公约数（按最严格的一方对齐），必要时反推回各计划。这本质上是**局部候选 + 全局一致性求解**的两段式架构：局部自由度用于探索收益，全局阶段保证产出唯一确定——与指令选择的 tree covering + 全局合法性检查是同一思想。"},
+
+{id:8,cat:"optstages",diff:3,tags:["tiling","IRChecker","回滚"],
+q:"`tile_graph` 结尾先 `IRChecker::check_graph(g)`，失败就 `oldg->clone(g)` 回滚。为什么 tiling 需要这种「事务性」保护？这个设计有什么代价？",
+a:"tiling 是整条流水线里**最激进的结构改写**：大算子拆成多个、插入 crop/concat/split/pad、常量参数被切分、节点顺序重排——新图很容易违反 IR 不变量（shape 不自洽、边断裂、类型不匹配）。如果不校验不回滚，后续 193 项 pass 会在一张非法图上继续工作，错误级联爆发，最终现象可能离根因十万八千里。回滚保证「事务性」：要么得到一张通过校验的新图，要么保持原图 + WARN（Tiling failed! The original graph is restored.）。\n\n代码实现：函数入口先 `oldg = g->clone()`，结尾校验失败时 `oldg->clone(g)` 把内容克隆回去。",
+fq:"「备份-尝试-失败还原」模式的代价是什么？编译器里还有哪些同构应用？",
+fa:"代价：① 内存——整张图深拷贝常驻；② 时间——失败时全部计算作废。同构应用：指令选择失败回退通用指令、寄存器分配失败 spill 重试、JIT 分层编译的激进层失败回退保守层。改进方向：只记录变换的 undo log（增量回滚）或设多个中间校验点（分阶段提交），把「全有全无」变成「尽量前进」。"},
+
+{id:9,cat:"optstages",diff:3,tags:["tile_graph_by_size","GM 约束"],
+q:"`tile_graph_by_size` 按 gm_size 约束切图。请描述两个重载的分工、判据语义，以及 threshold（默认 1.6）的用途。",
+a:"两个重载：一个接受显式 tile_num，一个接受 core_num。共同思想：切分后的数据体量必须落进 GM 预算内——判据围绕「tiled_output_size 与 gm_size / core_num 的关系」展开（对应头文件注释：tiled_output_size < gm_size/core_num）；core_num 版本等于「按核数平均分摊 GM 预算」的语义，每个核分到一份预算，切分粒度不能超过它。\n\nthreshold 默认 1.6，注释写明是「a experience value」：处理切片间的 overlap——tiling 切片不是完全独立（halo/重叠区、边界行重复读），实际占用比理论输出大，用经验系数留出余量，避免理论可行、实际微超。\n\n输出 mp_bp_map（切点→分支计划）与 max_num_map（每个切点的最大切分数），供上层应用。",
+fq:"为什么按「输出」体量约束，而不是按「输入」体量？",
+fa:"因为内存峰值主要由输出决定：输入常常可以流式读取（不必全量驻留），而每级输出 feature map 要落 GM 被下游消费，是驻留量的主要贡献者。以输出为约束等价于直接给峰值驻留量设上界，比输入导向更贴近真实内存模型。这也解释了为什么很多 tiling 启发式都围绕「输出 footprint」而不是「输入 size」来做搜索。"},
+
+{id:10,cat:"optstages",diff:3,tags:["keep_isolate_when_scheduling","CP-20953"],
+q:"`keep_isolate_when_scheduling` 的注释说它是「a trick way to make a barrier between core (CP-20953)」。这个 flag 的作用机制是什么？为什么只在手动 tiling 时设置？",
+a:"机制：tiling 后，同一算子的不同切片在图上表现为一组相邻小节点。调度器默认会**合并**相邻小节点成大调度单元（提升执行效率）——但合并会抹掉切片边界，而切片边界承载着「不同核/不同时刻处理不同数据」的约束（核间 barrier 语义）。手动 tiling 给切片关联节点打上 keep_isolate_when_scheduling 属性，调度器见到就「不合并我」（代码里多处检查该属性），从而在调度结果中保住核间边界。\n\n只在手动模式设置的原因（代码注释明确）：该 flag 只在用户使用 tiling cfg 时存在，Not for auto tiling——自动 tiling 的计划由编译器自己生成，合并逻辑与切分逻辑可以协同；而手动 cfg 是**外部用户意图**，编译器无权假设自己可以改写，必须原样尊重。",
+fq:"这个 flag 被注释称为 trick，你觉得哪里「trick」？如果要给它转正，怎么设计？",
+fa:"trick 之处：用一个字符串属性在「tiling pass」与「scheduler」两个子系统之间传递契约——没有显式的类型、没有依赖声明，全靠双方约定；而且语义是「负向标记」（不要合并我），排查问题时很难从调度结果反查到源头。转正设计：① 把语义建模成一等概念——调度单元的 isolation 属性（枚举：free / barrier / pin），进类型系统而非 attrs；② 在 tiling 产出的计划里显式声明这些边界（本来就是计划的一部分）；③ 调度器文档化「isolation 优先级高于合并收益」的规则。核心原则：跨子系统协议要显式化。"},
+
+{id:11,cat:"optstages",diff:3,tags:["passes_before_optimize","功能分组"],
+q:"`passes_before_optimize` 共 193 项（174 个唯一 pass）。请把它按功能族归纳，每族举 2-3 个代表 pass。",
+a:"按源码列表可归为这些族：\n\n① **前置专项**：fill_constant_out_shape、tile_graph（默认禁用）、global_avg_pool_3d_to_2d、eliminate_concat1by1；\n② **matmul/FC 家族**（带严格顺序注释）：fuse_constant_matmul_to_fc → gemm_to_matmul → asym_matmul_to_sym_matmul（×2）→ eliminate_broadcast_matmul → … → adjust_matmul_for_large_w → split_matmul_for_large_inc/outc → matmul_to_fc；\n③ **norm 分解**：decompose_layernorm / instancenorm / rmsnorm → eliminate_norm_shape_dim → reshape_aiff_norm；\n④ **reduce 家族**：reduce_to_pool、global_max_pool_to_reduce、split_reduce、adjust_reduce_axis、reshape_aiff_reduce；\n⑤ **HWA 硬件适配**：hwa_conv_inc/outc_adaptor、hwa_*_c_adaptor、crop_conv_kernel、split_conv_input_c/output_c、stride_kernel_size_adaptor；\n⑥ **crop/pad 家族**：fuse_crop、fuse_crop_pad、offset_crop_pad、eliminate_crop/pad、patch_internal_crop；\n⑦ **融合**：fuse_tile_eltwise、fuse_reshape、fuse_transpose（×3）、fuse_transpose_reshape_matmul；\n⑧ **消除/清理**：CSE_subnode（×2）、remove_constant、eliminate_reshape / transpose / cast；\n⑨ **收尾**：reset_all_tensors_stride（必须是最后一项）。",
+fq:"维护近 200 项、大量带顺序约束的 pass 列表，最大的工程风险是什么？如何缓解？",
+fa:"最大风险是**顺序耦合的隐性破坏**：注释里几十条 NOTE（A 必须在 B 前）无法被编译器检查，新人插入新 pass 或调整位置时可能悄悄破坏依赖——编译通过、部分模型也正常，只在特定结构上出错。缓解：① 约束尽量写成可执行断言（如「此阶段后图中不得再有 Gemm 形态」的 IRChecker 扩展）；② 关键 pass 做成幂等或带 changes 返回值的收敛循环，降低对精确位置的敏感度；③ svg-before/after-pass 与 find_pass_by_name 支持二分定位；④ 基准模型集（注释里大量 for xxx benchmark 的记录正是这种沉淀）。"},
+
+{id:12,cat:"optstages",diff:3,tags:["重复 pass","迭代收敛"],
+q:"统计显示 `reduce_to_reshape`、`split_to_crops`、`fuse_transpose`、`fuse_reshape`、`eliminate_reshape` 各出现 3 次，`asym_matmul_to_sym_matmul` 等多次出现 2 次。为什么同一个 pass 要重复执行？",
+a:"源码注释给出了最典型的一例（asym_matmul_to_sym_matmul）：**多个 matmul 节点共享同一输入节点**，第一轮 pass 修改了共享输入的表达后，其它 matmul 的匹配条件随之变化，需要再跑一轮才能全部转化——即「变换之间存在干扰，需迭代至不动点」。其它重复的动因：\n- fuse/eliminate 交替（fuse_transpose … eliminate_transpose …再 fuse）：一轮融合产生的新相邻关系又满足下一轮融合条件，呈波浪式收敛；\n- reshape 系（fuse/eliminate）：与其他 pass 交替推进——先融合一批，再有新的可融合对暴露；\n- reduce_to_reshape：reduce 处理链中多个阶段都需要把 reduce 规整成 reshape 表达。\n\n本质：这些变换**不是一次性完备的**，重复执行是「手动多轮迭代」的工程近似。",
+fq:"重复跑固定轮数的代价是什么？怎么升级成更优雅的「跑到不动点」？",
+fa:"代价：编译时间（每轮全图遍历），且固定轮数可能仍不充分（写死 2 轮但某模型需要 3 轮）或浪费（无变化的图也跑 2 遍）。优雅方案：pass 返回「是否发生修改」，PassManager 对标记为迭代的 pass 循环到无修改为止（很多 pass 已返回 bool，就是为这个准备的基础设施）。注意点：要防死循环（变换互相抵消时 add↔eliminate 震荡），需加轮数上限 + 震荡检测（图片段哈希）。这类「收敛循环」是编译器 pass 管理的常见演进方向。"},
+
+{id:13,cat:"optstages",diff:3,tags:["顺序依赖","静默错过"],
+q:"注释要求：`fuse_constant_matmul_to_fc` 在其它 matmul pass 前、`gemm_to_matmul` 在 `asym_matmul_to_sym_matmul` 前、`asym` 在 `fuse_tile_eltwise` 前。请挑一条解释「为什么不能反」，并说明这类错误的典型症状。",
+a:"以 gemm_to_matmul → asym_matmul_to_sym_matmul 为例：Gemm 是更宽泛的线性算子表述（带转置 flag、alpha/beta 标量），而 asym/sym 的匹配逻辑只认标准 MatMul 形态。若顺序反了：asym pass 匹配不到 Gemm 节点——不报错、直接跳过；随后整个 matmul 家族（shape adaptor、large_w / large_inc 切分、matmul_to_fc、c adaptor）全部漏掉这批算子。\n\n**典型症状：静默错过**（silent miss）——没有编译错误、没有断言，只是这批算子以原始形态进入后面的阶段：轻则失去优化（性能下降），重则在后端遇到「不支持该形态」的错误（且报错点离根因很远）。再比如 asym→sym 统一量化格式后，fuse_tile_eltwise 的融合模式才有稳定模式可匹配——顺序反了会漏融合或匹配到半成品模式。",
+fq:"怎么把这类「只能靠注释记住的约束」变成机器可验证的？",
+fa:"三层防护：① **格式归一化收敛**——把「先把所有等价形态归一化成一种」做成每个阶段的入口约束（如 matmul 家族统一要求标准 MatMul 形态），配合 IRChecker 扩展断言「此阶段后不得存在 Gemm」；② pass 显式声明 provides/requires（形态级契约），PassManager 在注册顺序违反时启动告警；③ 变换覆盖率基线——构建结束时统计各关键 pattern 命中数，与历史基线对比，命中数掉到 0 报警。原则：口头约定进注释是第一步，把注释变成检查才是终点。"},
+
+{id:14,cat:"optstages",diff:2,tags:["reset_all_tensors_stride","收尾顺序"],
+q:"`reset_all_tensors_stride` 的注释是「it muse be at last」（原文如此）。为什么 stride 重置必须放在全部 pass 的最后？",
+a:"stride 是 tensor 的物理布局元信息（各维步长与对齐），被两类逻辑消费：\n① 依赖 stride 做决策的优化（datalayout_adaptor、lift/adapt cache stride、unroll 相关）——它们需要看到真实的 stride 状态；\n② 后续阶段的地址计算（tiling、内存分配、汇编都直接读 stride）。\n\n如果在中途重置：后面的 pass 会基于「规范化后的 stride」做判断，而它们可能期望看到「真实当前布局」——判定全部失真。放在最后 = 宣告「所有布局敏感变换已结束，把之前为匹配方便设置的临时 stride 异常值统一清除」，保证交给下游的布局元信息是干净、统一的初始态。",
+fq:"这个 pass 之后，stride 还会不会再被改写？「重置」的准确语义是什么？",
+fa:"会被读（tiling/调度/汇编），但设计上不应再被优化类改写——这是「布局决策已经冻结」的分界点。语义上它不是删除信息而是**规范化**：把 pass 期间为匹配/交换方便而留下的非规范 stride（零、占位值、局部特例）清除到统一默认态（如连续布局的标准步长），让下游拿到确定性的起点。这类「冻结点」是流水线设计的重要概念：明确哪些决策在这条线之前必须完成，之后只允许消费。"},
+
+{id:15,cat:"optstages",diff:3,tags:["unfold_graph","子图"],
+q:"`unfold_graph` 把 SubGraphNode 展开成内部真实节点，但会跳过两类节点：带 `skip_unfold` 的、带 `plugin_attrs_name` 的。展开放在 tiling 之后、plugin 之前，动机是什么？",
+a:"展开规则：① skip_unfold==true → 保留封装——这是其它 pass 显式要求的「保持整体」标记（如 loop/if 等控制流结构，或结构需要在后续阶段按整体处理）；② 带 plugin_attrs_name → 保留封装——plugin 已把该组节点变成原子实现单元，展开会破坏插件约定（插件的 memory_remapping、代码生成都依赖封装形态）。\n\n时机动机：① tiling 阶段希望子图保持封装（把子图当整体处理切分逻辑）；② 下一站 apply_plugins 的 GraphMatcher 需要在**普通节点**上做模式匹配——只有展开后的节点才能被识别和融合。所以 unfold 的窗口 =「tiling 已完成 + plugin 尚未开始」之间的唯一时段。",
+fq:"为什么 plugin 封装之后的节点不再展开？反过来，skip_unfold 标记的节点如果一直不展开，后面谁负责它们的代码生成？",
+fa:"不再展开：封装本身承载信息（选中的实现、匹配列表、error_code 绑定），展开等于让 plugin 的选择白做，还会破坏后续 remove_* 清理与内存重映射的处理对象（它们按封装节点组织）。skip_unfold 节点（典型如 Loop/If 控制流、或特殊结构子图）由各自专属的代码生成路径处理——控制流有 LoopNode/IfNode 的专门处理，plugin 节点由 plugin 的 codegen 接口生成，它们本来就不走「展开成普通算子再统一 lower」的路径。这体现了图编译器的**分层处理**：通用节点归一化处理，特殊结构按专用通道处理。"},
+
+{id:16,cat:"optstages",diff:3,tags:["lift","lower","结构清理"],
+q:"`lower_after_unfold` 组里同时有 `lift_reshape` / `lift_transpose`（提升）和 `lower_quantize_reshape_matmul`（下降），还有 eliminate / fuse 收尾。为什么方向是混合的？",
+a:"这一组的使命是「unfold 之后的结构清理」——unfold 让子图内部节点暴露出来，图中出现新的相邻关系，于是：\n① **lift 系（向上提升）**：把算子穿过相邻节点上移到更合适的位置——如 transpose/reshape 上移跨过量化算子，让量化作用于连续内存、也让下游模式更规整（与 lift_cache_transpose / lift_cache_pad 同思路，是这一类变换家族）；\n② **lower 系（下降拆解）**：lower_quantize_reshape_matmul 把「量化 + reshape + matmul」的复合模式下降为基本算子组合，统一到标准管线可处理的形态；\n③ **清理系**：eliminate_transpose + fuse_reshape 把 lift 制造的冗余（新产生的相邻可消 transpose、可合并 reshape）收干净。\n\n三者是配套动作：提升创造结构，下降统一形态，清理收尾——方向混合是为了「把图整理成规范形态」这一个共同目标。",
+fq:"「向上提升算子」的通用风险是什么？代码里怎么控制风险？",
+fa:"风险：① 语义改变——穿过相邻节点时若两者不可交换（如非线性算子前后搬 transpose），数值就错了；② 布局代价转移——把 transpose 提上去后，可能让另一处需要物化的转置数据变大（内存/性能副作用）。代码里的控制手段：每个 lift pass 维护**支持算子白名单表**（如 lift_reshape.cpp 里的 supported_ops：map<OpType, pair<check_fn, lower_fn>>），只有在白名单内且 check 通过才穿过；对不同算子有专门的 lower_fn 处理细节。依赖「白名单 + 单测 + 基准数值对比」三件套兜底。"},
+
+{id:17,cat:"optstages",diff:2,tags:["lower_before_plugin","fuse_multi_scalars"],
+q:"`lower_before_plugin` 只放了一个 `fuse_multi_scalars`。为什么它要单独成组、且必须紧邻 apply_plugins 之前？",
+a:"apply_plugins 会把匹配到的节点组**封装成黑盒 plugin 节点**——封装之后图匹配器看到的是原子节点，里面的标量运算再也无法被普通 pass 触碰。fuse_multi_scalars 把多个连续的标量运算（mul/add/sub 一类小算子）在封装前融合，为插件提供更干净的匹配模式：plugin 的 pattern 通常按「单个 scale 操作」编写，多个连续标量要么让 pattern 匹配不上、要么被浪费成多算子。\n\n单独成组的理由：① 时机唯一——恰在 unfold 之后（节点可见）、plugin 之前（尚可修改），区间里没有其它 pass 需要搭车；② 便于调试定位——独立组意味着独立的日志与单独执行通道；③ 依赖最全——它需要读「所有形状适配已尘埃落定」之后的最终形态，放太早会基于中间态做错决策。",
+fq:"其它融合类 pass（fuse_tile_eltwise 等）为什么不也挪到这里？",
+fa:"它们在 passes_before_optimize 的中后段执行，其产物会被中间 pass 继续利用：例如 fuse_tile_eltwise 融合出的 eltwise 形态会影响后续 crop/pad 清理与 adaptor 的判断；而 fuse_multi_scalars 处理的是「纯标量广播运算」——这类运算与 dtype / 布局 / 硬件约束弱相关，只会被 plugin 的封装打断，不受中间 pass 影响。所以它的最晚安全点恰是 plugin 之前。这个对照说明：pass 的合理位置取决于「它依赖谁、谁依赖它」——依赖强、被依赖弱的 pass 往后放是通用策略。"},
+
+{id:18,cat:"optstages",diff:3,tags:["apply_plugins","GraphMatcher"],
+q:"`apply_plugins` 的执行流程：插件如何排序？匹配后有哪些拦截检查？`fused_nodes` 集合解决什么问题？",
+a:"① **排序**：get_plugins 先按 set_target 过滤（只保留支持当前目标的插件），再按 get_score() 降序；score 相同时非 DS 插件优先（静态插件先匹配）；\n② **匹配**：对每个插件、每张图，GraphMatcher 以 GreedyMode +（internal 插件再加 SingleOpSubgraphMode）匹配 pattern，匹配结果过 filter_pattern 二次筛选；\n③ **拦截**：check_io_tensor——若匹配集合含 io_tensor 且其消费者全在集合内部（融合会让 IO 从图中消失）则禁止；check_ds_plugin——动态节点只能用 DS 插件、静态节点只能用非 DS 插件；单节点 LayoutConvertor 直接跳过（单独一个布局转换不值得封装）；\n④ **封装**：SubGraph::create + as_node(true, false)，写入 plugin_attrs_name、_match_list、error_code，调用 plugin 的 check_params 与 setup；\n⑤ **fused_nodes**：记录已被吸收进某个 plugin 的节点；后续 pattern 若包含已融合节点（has_merged）则跳过——防止同一节点被两个 plugin 重复封装导致图结构损坏。",
+fq:"为什么 score 相同时让「非 DS 插件优先」？这个 tie-breaker 反映了什么策略？",
+fa:"DS（动态 shape）插件的匹配条件更复杂、生成路径更长、验证样本更少；静态插件经过更多生产验证、行为更稳定。能力评分相同时也意味着「静态插件能做到的事」优先交给它。策略本质是**保守优先**：在收益无从区分时选择风险更低的路径。反过来，纯动态模型场景下非 DS 插件会被 check_ds_plugin 拦截（动态节点必须走 DS 插件），所以这个 tie-breaker 不会伤害动态路径的正确性——只在「两者都能干」的模糊地带起作用。"},
+
+{id:19,cat:"optstages",diff:3,tags:["pass_uncalled","find_pass_by_name"],
+q:"`apply_plugins` 与 `apply_internal_plugins` 被放进 `pass_uncalled`，注释说「find passes that are not called by lowring functions」。这两个 pass 的实际调用路径是什么？`find_pass_by_name` 又提供了什么能力？",
+a:"差异与调用路径：① apply_plugins / apply_internal_plugins 都不在任何一个 lower_* 的 pass tuple 里——它们在 optimize() 函数体里被**直接调用**（apply_plugins 在 lower_before_plugin 之后、apply_internal_plugins 在 lower_after_optimize 之后）；② pass_uncalled tuple 把它们注册进「pass 名录」，供 find_pass_by_name 建立 name → callable 的映射；③ apply_internal_plugins 与 apply_plugins 的区别：前者只过滤出 GBPlugin_Internal 类型的插件且只遍历主图，后者用全部插件遍历主图+所有子图。\n\nfind_pass_by_name 的能力：首次调用时把所有 pass 组（含 pass_uncalled 与 other_passes）里的每个 pass 按名字收集成 std::map<string, function<bool(GraphPtr)>>，外部（工具/调试通道）可以按名字取到任意 pass 的函数包装并单独执行它。",
+fq:"「按名字单跑任意 pass」这个能力对编译器团队的价值是什么？",
+fa:"它把流水线从不可分割的黑盒变成**可组合实验台**：① 单跑一个 pass 并导图（配合 svg-before/after-pass）看它自己做了什么；② 复现「关掉/单开某 pass 结果就对了」的 bug；③ 给 tuner 提供 pass 级开关矩阵做搜索；④ 给新人一个「一题一 pass」的学习路径。这种「pass 级可观测、可执行」的基础设施是编译器项目的非功能性核心资产——比起优化本身，它决定了团队定位问题的速度。代价是每个 pass 都要能被独立执行（对上下文依赖强），这也是 pass 设计要尽量无副作用的原因之一。"},
+
+{id:20,cat:"optstages",diff:2,tags:["lower_after_optimize","收尾校验"],
+q:"`lower_after_optimize` 有 14 个 pass。请按功能分组说明，并解释 optimize() 结尾为什么还要「刷新 real nodes + 校验输出 tensor」。",
+a:"分组：\n① **统计与布局**：actg（activation gather，dev 特性）、calculate_node_ops_count（算子量统计）、DataLayoutSchedule（布局调度——决定最终数据布局方案）；\n② **布局收尾**：remove_transformer_multi_head_layoutconvertor、unify_transpose_layout、adapt_concat_strides；\n③ **冗余清理**：remove_dummy_slice / remove_crop / remove_split / remove_concat / remove_pad / remove_switch——内部辅助算子在完成使命后拆除；\n④ **标记与重映射**：record_gm_tensor（读写 prior_in_gm 配置）、max_batch_adaptor、virtual_node_memory_remapping。\n\n结尾两件事：① update_real_nodes——前面所有变换都可能修改子图内容（换节点、改连接），SubGraphNode 缓存的「真实节点列表」必须刷新，否则后续阶段（调度/汇编）读到过期信息；② 输出校验——遍历入口处记录的所有输出 tensor，任何一个不在图中就 ERROR（被某个 pass 误删）。",
+fq:"输出校验用 ERROR 日志而不是断言/异常，为什么？这套「错误计数」机制怎么决定构建成败？",
+fa:"背景：项目用 -fno-exceptions 编译，没有异常通道；assert 在 release 被裁剪且 abort 对库形态不友好（宿主可能是 Python 进程）。所以错误通道 = ERROR() 日志宏 + 全局错误计数（GCompilerLogger）。build_aipu 开头记下初始错误数，结尾对比 error_cnt == get_error_count() 决定返回 true/false——期间任何 ERROR 都让构建失败。优点：不必手工在每层调用栈传递错误码，日志本身就是诊断入口；缺点：错误恢复能力弱（一般直接终止），且「忘记检查返回值」的地方会漏错。配套约定是「关键路径终点必须核对计数」。"},
+
+{id:21,cat:"mcflow",diff:2,tags:["build_graph","主流程"],
+q:"请完整讲一遍 MC 路径 `GraphBuilder::build_graph()` 的执行流程：从图处理到返回可构建的图。",
+a:"按 builder.cpp 顺序：\n① 决定输入/输出（缺省取 origin graph 的 IO）；\n② 图复用策略：remove_origin_constant 为真 → 直接用 m_origin_graph；否则 `m_origin_graph->clone(inputs, outputs, m_graph, true)` 做带裁剪的深拷贝；\n③ `topological_sort()` + `partition_graph()`（当前是空实现，预留扩展点）；\n④ error_code 全局 tensor 的 ISA 分支处理（≥ZYv5 置 shape[0]=0；<ZYv5 给所有节点 set_attr 引用）；\n⑤ **BuilderOptimizer::optimize(m_graph)**——完整 MC 优化流水线（前 20 题的整套阶段）；\n⑥ `check_valid_name()` 校验命名合法；\n⑦ PerfEstimator 性能估算并打印 summary；\n⑧ 分层：<ZYv5 所有节点塞进一个 level；≥ZYv5 走 LoadBalancer（核数受 single_core_opt 影响）→ m_levels；\n⑨ workspace_allocate：绑定/创建各级 workspace；\n⑩ ReorderOptimizer::node_reorder(branch_reorder_strategy) 节点重排；\n⑪ 刷新子图 real nodes；\n⑫ 返回 m_graph（所有权移交，成员置空）。",
+fq:"第 ⑤ 步 optimize() 之后才做负载均衡与重排——为什么这两件事不早做？",
+fa:"因为它们的输入是「优化完成后的最终图」：LoadBalancer 要基于最终算子形态估时划分核（算子已经全部 lowering/融合，估算才有意义）；ReorderOptimizer 的 w_map 权重由最终 tensor 尺寸算出（内存足迹模型依赖最终 shape）。如果提前做，图的形态还会被后续 pass 改写，划分与排序全部作废。这再次体现「决策后置」原则：**结构决策放在结构稳定之后**。此外顺序上先均衡后重排也合理：重排是同一 level 内的顺序微调，必须在 level 划分确定之后。"},
+
+{id:22,cat:"mcflow",diff:2,tags:["error_code","ISA 分叉"],
+q:"`error_code` 这个全局 tensor 在 ISA<ZYv5 时给所有节点逐一分发引用，≥ZYv5 时只把 shape[0] 置 0。同一个语义为什么有两套处理？",
+a:"error_code 是运行时的错误回写区域：算子执行失败时执行环境把错误码写入该 buffer、运行时读出来定位问题。\n\n两套处理反映机制演进：\n- **旧架构（<ZYv5）**：逐节点 set_attr(error_code, error_code)——每个节点上下文都持有一份引用，运行时按执行中的节点找到对应错误槽位；\n- **新架构（≥ZYv5）**：`error_code->shape()[0] = 0` ——分配阶段不再为它预留 per-node 静态空间（size 归零），错误码统一由运行时机制处理。\n\n代码只用一行 if 切开两种行为。",
+fq:"这种按 ISA 代际分叉的语义散落在代码各处（error_code、level 划分、调度器选择……）。管理这类分叉的最佳方式是什么？",
+fa:"现状：if/else 直接写在各消费点——可读但分散，新增 ISA 时要靠搜索全库找 `type >= ISA_ZYv5` 这类散点。改进方向：把这些差异沉淀为 **Target 能力查询接口**——如 target->needs_per_node_error_code()、target->uses_compiler_load_balance()、target->min_stack_size()——消费点变成单一函数调用；新增代际时改动集中在 Target 层的一处 switch。项目其实已经在 lowering_utils 做了类似沉淀（get_aiff_max_h / get_pe_spec 按 ISA 查表），说明团队有这个意识——把「散落的 if」收敛成「集中查表」是同一思路从数据向行为的推广。"},
+
+{id:23,cat:"mcflow",diff:2,tags:["LoadBalancer","level"],
+q:"为什么只有 ISA ≥ ZYv5 才走 LoadBalancer？< ZYv5 把所有节点直接塞进一个 level 意味着什么？",
+a:"<ZYv5 分支：`for(n : m_graph->nodes()) level.push_back(n); m_levels.push_back(level);` —— 全图一个 level，编译期不做多核划分，把「谁在哪颗核、何时同步」交给驱动/运行时动态决定。\n≥ZYv5 分支：LoadBalancer 在编译期基于全图信息做显式多核划分，产出多 level 结构（同层可并行执行）。\n\n差异的动因是架构复杂度的变化：新架构（多核 + 多 TEC + GM/SM 层级）运行时无法承担全局最优划分（信息不全、时机太晚），必须在编译期看到整图做静态调度；老架构相对简单，运行时动态调度够用。single_core_opt 则给新架构提供强制单核的调试路径（对拍定位多核竞争类问题）。",
+fq:"「同层节点可并行」——这个并行性由谁最终决定？level 结构表达的到底是「承诺」还是「机会」？",
+fa:"level 表达的是**机会**（opportunity），不是承诺：编译期保证的是同层节点之间无数据依赖（拓扑上可并行），但实际是否并行、如何映射到硬件执行单元由运行时决定——单计算单元或驱动串行策略下，同层就是顺序跑，功能正确性不受影响。这种「编译期标注机会、运行期消费机会」的分离是编译器常见的设计：编译器不做它无法保证的事，只把信息暴露得足够好。新架构把这个机会显式映射到多核执行上（并行度=核数），本质是用编译期的确定性换取更高的执行效率。"},
+
+{id:24,cat:"mcflow",diff:3,tags:["LoadBalancer","策略表"],
+q:"`LoadBalancer::m_load_balance_strategy` 有四行策略：`{0,0,0}`、`{0,1,0}`、`{0,1,1}`、`{0,2,2}`。表头注释把它们记为 merge_s / split_s / split_load_s——请解释这套策略空间。",
+a:"三元组 = 三个维度的取值组合（合并方式 / 切分方式 / 负载切分方式）：\n- **{0,0,0}**：不合并也不切分——不干预，图原样分层；\n- **{0,1,0}**：不合并、按输出 C 通道切分——把大算子按 channel 拆到多核（适合 C 维可分的算子）；\n- **{0,1,1}**：不合并、按 tiling 方式切分——与 tiling 结果协同做核间分配；\n- **{0,2,2}**：合并为单节点、按 batch 切分——N 维拆到多核（batch 并行的典型场景）。\n\nschedule() 按选定策略把图划分为 levels，set_core 决定核数。不同策略适配不同图结构：分支多适合按分支合并，batch 大适合 N 切，C 大适合 C 切。",
+fq:"为什么用「数字三元组 + 表格」而不是命名 enum？这种数据驱动风格的得失是什么？",
+fa:"得：策略空间是三个正交维度的组合枚举，表格让「加一行 = 加一种策略」，外部（配置/命令行）可用整数索引选择，改行为不动控制流。失：可读性与类型安全弱——0/1/2 的语义只能从 schedule() 的消费代码反推（甚至连表头注释 merge_s/split_s/split_load_s 与实际值的对应都需要考古）。改进：保留表格驱动的同时给数字定义 scoped enum 与文档注释，或让每行携带一个策略名。这是快速演进期「先覆盖策略空间、后补类型」的典型取舍。"},
+
+{id:25,cat:"mcflow",diff:3,tags:["ReorderOptimizer","重排"],
+q:"`ReorderOptimizer::node_reorder(strategy)` 支持策略 -1 / 1 / 2 / 3 以及从 JSON 加载的离线方案。它们分别在做什么？为什么「重排」需要这么多种策略？",
+a:"五种路径：\n- **JSON 配置**（load_reorder_cfg）：直接按用户给定的「level → 子图 → 节点顺序」sort_by_ordered 应用，离线调优通道；\n- **-1**：每个子图做 sg_order_dfs（DFS 序遍历）后回写 topological_sort(new_orders)；\n- **1**：sg_order_optimize——基于 w_map 权重（沿路径累计的内存足迹估计）做贪心排序（best_order 局部择优）；\n- **2**：level_branch_optimize——同一 level 内按分支聚合（同分支算子连续执行）；\n- **3**：level_stage_optimize——按 stage 聚合重排。\n\n为什么需要多种：节点执行顺序影响两件事——**峰值内存**（相邻算子的 buffer 复用率）与 **DDR 访问模式**（同分支连续执行 = 更好的局部性）。不同图结构（分支多 / 链式长 / batch 结构）适合的策略不同，且「最优」随硬件与模型变化——做成策略矩阵供 tuner 搜索。",
+fq:"strategy=1 的 w_map 是什么？为什么按它排序能改善内存？",
+fa:"update_w_map 自根向叶累计：w_map[n] = 所有父节点 w_map 之和 + 自身输出尺寸——即「沿这条执行路径到该节点为止累计产生的内存足迹」。按足迹贪心排序（优先处理占用大的链）让大链先执行、其 buffer 尽早释放，后续小操作穿插复用，压平峰值内存曲线。它不保证最优（DAG 上峰值内存最小化是 NP 难），是「线性时间局部启发式」的工程折中。dump_reorder_cfg 可以导出方案供离线分析——这也说明团队把它当作**可调优子系统**而非一次性算法。"},
+
+{id:26,cat:"mcflow",diff:3,tags:["sub_model","bss_id"],
+q:"build_aipu 里根据 `max_wt_size` / `max_act_size` 把 levels 切成多个 sub_model，并给节点打 `bss_id`。这套机制解决什么问题？cross_submodel 又是什么？",
+a:"背景：某些部署形态对「单次可访问的常量总量」或「中间数据总量」有硬上限（如权重必须放片内、或 BSS 段大小受限）。算法：\n① 按 level 累计 size——get_level_constant 统计该 level 所有节点的常量总量；get_level_act 统计真实计算节点的输出总量（跳过 InternalConcatenated/Crop/Slice/Spliter/Pad/Constant 等结构性辅助算子，以及纯 remapping 的 LayoutConvertor——它们不产生真实驻留数据）；\n② 累计超过 max_size（max_act_size 优先）就切出新 sub_model；单 level 本身超限则 WARN；\n③ 给每个 sub_model 内所有节点（含其子图内部节点）set_attr(bss_id, i)——后续内存分配与 BSS 段生成以 sub_model 为单位；\n④ **cross_submodel**：记录「在之前 sub_model 中被生产、又在当前 sub_model 中被消费」的跨段 tensor；disable_cross_buffer_reuse 打开时这些 tensor 进 not_reuse 列表（跨段复用会踩数据）。\n\n本质：把「单段内存超限」的大图切分成多个连续执行的段，各段独立分配/下发，用执行序换空间。",
+fq:"get_level_act 的统计口径为什么要把 Internal 系列算子全跳过？口径错了会怎样？",
+fa:"口径原则是**只统计真实内存足迹**：Internal 系列（拼接/裁剪/切片等）是 pass 阶段插入的结构性辅助节点，表达数据搬运关系，不产生新的驻留 buffer——算上会虚增 size、把本可不切的图切碎（每个 sub_model 边界都带来跨段 tensor 的额外约束与调度开销）。反方向的口径错误（漏统计真实算子）则让段超限，运行时报错或硬件异常。所以这个统计函数本质上是一个「内存模型」，值得与真实 profiling 数据定期对账（代码里 DDRFootPrintEstimation 就在做类似的事情）。"},
+
+{id:27,cat:"mcflow",diff:2,tags:["not_reuse_tensor","buffer 复用"],
+q:"哪些场景会把输入/输出收集进 `not_reuse_tensor`？为什么这些场景反而不能复用 buffer？",
+a:"触发条件（代码）：输出侧——存在外挂 SRAM（extsram）、disable_output_buffer_reuse、alloc_output_on_extsram、enable_custom_smmu、multi_batch 任一成立；输入侧——extsram、disable_input_buffer_reuse、enable_custom_smmu、multi_batch 任一成立；此外 InternalConstant 的输出（zero-copy 常量）**永远**不可复用。\n\n为什么不能复用（复用本是压缩内存的常规手段）：\n① **SoC SRAM 场景**：buffer 地址由驱动/UMD 分配管理，编译器随意复用会造成驱动分配冲突或地址不固定；\n② **custom SMMU / multi-batch**：输入输出被运行时跨调用持有（页表共享、batch 流水），复用意味着下次使用被覆盖；\n③ **zero-copy 常量**：数据指针直接暴露给硬件/驱动（不拷贝），被写就是数据损坏。\n\n共性：这些 tensor 的**生命周期超出了单算子执行窗口**——被外部系统持有。复用的前提「生产者死后消费者不再访问」在这些场景不成立。",
+fq:"注释里还有一句：temp disable output if using gm due to how to use sync out feature is not quite clear。怎么评价这种「写明原因的不完美妥协」？",
+fa:"这是一条高质量注释的范例：它同时记录了「做了什么」（暂时禁用输出的 buffer 复用）、「为什么」（sync out 特性用法不明确）和「性质」（temp——临时妥协）。好处：后来者不会误以为是深思熟虑的设计而不敢动，也不会不知道背景而乱改；为未来「sync out 明确后移除该禁用」留下了明确的路标。对比糟糕的做法：沉默地把输出加入 not_reuse（后人只能靠 git blame 考古），或写一句无信息量的 because bug。工程文化上，**把临时妥协显式化**比假装完美更可信。"},
+
+{id:28,cat:"mcflow",diff:3,tags:["调度器","MCScheduler"],
+q:"ISA ≥ ZYv5 时用 MCScheduler 还是 SOMSScheduler 取决于 `use_amat_scheduler` 配置，< ZYv5 用基类 Scheduler。这三者的层级关系与差异是什么？",
+a:"类关系：Scheduler 基类——通用流程（graph_memory 统计各 buffer 内存需求、graph_consumer 统计消费者计数用于释放、graph_memory_allocate 通用分配、mem_allocate 编排入口、sram_optimize 支持、gm_enhance 默认实现）；MCScheduler 继承 Scheduler，重写 mem_allocate / gm_enhance / print_gm_avg_usage，核心差异是 graph_memory_allocate_mc——按 level 把 GM 预算均分（gm_per_core = gm_size / level.size()，disable_separate_gm 可关闭）、维护每子图的 m_liveness_map（多核场景各子图独立活跃性）、mem_clock 标记；SOMSScheduler 是另一套复用策略实现。\n\n三代选择：老 ISA 用通用分配（结构简单）；新 ISA 在多核预算管理（MCScheduler）与另一复用策略（SOMSScheduler）之间由配置切换——是策略并存而非递进替代。",
+fq:"gm_per_core = gm_size / level.size() 这个「均分」假设有什么隐患？改进方向？",
+fa:"隐患：假设同 level 内各子图（核）的 GM 需求均匀——真实模型里 attention 头、大卷积、小元素算子的中间数据量可能差一个数量级，均分造成「大需求核不够用、小需求核浪费」。缓解手段已有两个方向：disable_separate_gm（放弃切分共享池）、gm_enhance（事后增强）。更优做法是按各核的 footprint 估计做**加权切分**（需要分配前的内存需求预估——DDRFootPrintEstimation 已有雏形）。这是「先上线差异化切分、再精细化」的典型演进路径。"},
+
+{id:29,cat:"mcflow",diff:2,tags:["preserve_gm_size","内存契约"],
+q:"`preserve_gm_size` 在把 GM 大小传给调度器之前先扣掉一部分。为什么要预留 GM？这类机制的本质是什么？",
+a:"逻辑（ISA ≥ ZYv5 时）：读取 preserve_gm_size，若大于总 GM 直接 ERROR；否则 gms = gm_size - preserve_gm_size 再传给 scheduler->set_gm_size。动机：GM 不是编译器独占的资源——运行时/驱动/其它组件也需要 GM 空间（驱动内部结构、多模型共载的共享区、profiler 区域、或用户为特定特性手工保留）。编译器如果按满额分配，运行时就没有余量可用，导致加载失败或运行异常。所以预留 = **编译期与运行时的内存契约**：编译器让渡一部分预算，换取运行时系统的正常工作空间。",
+fq:"编译器里还有哪些同构的「预算扣减/硬性预留」例子？它们的共同原则是什么？",
+fa:"同构例子：bss.stack_size = MAX(config stack_size, 8192)——栈有最小值兜底；DS 模式下 temp_param_base 默认 8KB、RO/descriptor 按 64 项对齐填充（DEFAULT_RO_NUMBER_PER_LAYER）预留增长空间；max_wt_size 切分里的单 level 超限 WARN 也是预算思维。共同原则：**在总量固定的资源上，为「不确定的将来」留硬性余量；宁可浪费一点，不能越界**——因为越界的代价（硬件挂死/加载失败）与浪费的代价（一点内存）完全不对称。工程上这类参数都应做成显式配置 + 校验（preserve 超总量直接 ERROR 就是好的示范）。"},
+
+{id:30,cat:"mcflow",diff:2,tags:["mem_allocate","EVAL","emu_align"],
+q:"内存分配完成后代码做了三个动作：打 `[EVAL]` 计时、把输出 slot 提到列表最前（alloc_output_on_extsram）、给 input/keep/not_reuse 强制 `emu_align` 对齐。请逐个解释。",
+a:"① **[EVAL] 计时**：high_resolution_clock 包住 `scheduler->mem_allocate(...)`，打印 duration——分配算法的耗时随图规模增长，这条日志是性能回归的观测点（也出现在 INFO() level 输出里）；\n② **输出 slot 重排**：alloc_output_on_extsram 打开时，先把包含输出的 slot 收集到列表最前，再拼其余 slot——下游 UMD 按 slots 顺序分配地址，输出优先 = 输出落进更快的 SoC SRAM 且地址可能更优（注释：so that UMD can allocate the buffer in priority）；\n③ **emu_align**：按 `get_target()->axi_bandwidth() / 8`（EMU 要求的位宽对齐）抬高 input / keeps / not_reuse 三类 tensor 的 align——注释写明 according to EMU requirements。\n\n三个动作共同主题：**编译期为运行时/外部系统铺垫**——性能计量、布局偏好传递、接口对齐约束。",
+fq:"为什么 emu_align 只加在这三类 tensor 上，而不是全图所有 tensor？",
+fa:"这三类的共同点：**会跨出编译器边界被外部系统直接寻址**——inputs/outputs 是运行时 API 面，keeps 是 dump/保留语义（外部读取），not_reuse 是被驱动/UMD 持有的 buffer。外部访问者按接口对齐假设解析地址，所以要按 AXI/EMU 位宽对齐。纯内部 buffer 由编译器自己生成的全部访问代码寻址，对齐要求由 ISA 访存单元特性决定（汇编阶段控制），不需要套外部接口的约束。原则：**对齐要求跟着访问者走**——谁访问，按谁的接口对齐。"},
+
+{id:31,cat:"mcflow",diff:3,tags:["dynamic_gm","view 切换"],
+q:"`enable_gm_enhance` / `enable_dynamic_gm` 采用两段式：分配后 `update_node_output_for_dynamic_gm` 临时替换节点输出，assembly 之后再 `restore_node_output_for_dynamic_gm` 恢复。为什么要「临时替换再恢复」？",
+a:"机制： gm_enhance 后拿到 GM 区域（scheduler->get_gm_regions()[0]）；update_node_output_for_dynamic_gm 把部分「写出到 GM」的节点输出**临时替换成指向 GM 区域的新 tensor**，同时用 node_tensor_map 记录原始输出；assembly 在替换后的图上生成代码与参数——汇编阶段看到的是「GM 直写」形态（地址模式、描述符、访问路径都按 GM 组织）；assembly 完成后 restore_node_output_for_dynamic_gm 恢复原连接，并**修正 m_ro 中涉及的参数引用**。\n\n动机：让汇编看到优化后的布局做代码生成，但图的语义连接不应被这种优化永久改变——恢复保证交给后续（BSS/header/调试 dump）的是干净的原始语义图。本质是一次**受控的视图切换**：同一张图，汇编看见 GM 形态，其它阶段看见原形态。",
+fq:"「临时改写-恢复」模式的风险在哪？怎么保证恢复无漏？",
+fa:"风险：替换期间新产生的任何引用（RO 参数、缓存指针、descriptor 项）若不在恢复时修正，就留下悬空/错混乱引——而这类错误往往在运行期才暴露。代码做法：映射表完整记录 + restore 显式修正 m_ro（restore_node_output_for_dynamic_gm(m_graph, node_tensor_map, m_ro)）。通用防护梯度：① 作用域化（RAII scope guard 自动恢复，杜绝漏调）；② 引用集中化（把所有可能新增引用的系统梳理成清单，恢复时全部过一遍）；③ 校验（恢复后断言「图中不存在指向 GM 替换物的引用」）。当前实现靠手工配对（update → assembly → restore），位置紧邻、可读但脆弱。"},
+
+{id:32,cat:"mcflow",diff:3,tags:["常量链","HashConstant"],
+q:"MC 的常量处理三步走：`HashConstant` pass → `reduce_constant` → `allocate_constant_data`。请说明每一步做什么、共同目标是什么。",
+a:"① **HashConstant**（pass）：给常量 tensor 计算并写入 hash 属性——为「相同内容识别」建立键；\n② **reduce_constant**（build_aipu 按 sub_model 调用）：按 hash 合并重复常量——相同 hash 的常量共享同一数据指针并累加 footprint（footprint=引用点计数），LoRA 相关常量跳过；直接压缩常量内存（大模型里共享权重、相同初始化的常量很常见）；\n③ **allocate_constant_data**：真正落地分配——收集当前 sub_model 全部节点的常量；large_kernel 节点的 weights 先收集（必须进 DTCM，优先入队）；按「footprint / mem_size」比率**降序**排序（复用价值高的先分配）；遍历时对每个常量取 root blob：已被分配过的共享 blob 直接跳过（allocate root blob once for shared blobs）；zerocopy 常量走独立映射表（按数据指针判同）；未分配的分配新 slot——对齐、设 base_offset、buffer_id、bss_id=sub_model 序号，标记 zero_copy flag；ZYv6 额外按 64 对齐 size；最后 fm_offset=weight_offset 交给 feature map 区域。\n\n共同目标：**让常量内存「去重到底、布局有序、身份可溯」**——hash 定身份、reduce 去重、allocate 定地址。",
+fq:"为什么 zerocopy 常量的合并要单独一张表？两类常量在分配语义上有什么根本区别？",
+fa:"普通常量的内存是**编译器分配的**——可以自由搬运打包进 data 段、可以按大小合并；zerocopy 常量的内存是**外部给定的**（数据直接驻留在固定地址域），编译器只能登记地址引用，不能搬、不能改。分开两张表是为了隔离两条路径的规则：合并判定键不同（内容 hash vs 数据指针）、size 约束不同（zerocopy 要求后引用者的需求不超过首分配者）、以及标记不同（zero_copy flag 影响后续 not_reuse/dump 行为）。混表会让「哪些能合并」的规则互相污染——这是「按生命周期所有权划分数据结构」的典型实践：谁拥有的内存、谁定规则。"},
+
+{id:33,cat:"mcmem",diff:2,tags:["MemoryAllocator","SRAM 分级"],
+q:"`MemoryAllocator::SRAMLevel` 定义了 L0~L4 五级。为什么要给内存分级？`ocm_size` 与 X1 的 TCM 是怎么接入这套分级的？",
+a:"分级（注释：lower is faster for AIPU）：L0 内部紧邻 ALU / L1 内部次近 / L2 内部共享 / L3 DTCM / L4 外部（SoC）SRAM。分配器按级别管理可用空间与分配顺序——让「速度、容量、共享范围」进入分配决策，而不是把所有内存当作一个平铺地址空间。\n\n接入实例（Scheduler::mem_allocate 里）：\n- `ocm_size > 0` → 构造对应大小的 MemoryObject 并以 L4 注册（add_soc_sram(buffer, L4)）；\n- 目标为 X1_1204 且 enable_tcm → add_soc_sram(0xd0000000, tcm_size)（走默认级别）；\n- get_external_sram() 探测的外挂 SRAM 逐个按 L4 注册。\n\nadd_soc_sram 有两个重载（按地址+大小 / 按 MemoryObject），remove 对称——这让「外部设备内存」和「编译器内部对象」用同一套接口表达。",
+fq:"L3 的 DTCM 是紧耦合存储器——large_kernel 的权重「必须进 DTCM」这类约束怎么和分级体系配合？",
+fa:"DTCM 不只是「第四快」，它有专属访问语义（CPU/执行单元无缓存协议直达）。所以约束不是「尽量放 L3」而是「必须放 L3」。配合机制：allocate_constant_data 开头专门扫描 large_kernel 节点的 weights 收集到 need_copy_to_DTCM 并优先入队分配——约束在**收集阶段**就分流，而不是在通用分配算法里加特判。这体现了分级设计的正确用法：通用分配管「性能偏好」（越热越低级），特殊约束在入口分流走专属通道。混合「性能分级 + 用途分级」是嵌入式内存管理的常态（对齐：SRAM 分级 vs 外设地址窗口）。"},
+
+{id:34,cat:"mcmem",diff:3,tags:["mem_allocate","编排"],
+q:"`Scheduler::mem_allocate(not_reuse, inputs, keeps, skip)` 的编排流程分哪些步骤？",
+a:"按 scheduler.cpp：\n① **重建分配器**：delete 旧 m_allocator → get_mem_allocator() 按配置造新的（每次分配从干净状态开始）；\n② **OCM 注册**：ocm_size > 0 → add_soc_sram(L4)；\n③ **准备集合**：final_tensors = keeps；not_reuse 集合化；skip_tensors 的 base object **全部预插入 allocated**——用数据结构状态声明「这些已分配，别碰」；\n④ **统计**：graph_memory(memory_size, nodes) 统计每个 buffer 需求；graph_consumer(keeps, keep, consumer_cnt, nodes) 建立消费计数与 keep 集；\n⑤ **SRAM 注册**：external SRAM 逐个 L4；X1_1204+enable_tcm 加 TCM；\n⑥ **MMU 支持**：!disable_mmu → sram_optimize 计算 reserve_orders（需保持相对顺序的节点），非空则重做 topological_sort——保证 SRAM 复用的时序正确；\n⑦ 全局 tensor 的 not_reuse 补充后，逐 level 进入 graph_memory_allocate（MC 版有覆盖实现）完成实际分配。",
+fq:"第 ⑥ 步「为了 SRAM 复用重做 topological_sort」为什么必要？拓扑序不是已经排过了吗？",
+fa:"拓扑序只保证「依赖在前」，但同一拓扑层内的节点顺序未定义。SRAM 复用的前提是「生产者先跑、消费者用完才允许别人复用其空间」——如果两个无依赖关系的节点共享同一 SRAM 地址，执行顺序错换就会互相踩数据。sram_optimize 返回的 reserve_orders 是「按 SRAM 地址布局推导出的必要执行顺序」，把它作为拓扑排序的约束重排，得到既是拓扑序、又满足地址复用时序的**唯一确定顺序**。这体现「排序是多方约束的交汇点」：依赖约束之外还有内存约束、调度约束——每次引入新约束都可能需要重新排序，而不是排一次永远对。"},
+
+{id:35,cat:"mcmem",diff:3,tags:["MCScheduler","liveness"],
+q:"`MCScheduler::graph_memory_allocate_mc` 与基类分配有哪些关键差异？注释「先分配 internal buffer 再分配 output」是什么意思？",
+a:"差异点：\n① **逐 level + 每核预算**：对每个 level 计算 gm_per_core = gm_size / level.size()（disable_separate_gm 关闭时用总量）——GM 预算按核摊分；\n② **mem_clock 标记**：分配时刻写入子图节点的 mem_clock 属性，记录分配时间戳；\n③ **per-subgraph 分配**：对未插件的子图节点，用其内部节点重跑 graph_consumer + graph_memory_allocate（复用通用分配逻辑），把 liveness 存入 `m_liveness_map[子图]`——多核场景每个子图有独立活跃性视图（注释里的 m_liveness 一对多结构）；\n④ **释放计数**：consumer_cnt 递减到 0 释放 buffer；INT32_MAX 表示无限消费者（永不释放的 keep 类）。\n\n「先 internal、后 output」注释（to get the best liveness data...）：先分配内部 buffer、再分配输出 buffer——让内部 buffer 的活跃性区间数据更准确，避免输出先占地址挤压内部布局导致 liveness 失真。",
+fq:"mem_clock 这类「时间戳属性」写进图里，对调试的价值是什么？",
+fa:"它给「地址与时间的对应关系」留下可追溯记录：排查「某 tensor 被错误覆盖」类问题时，可用 mem_clock + liveness 重建「谁在何时复用了谁的地址」；对拍两次构建的差异时，时间戳能定位从哪个 level 开始分叉。它的价值不在生产路径，而在于把**分配决策的推理链**留在图上——排查内存类问题最难的一步恰是重建当时的决策上下文。这类轻量元信息是「可调试性预算」的合理支出（一行 set_attr，换来问题可复现）。"},
+
+{id:36,cat:"mcmem",diff:3,tags:["liveness","consumer_cnt"],
+q:"buffer 的「活跃性」怎么管理？`consumer_cnt` 的角色是什么？`INT32_MAX` 又代表什么？",
+a:"机制（graph_consumer 与分配循环配合）：\n① **分配前统计**：graph_consumer 遍历图统计每个 buffer（base object 粒度）的消费者计数——消费者全部执行完，buffer 才允许复用；\n② **执行序推进**：分配器按 level 内节点顺序推进——节点执行时其输入 buffer 计数递减，减到 <=0 即「释放」回流空闲池；节点输出分配新空间或复用已释放空间；\n③ **INT32_MAX = 无限消费者**：keeps_tensors、全局 tensor 一类「永远有人要用」的 buffer 计数永不递减到 0——**从不释放**，杜绝被误复用。\n\n多个 tensor 共享 base object（sub-tensor / view）时，计数统一在 base object 上管理（memory_offset()->get_base_object()）。这套「引用计数 + 执行序」就是静态 liveness 分析的工程化实现。",
+fq:"「计数递减释放」模型的正确性依赖什么前提？哪里最容易被打破？",
+fa:"前提：① 静态执行序与运行时真实消费序一致（乱序执行/多核竞争会让统计失真——多核场景因此需要 per-subgraph liveness 与 mem_clock 增强）；② 计数覆盖所有真实引用——任何绕过计数的访问都会提前释放。最容易被打破的点正是「特殊访问路径」：loop 的 scan 输入输出（代码里专门有 set_loop_scan 给 loop 相关 tensor 打标防误复用）、dump/keep 机制（进 not_reuse 强制不释放）、跨 sub_model 共享（cross_submodel 进 not_reuse）。这些「例外清单」本质上是对静态模型边界的一一修补——**维护这个模型，例外的登记机制比模型本身更关键**。"},
+
+{id:37,cat:"mcmem",diff:3,tags:["handle_tensor_overlap","fake tensor"],
+q:"`handle_tensor_overlap` 在 force_prior_in_gm 模式下用「fake tensor」建立额外依赖。为什么需要这么做？fake 标记为什么不可省？",
+a:"场景：force_prior_in_gm 强制部分中间数据常驻 GM，被指定的 tensor 实际存活期**人为延长**——原本生命周期不重叠的两个 tensor，现在会同时驻留；而 GM 空间由分配器复用管理，若不知道这层新约束，可能给它们分配重叠的地址 → 数据互踩。\n\n对策：handle_tensor_overlap 找出实际会冲突的对，用 add_fake_tensor 在冲突 tensor 的生产者/消费者之间插入**一条假依赖边**——fake tensor 是 shape{0} 的 UINT8 空 tensor（不占数据），set_fake_tensor(true)；插入后两个节点变成有序依赖，分配器/调度器看到依赖自然不会把地址安排重叠。结束后 remove_fake_tensor 清理（代码里 force_prior_in_gm 块调用）。\n\nfake 标记不可省的原因：shape{0} 保证零内存；set_fake_tensor 是全流程的「忽略我」声明——IR 校验、序列化、内存统计、dump 等环节看到标记即跳过。缺了它，一条纯约束边会被当成真实数据流，引入假的内存需求和假 IO。\n\n本质：**把内存约束翻译成图结构**，复用已有的依赖分析机制，而不是在分配器里写特判。",
+fq:"「约束翻译成图结构」这个模式还有什么其他应用场景？",
+fa:"同构应用：① 设备间的同步依赖（DMA 完成事件）常用「假边」表达而不是序列化代码；② 某些「同地址但需要顺序写」的 alias 场景；③ 确定性执行的顺序约束（比如调试模式强制串行）。模式价值：让下游所有分析（调度/分配/校验）**统一在图模型上工作**，避免每个子系统各自维护一份约束表（那才是 bug 温床）。代价是：约束边对所有基于图的算法可见——需要「忽略我」标记的全流程一致性维护（这也是 fake 标记必须参与序列化的原因）。"},
+
+{id:38,cat:"mcmem",diff:3,tags:["workspace","多核"],
+q:"`workspace` 的语义随核数变化：多核下每核私有、单核下共享（apply_plugins 注释）。workspace_allocate 的绑定与 build_aipu 的重算是怎么配合的？",
+a:"语义：多核场景每个子图 workspace 私有（核间不能共享）；单核场景各子图共享主图 workspace。\n\n**绑定（workspace_allocate，递归）**：遍历节点——子图节点：取上层图的全局 workspace 作为基对象；子图自身若无 ws 则创建（命名 子图名+/ws）；把上层 ws 挂为基对象（保证此后 size/offset 统一管理）；递归子图内部。普通节点：workspace 属性挂到全局 ws。缺 ws 的节点 WARN。\n\n**结算（build_aipu 后段）**：遍历图取所有节点 workspace_size 的 max（子图节点的全局 ws 一并处理，同步设置子图内的 ws size）；总大小 aligned(256) 写回全局 workspace tensor；分配侧联动——slot 与 workspace 共享时把 slot->size 更新为最终 ws_size。\n\n两段式的原因：pass/插件阶段持续写出 workspace_size 需求，只有优化与调度全部结束后才能统计出确定的最大值。",
+fq:"为什么设计成「先绑关系、后结算数值」？直接到结算时再分配不行吗？",
+fa:"不行——绑定阶段解决的是**所有权与引用结构**：哪些节点用哪块 ws（子图边界、共享/私有语义）必须在 pass 阶段就确定下来，因为后续变换（内联、克隆、序列化）都要沿着这个引用结构走；而数值（大小）此时还未收敛。若等到最后统一分配，中途的 pass 没有可引用的对象，要么各自造临时占位再合并（复杂且易漏）。两段式是编译器资源管理的通用模式：**关系先绑定（结构稳定）、数值后结算（需求收敛）**——对齐 stack_size 的 MAX(·,8192) 兜底、temp_param_base 的两种预算（8KB 默认 / DS 动态计算）都是同一模式的应用。"},
+
+{id:39,cat:"mcmem",diff:2,tags:["GM","调优闭环"],
+q:"GM（global memory）在分配器里怎么管理？`m_gm_regions`、`print_gm_avg_usage`、`gm_enhance` 各自是什么角色？",
+a:"GM = DDR 上编译器可管理的全局内存区域（feature map 主战场；SRAM 是快而小的缓存层）。管理脉络：\n① **预算**：gm_size 配置总量（可被 preserve_gm_size 扣减）；MCScheduler 下按 level 摊给核；\n② **区域对象**：分配后 get_gm_regions() 返回 MemoryObject 列表（builder 存为 m_gm_regions），带 footprint 统计；\n③ **观测**：print_gm_avg_usage 打印平均使用率——判断分配均衡性的信号；\n④ **增强**：gm_enhance 尝试更激进的驻留/复用策略（配合 dynamic_gm 视图切换，见 Q31）；\n⑤ 另有 global_memory_opt 做全局优化后处理；dump_tune_strategy 把 GM 使用与 level/tiling 状态导出 tune_strategy.json 供离线分析。",
+fq:"为什么看「平均使用率」而不只看峰值？这个指标怎么进入调优闭环？",
+fa:"峰值只回答「gm_size 够不够」（最大时刻占用）；平均回答「分配质量」——平均低 = 大量空间长期闲置（策略保守，可压缩或换更高并行度），平均高 = 接近极限（风险）。两者组合才判得出「给大了还是给小了」。闭环：构建输出这些指标 → tuner 以它们为目标（如「保峰值、拉平均」）搜索配置（tiling 方案、load balance 策略、reorder 策略）→ 回灌构建。这种「指标导出 + 离线搜索」的结构让编译器可调优子系统从「手调」走向「可自动化」——dump_tune_strategy、dump_reorder_cfg、dump_tile_cfg 都是同一套思路的产物。"},
+
+{id:40,cat:"mcmem",diff:3,tags:["memory_remapping","自注册"],
+q:"`virtual_node_memory_remapping`（pass）与 `MemoryRemappingOpRegister`（mem_remapping.cpp）是怎么配合的？",
+a:"**注册端**：MemoryRemappingOpRegister 构造时把 (OpType → 处理函数) 写进全局 map——各算子在自己的实现文件静态注册「我的内存重映射逻辑」（自注册，无需中心 switch）；memory_remapping_op(n) 查表执行（先解析真实类型：单节点子图取内部节点 type）。\n\n**驱动端**（lower_after_optimize 里的 pass）：① 先 topological_sort——remapping 必须保证执行顺序；② **清洁**：把非 SubGraphInput 节点输出的 memory_offset base 全部置 nullptr（清掉上一轮映射）；③ 遍历分发：子图节点递归；插件封装节点分两类——GBPlugin_Internal 插件调 plugin->memory_remapping(sgnode, match_list)（插件自定义），其它插件跳过；普通节点走 memory_remapping_op 注册表。\n\n分工：pass 管「遍历框架 + 状态清理 + 分发」，注册表管「逐算子实现」——插件还能带自己的规则入场。",
+fq:"自注册模式相比中心化 switch/case 的优劣是什么？这个项目为什么适合它？",
+fa:"优：① 开闭原则——新增算子 +1 行注册，不碰中心文件；② 实现同居——算子逻辑与重映射逻辑同文件，可读性高；③ 插件生态友好——内部插件拿同一接口扩展。劣：① 时序与去重隐式——静态初始化顺序问题、同 OpType 重复注册直接覆盖（代码无检查）；② 可发现性差——找「谁注册了某 OpType」需全库搜索；③ 全局状态使单测隔离变难。适用判断：**当算子种类多且持续增长时注册表胜出**——本项目 100+ 算子类型且还在加，中心 switch 会变成巨型冲突点，注册模式是正确选择。前提是补上两个治理手段：重复注册检测（DEBUG 模式断言）+ 注册清单导出（可测性）。"},
+
+{id:41,cat:"mcasm",diff:3,tags:["assembly","descriptor 链"],
+q:"请讲一下 `GraphBuilder::assembly()` 的逐节点流程：每个节点要过哪些生成器？descriptor 链是什么？",
+a:"初始化：清空 codetree / ro / codes / kernels / text / descriptor；m_ro 预置 64 个 0（DEFAULT_RO_NUMBER_PER_LAYER 对齐基线）。\n\n逐节点（按图序）：\n① 按类型取四个生成器：ro_generator / code_generator / kernel_generator / descriptor_generator；\n② 挂长链属性：parambase / descriptorbase 占位符（*pb = *ro_base + 4×当前 m_ro.size()——**节点级 RO/描述符起始地址**）、desc_param/act/dt base、descriptor 链指针属性；\n③ **descriptor 阶段**（可选）：生成主描述符，追加 descriptor_param / act / dt 三段（各记 base），对齐 64，记 desc_offset / desc_size（字节）；\n④ **code 阶段**：code_generator 产出汇编行——逐行分配 operator_id（挂 operator_ids 向量）；旧 ISA 还要 get_text_content_by_filename 校验每个引用存在（防插件生成悬空符号）；\n⑤ **RO 阶段**：记 ro_offset，ro_generator 写参数，对齐 64，记 ro_size；\n⑥ **kernel 阶段**：kernel_generator 产 kernel 列表；codetree 非空则挂进 m_codetree；\n⑦ delete_unused_const 清理本节点未引用的常量；\n⑧ **descriptor 链更新**：默认把「下一描述符指针」接为当前节点属性（形成链表）；但 gm_enhance / dynamic_gm / x2_sm_opt / max_wt_size / max_act_size / break_descriptor_chain 任一开启则断链（置 null）。\n\n不支持类型 → ERROR（带 location 与节点定义），并结算 plugin 捕获的 warn/error 日志。",
+fq:"descriptor 链的设计意图是什么？为什么这些条件下必须断链？",
+fa:"链的意图：运行时按「当前 → 下一」顺链执行，无需编译器把整图展开成扁平任务表——降低启动延迟、支持流式执行、便于运行时在断点插入调度。断链场景共同点：**任何让「下一跳」不再静态可知的优化**——dynamic_gm/gm_enhance 的地址运行时才定、x2_sm_opt 改变执行结构、sizing 切分产生 sub_model 边界（跨段必断）、debug/profiler 显式断链。链完整性是全局不变量，所以断链逻辑集中在 assembly 循环一处维护——这类「单一时刻点维护全局不变量」的组织方式值得学习：改规则只改一个地方。"},
+
+{id:42,cat:"mcasm",diff:3,tags:["BSS","subsection"],
+q:"`build_bss_section` 生成的 BSS 段里，buffer descriptor 与 subsection 是怎么组织的？哪些特殊 tensor 会被标记？",
+a:"输入：data slots（feature map buffer）、constant slots、buffer_map（base object→tensors）、tensor_map（tensor→RO/desc 引用位置）、special_marked_tensor、sub_model 编号。\n\n组织：\n① **feature map buffer**：每个 slot 一条 buffer descriptor；update_subsec 把 tensor 的 dtype / scale / zp 与 RO、descriptor 引用位置写进 subsection 描述符——描述 tensor 与参数表的关联；\n② **特殊 subsection**：desc_add_subsec 把属于特定类别的 tensor 按类型加入——input / output / dump / profile_data / printf_fifo / op_cnt / error_code / cross_submodel / dump_tensor_shape——运行时可见的特殊区域；\n③ **常量 buffer**：同样生成 descriptor（带 bss_id、zero_copy 标志）；\n④ 上层 build_aipu 填充 m_marked_tensors 后逐 sub_model 构建，remap_size 计入 header.bss_size。",
+fq:"运行时按「subsection 类别」查找，比固定全局偏移好在哪？",
+fa:"subsection 提供**带类别标签的自描述结构**：运行时读 BSS 后按类别找到「输入区/输出区/dump 区」，再按 descriptor 索引具体 tensor。相比硬编码偏移：① 编译期与运行期解耦（自描述，不依赖双方对布局的隐式约定）；② 类别可扩展（新增一种 subsection 不重排偏移表）；③ 多 sub_model 时每个 BSS 独立自描述。这是自描述数据格式思想（对照 ELF 的 section header 表）在嵌入式产物上的应用——把「结构信息」随数据一起交付，而不是留给双方口头约定。"},
+
+{id:43,cat:"mcasm",diff:3,tags:["remap","重定位"],
+q:"`build_remap` 生成的 remap 表是什么？为什么 MC 产物需要它？",
+a:"背景：bin 里的 RO（参数区）与 descriptor 区由编译器生成，内部大量字段是 **tensor 地址**——但最终地址编译期无法全部确定（运行时按加载位置/分配结果决定）。\n\n做法：build_remap 遍历 m_ro 与 m_descriptor 中引用的每个 tensor，按所属区域（RemapcSection::RO / DESC，base 分别取 parambase、descriptorbase 占位符）计算相对偏移，生成 remap entries——记录「第 N 个 RO/desc 项里的地址字段，相对 base 的偏移 X」。运行时装载后驱动按表**回填真实地址**（rebasing）。header.flag |= (1 << 4) 无条件启用 remapping。\n\n同族机制：MQ 的 param_offset_table / tensor_index_map、ELF 的 relocation 段——「编译期留占位、加载期回填」是目标文件格式的通用模式。",
+fq:"remap 按「引用位置」逐项登记而非按 tensor 登记一次——为什么粒度必须这么细？",
+fa:"同一 tensor 可能在 RO/desc 被引用多次（多个算子/多个参数项指向同一 buffer），回填必须覆盖每个**位置**——按 tensor 登记的话，运行时得反查所有引用点（把编译期已知信息搬到运行期重建索引），既慢又易与版本漂移不一致。原则：编译期知道的信息尽量编译期展开，运行期只做机械回填。代价是表变大（尺寸正比引用数），换来的是运行时零推理——嵌入式场景里典型的「体积换复杂度」取舍。"},
+
+{id:44,cat:"mcasm",diff:2,tags:["build_text","build_data"],
+q:"`build_text`（LinkerV1）与 `build_data` 分别做什么？多 sub_model 时 data 段怎么组织？",
+a:"**build_text**：把 assembly 累积的代码（m_codes、各子图 text、kernel 表、codetree）交给 LinkerV1 链接成最终 text section——设置入口点与 header type，结果写入 m_aipubin->text。\n\n**build_data**：把常量数据打包进 data section——按常量 MemoryObject 的 base/size 划定整体范围，把每个常量的真实数据拷贝到对应相对位置，记录 m_const_offsets（每常量相对 data 段的 offset）。\n\n多 sub_model：第一个的常量进主 data 段（m_aipubin->data）；其余每个 sub_model 独立一个额外段（add_extra_data(data_bin)），偏移表 per 段维护（m_const_offsets 按 size 扩展）。",
+fq:"多 sub_model 的 data 为什么各建段（extra_data）而不是拼成一个大段？",
+fa:"与 sub_model 的语义配套：每个 sub_model 是「独立可执行/加载的段」——① 运行时可能只激活某个 sub_model（流式执行），独立段支持按需加载；② 常量地址域可能不同（有的进 DTCM 有的进 DDR），物理上无法拼进同一加载单元；③ 与 per-sub_model 的 BSS 结构配对（一段 BSS + 一段 data，自描述闭环）。若强行合并，运行时要么全量加载（浪费），要么自行二次切分（把编译期信息挪到运行期）——又一次「编译期展开 vs 运行期组装」的选择，这里选了前者。"},
+
+{id:45,cat:"mcasm",diff:3,tags:["header","产物格式"],
+q:"build_aipu 尾部链式算出 header 的各段偏移，并设置多个 flag 位。请复述偏移计算链与 flag 含义。",
+a:"偏移链（file_offset 从 sizeof(header) 起）：\n`text_offset = file_offset` → text_size → `rodata_offset/size` → `dcr_offset/size`（descriptor）→ `data_offset/size` → `bss_offset/size`（bss.size()，其中已含 remap_size）→ 加 remap.size() → `header.filesize`。各段在文件中**顺序紧凑排列**，运行时按 header 偏移直接读取。\n\nflag 位：\n- `|= 1`：enable-asid（地址空间 ID 方案，默认 1）；\n- `|= (1 << 4)`：remap——**无条件置位**（此产物格式自带 remap 表）；\n- `|= (1 << 5)`：preallocated_soc_sram（SoC SRAM 预分配）；\n- `|= (1 << 6)`：enable_ds（动态 shape 产物）。\n\n另有 header.arch = gen_arch_number()；enable_tcm 时把 TCM 大小（KB）写进 extra_data 的固定字段。",
+fq:"「头 + 各段顺序排列 + 偏移表」这种自描述格式的通用价值是什么？代价在哪？",
+fa:"价值（对照 ELF program header 的极简化版本）：① 加载器读一个小 header 即掌握全部布局，无需预知构建细节；② 段增删不改加载器主逻辑（偏移表天然容纳，如后加的 extra_data）；③ 支持按偏移分段流式加载；④ flag 位/extra_data 给格式小扩展留通道（不改 magic/version）。代价：段的排列顺序被硬编码（改顺序要同步加载逻辑）；偏移链计算散在 build_aipu 里而没有格式层抽象——新增段要记得在 4 处联动（偏移/大小/写内容/header 字段）。改进方向是把「段注册表」抽成数据驱动结构，让链式推导自动生成——这是很多二进制格式库的标准做法。"},
+
+{id:46,cat:"mcisa",diff:1,tags:["对齐","ISA 差异"],
+q:"`lowering_utils.cpp` 里有一组对齐查询函数：`get_v1_in_c_alignment` / `get_alignment` / `get_channel_base`。请说明它们的 ISA 差异逻辑与设计意图。",
+a:"差异逻辑：\n- **get_alignment(arch)**：ZY→4；ZYv2→按 dtype 8bit 取 32、否则 16，取所有 tensor 的 max；ZYv3+→8；ZYv6+→1；\n- **get_v1_in_c_alignment(in_c)**：仅 ZY 路径（带 assert 保护）——matmul_to_fc 启用且 in_c>320 时返回 1（大 in_c 走 FC 方案不要求对齐）；否则 in_c>16→16、否则 4。注释点明目的：make sure HWA dc_times == 0 in v1（让除法次数为零）；\n- **get_channel_base**：ZY→1；其它 ISA→8bit 取 32、16bit 取 16 的 max。\n\n设计意图：把「各代硬件的对齐约束」收敛成查询函数，供所有 split/adaptor pass 统一调用——约束集中一处，pass 代码不重复硬编码；用 dtype_bits 区分 8/16bit 两套基准。",
+fq:"ZYv6 的 alignment=1（完全不对齐）反映什么演进？对下游 pass 意味着什么？",
+fa:"反映新硬件访存单元支持细粒度/任意对齐访问——约束从「编译器必须对齐」演进为「硬件自适应」。影响：① 依赖对齐的 pass（split_conv_input_c 等）不再因对齐被迫切分，碎片与 pad/crop 显著减少（代码质量自然提升）；② 对齐从「正确性前提」降级为「性能优化手段」——编译器仍可主动对齐换吞吐，但不对齐不再出错。这类「硬约束降级为软优化」是硬件演进给编译器松绑的典型红利，也解释了为何这些函数要按 ISA 查表而不是全局常量——约束是会随代际消失的。"},
+
+{id:47,cat:"mcisa",diff:3,tags:["PE","reduce"],
+q:"`get_pe_spec` 返回 PE 阵列形状（pe_w / pe_h），`try_optimize_aiff_reduce_shape` 用它为 reduce 搜索 reshape 形状。两者的配合逻辑是什么？",
+a:"get_pe_spec：默认 8×4；ZYv2 按 mac_num≥2048 得 8×2 / 否则 8×1；ZYv3+ 按 mac_num≥4096 同理（PE=处理元阵列，形状即 MAC 在 H/W 维并行度）。\n\ntry_optimize_aiff_reduce_shape(h, w, is_surface_reduce, hw, method)：把面积 hw 选形成 h×w 的新形状，两级策略：\n① **surface reduce + MIN/MAX** 且面积超过 kernel 上限：试**平方形**——从 ceil(sqrt(hw)) 向下找整除因子对（h=√ 附近，w 相应），w 不超过 max_div（按 ISA：2048/1920/4096）——大面积归约方阵更均衡；\n② 否则优先 **PE 友好形状**：先试 hw % (pe_w*pe_h)==0 的因子对（h 按 pe_h 步进、w 按 pe_w 对齐），再退到只要求被 pe_h 整除，最后退到任意因子对（只约束 ≤ max_div）。\n\n配合点：AIFF 上 reduce 经「reshape 成 surface + pool」实现，形状纵横比决定硬件循环结构与边界浪费——搜索目标即「贴合 PE 并行度、减少残块」。",
+fq:"「先 PE 友好、再逐级降级」的启发式分级在编译器里常见吗？举几个本项目的例子。",
+fa:"常见且必要——每级快且大概率命中，失败逐级放宽，最终兜底保证一定出结果。本项目例子：① 这里的 PE 友好→整除→任意因子三级；② 内存分配 SRAM→DDR 降级（slot 找不到片内空间就落外部）；③ get_plugins 按 score 排序 + 同级 DS tie-breaker 的选择降级；④ LoadBalancer 从保守到激进的策略表。设计要点三条：每级成功条件明确；降级可观测（记录用了哪级，便于诊断性能异常）；兜底级必须**永远成功**（否则系统在 corner case 挂死）。缺少最后一点的降级链是定时炸弹。"},
+
+{id:48,cat:"mcisa",diff:3,tags:["ISA 表格","硬件参数"],
+q:"`get_aiff_max_h/w/in_c/out_c` 与 `get_aiff_mtp_num_per_core` 是一组按 ISA 查表的硬件限制。请说明表的形态、用途，以及维护这类表格的利弊。",
+a:"形态：函数内 static map<ISAType,int>，查不到时 WARN（target not found）并退回默认 1/保留默认。内容举例：max_h——ZY 2048 / v2 1080 / v3+ 2160 / v6 4096；max_w——ZY 2048 / v2 1920 / v3+ 4096；max_in_c——ZY 4096 / v2 2048 / v3+ 4096；mtp_num_per_core——v5 及以前 2、v6 为 4。特例：get_aiff_max_in_c(is_fc=true) 用公式 65536/dtype_size 而非查表。\n\n用途：AIFF 单元的工作约束——H/W 超限要 tiling 切、in_c/out_c 超限要 split_conv_* 切、mtp 数影响核内 matmul 并行配置。这些函数就是 tiling/split 决策依赖的「硬件说明书接口」。\n\n利弊：利——集中（改一处全生效）、可读（表格即文档）、扩展快（加一行）；弊——静态 map 无编译期校验（漏行只 WARN+危险默认值）、数据嵌在函数里难与硬件手册对账、无版本叠加机制（同一 ISA 的小版本差异无处表达）。",
+fq:"如果让你重构这套 ISA 表格，会怎么设计？",
+fa:"四个方向：① **数据外置**——表格移到结构化数据文件（yaml/json），构建期生成，支持 base+override 叠加（同 ISA 小版本差异可表达）；② **完整性校验**——启动/构建期对全部已知 ISAType × 全部限制项断言有值，缺项 ERROR 而非 WARN+默认 1（「默认 1」这种静默错误比缺项更危险，会让下游做出错误的切分决策）；③ **语义类型**——裸 int 换成带单位/语义的强类型，防串行错位（几十个数字容易一列对错）；④ 与硬件文档的双向对账机制（表格项标注手册章节号，便于同步审计）。原则：硬件参数表是最值得「人类维护、机器校验」的知识资产。"},
+
+{id:49,cat:"mcdebug",diff:1,tags:["record_gm_tensor","离线调优"],
+q:"`record_gm_tensor` 有三种工作模式（load_prior_in_gm / dump_prior_in_gm / softmax_prior_in_gm）。它们分别做什么？为什么 GM 驻留决策要做成可配置的离线通道？",
+a:"三种模式：\n① **load**：读 load_prior_in_gm 指向的 JSON（节点名→输出索引），给对应 tensor 打 prior_in_gm 标记——**离线调优配置的注入通道**；\n② **dump**：遍历导出 prior_in_gm.json（与 load 对称，导出当前决策供分析/编辑）；\n③ **softmax 启发式**：自动识别 HwaSoftmax 结构（父为 HwaCropMatmul、子/邻为 HwaMatmul 或 Concat）给相关 tensor 批量打标——内置经验规则的自动化路径。\n\n为什么离线化：「哪些中间数据常驻 GM」是性能敏感但难建模的决策——编译器只估 footprint，实际收益取决于运行时访问模式与带宽竞争（要靠真实 profiling）。工程分工：**编译器给机制（标记、生效、load/dump）、数据给决策（tuner 搜出的 per-model 配置）**。与 tiling cfg、reorder cfg、disable-pass 是同一套模式：半经验调优点显式外置。",
+fq:"「一个 pass 三种模式」的结构你怎么评价？",
+fa:"共享了遍历与标记逻辑（合理复用），但三个模式的输入输出与触发条件完全不同，挤在一个 if/else 链里——而且 load 只读文件、dump 只写文件、softmax 纯计算，本质上三个职责不同的 pass 被合并成了一个。更清晰：拆成 load/dump/auto_mark 三个小 pass，各自独立单测、独立开关（当前用配置互斥隐式表达）。现状属于小团队「能工作优先」的可接受写法，但登记进重构候选——因为这种合并让「测试面」和「配置组合」都变复杂了（三个模式 × 触发条件就是 2³ 种状态空间）。"},
+
+{id:50,cat:"mcdebug",diff:2,tags:["调试基建","方法论"],
+q:"最后一道：这套 buildtool 有一整套调试基建——dump_tune_strategy / dump_const_info_csv / show_memory_info / dump_tile_cfg / graph to_svg / svg-before/after-pass / dump_prior_in_gm。请总结它们覆盖的维度，并谈谈编译器调试基建的设计方法论。",
+a:"按维度归类：\n① **结构可视化**：graph->to_svg / to_dot（graph_raw.svg、graph_tiled.svg）、svg-before/after-pass——图长什么样、某 pass 前后变了什么；\n② **内存视图**：show_memory_info（section 大小统计）、dump_const_info_csv（常量全表：名称/shape/layer/size/dtype/offset/buffer id）、show_buffer_slots（复用关系）、print_gm_avg_usage——内存为何溢出、谁复用了谁；\n③ **决策溯源**：dump_tune_strategy（level/tiling/GM 快照）、dump_reorder_cfg、dump_tile_cfg、dump_prior_in_gm——编译器为什么这样决定；而且多数有对应的 load 通道（可回灌）形成闭环；\n④ **运行期物证**：coredump handler、profiler、op_cnt / error_code——产物级可观测。\n\n方法论四条：a) **决策即数据**——每个自动决策都有 dump 与回灌通道（可保存、可复现、可人工修改）；b) **多粒度**——全图 → 单 pass → 单 tensor 逐级下钻；c) **人机双读**——JSON 机器可处理、CSV/SVG 人可读；d) **差异是信息的源泉**——dump 的真正威力在两次构建的对比。",
+fq:"如果只允许再加一件基建，你会加什么？为什么？",
+fa:"加**「构建差异对比器」**（build diff）：输入两次构建的全部 dump（tune_strategy / reorder / tile_cfg / 内存表 / pass 日志），自动输出「哪些决策在哪个阶段首次分叉」。理由：现有基建解决了单次快照的「看得见」，但现实问题——「昨天好好的今天坏了」「换了开关数值就不对」——卡在**比较**：人工 diff 七八个 JSON 不现实。有了差异器，定位从「逐 dump 肉眼比对」变成「看分叉点列表」。它同时是自动调优的地基（搜索需要决策-指标的关联分析）。原则：调试基建的演化路径是「可观测 → 可比较 → 可自动化」——比较是把数据变成信息的那一步。"}
+
+
+];
+
+/* ================= 渲染 ================= */
+(function(){
+  const state = {cat:"all", diff:0, search:"", viewed:new Set()};
+  try{
+    const v = JSON.parse(localStorage.getItem("aipu_mc_itv_viewed")||"[]");
+    state.viewed = new Set(v);
+  }catch(e){}
+
+  const $list = document.getElementById("list");
+  const $empty = document.getElementById("empty");
+  const $cats = document.getElementById("cats");
+  const $diffs = document.getElementById("diffs");
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function md(s){
+    let t = esc(s);
+    t = t.replace(/`([^`]+)`/g,"<code>$1</code>");
+    t = t.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+    return t;
+  }
+
+  const allBtn = mkChip("全部", "all");
+  $cats.appendChild(allBtn);
+  Object.entries(CATS).forEach(([k,v])=>$cats.appendChild(mkChip(v.name, k)));
+  function mkChip(label, key){
+    const c = document.createElement("span");
+    c.className = "chip" + (key==="all"?" on":"");
+    c.textContent = label;
+    if(CATS[key]) c.style.setProperty("--tc", CATS[key].color);
+    c.onclick = ()=>{
+      state.cat = key;
+      [...$cats.children].forEach(x=>x.classList.toggle("on", x===c));
+      render();
+    };
+    return c;
+  }
+
+  const dLabels = {0:"全部难度", 1:"★ 基础", 2:"★★ 进阶", 3:"★★★ 资深"};
+  Object.entries(dLabels).forEach(([k,label])=>{
+    const c = document.createElement("span");
+    c.className = "chip" + (k==="0"?" on":"");
+    c.textContent = label;
+    c.onclick = ()=>{
+      state.diff = +k;
+      [...$diffs.children].forEach(x=>x.classList.toggle("on", x===c));
+      render();
+    };
+    $diffs.appendChild(c);
+  });
+
+  function diffStars(d){
+    return '<span class="diff ' + ["","d1","d2","d3"][d] + '">' + "★".repeat(d) + "☆".repeat(3-d) + "</span>";
+  }
+
+  function matches(q){
+    if(state.cat!=="all" && q.cat!==state.cat) return false;
+    if(state.diff && q.diff!==state.diff) return false;
+    if(state.search){
+      const s = state.search.toLowerCase();
+      const hay = (q.q+" "+q.a+" "+q.fq+" "+q.fa+" "+(q.tags||[]).join(" ")).toLowerCase();
+      if(!hay.includes(s)) return false;
+    }
+    return true;
+  }
+
+  function render(){
+    const list = QUESTIONS.filter(matches);
+    $list.innerHTML = "";
+    $empty.style.display = list.length ? "none" : "block";
+
+    let lastCat = null;
+    list.forEach(q=>{
+      if(q.cat!==lastCat){
+        lastCat = q.cat;
+        const t = document.createElement("div");
+        t.className = "cat-title";
+        t.id = "cat-" + q.cat;
+        t.innerHTML = '<span class="cat-bar" style="background:' + CATS[q.cat].color + '"></span><h2>' +
+          CATS[q.cat].name + '</h2>';
+        $list.appendChild(t);
+      }
+      $list.appendChild(card(q));
+    });
+    updateProgress();
+  }
+
+  function card(q){
+    const el = document.createElement("article");
+    el.className = "card";
+    el.dataset.id = q.id;
+    el.innerHTML =
+      '<div class="chead">' +
+        '<div class="num" style="background:' + CATS[q.cat].color + '1a;color:' + CATS[q.cat].color + '">' + String(q.id).padStart(2,"0") + "</div>" +
+        '<div class="qwrap">' +
+          '<div class="meta">' +
+            '<span class="tag" style="background:' + CATS[q.cat].color + '1a;color:' + CATS[q.cat].color + '">' + CATS[q.cat].name + "</span>" +
+            diffStars(q.diff) +
+          "</div>" +
+          '<div class="qtext">' + md(q.q) + "</div>" +
+          '<div class="hint">点击展开：参考答案 · 追问 · 追问解答</div>' +
+        "</div>" +
+        '<svg class="caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>' +
+      "</div>" +
+      '<div class="body">' +
+        '<div class="blk ans"><div class="lb">参考回答</div><div class="content">' + md(q.a) + "</div></div>" +
+        '<div class="blk fu"><div class="lb">追问</div><div class="content">' + md(q.fq) + "</div></div>" +
+        '<div class="blk fa"><div class="lb">追问解答</div><div class="content">' + md(q.fa) + "</div></div>" +
+      "</div>";
+
+    el.querySelector(".chead").onclick = ()=>{
+      const open = el.classList.toggle("open");
+      if(open){
+        state.viewed.add(q.id);
+        try{ localStorage.setItem("aipu_mc_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+        updateProgress();
+      }
+    };
+    return el;
+  }
+
+  function updateProgress(){
+    const n = [...state.viewed].filter(id=>QUESTIONS.some(q=>q.id===id)).length;
+    document.getElementById("ptext").textContent = "进度 " + n + " / " + QUESTIONS.length;
+    document.getElementById("pfill").style.width = Math.min(100, n*100/QUESTIONS.length) + "%";
+    document.getElementById("s-viewed").textContent = n;
+  }
+
+  document.getElementById("search").addEventListener("input", e=>{
+    state.search = e.target.value.trim();
+    render();
+  });
+  document.getElementById("btn-expand").onclick = ()=>{
+    document.querySelectorAll(".card").forEach(c=>c.classList.add("open"));
+    QUESTIONS.forEach(q=>state.viewed.add(q.id));
+    try{ localStorage.setItem("aipu_mc_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+    updateProgress();
+  };
+  document.getElementById("btn-collapse").onclick = ()=>{
+    document.querySelectorAll(".card").forEach(c=>c.classList.remove("open"));
+  };
+  document.getElementById("btn-random").onclick = ()=>{
+    const vis = [...document.querySelectorAll(".card")];
+    if(!vis.length) return;
+    const c = vis[Math.floor(Math.random()*vis.length)];
+    c.classList.add("open");
+    c.scrollIntoView({behavior:"smooth", block:"center"});
+    c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash");
+    state.viewed.add(+c.dataset.id);
+    try{ localStorage.setItem("aipu_mc_itv_viewed", JSON.stringify([...state.viewed])); }catch(e){}
+    updateProgress();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
