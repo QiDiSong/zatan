@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图编译器 面试宝典 · 50 问</title>
+<style>
+  :root{
+    --bg:#f6f4fb;
+    --panel:#ffffff;
+    --panel-2:#fbfaff;
+    --ink:#1a1d24;
+    --ink-2:#4a5262;
+    --ink-3:#7b8496;
+    --line:#e6e2f2;
+    --line-2:#f0edf9;
+    --brand:#5b3bc4;
+    --brand-2:#7a5af0;
+    --brand-soft:#f0ecfb;
+    --hot:#d9480f;
+    --hot-soft:#fdeee7;
+    --ok:#0f7b57;
+    --code-bg:#f1eefb;
+    --code-ink:#4b2fa8;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(30,20,60,.05), 0 8px 24px -12px rgba(30,20,60,.16);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.top{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1240px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px;
+  }
+  .logo{display:flex;align-items:center;gap:11px;flex-shrink:0}
+  .logo-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(145deg,#3f2496,#8b6cf5);
+    color:#fff;font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    letter-spacing:-1px;
+    box-shadow:0 4px 12px -4px rgba(91,59,196,.55);
+  }
+  .logo-txt b{display:block;font-size:15.5px;line-height:1.25;letter-spacing:.2px}
+  .logo-txt span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.4px}
+  .search{
+    flex:1; max-width:420px; position:relative; margin-left:auto;
+  }
+  .search input{
+    width:100%; padding:9px 14px 9px 36px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--panel-2); color:var(--ink);
+    font-size:13.5px; font-family:inherit; outline:none;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .search input:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(122,90,240,.13);background:#fff}
+  .search::before{
+    content:"⌕"; position:absolute; left:12px; top:50%; transform:translateY(-52%);
+    color:var(--ink-3); font-size:16px; pointer-events:none;
+  }
+  .search kbd{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:10.5px; color:var(--ink-3); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:5px; padding:1px 5px; background:#fff;
+    font-family:inherit;
+  }
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-2);
+    padding:8px 13px; border-radius:9px; font-size:12.8px; font-family:inherit;
+    cursor:pointer; white-space:nowrap; transition:.16s;
+  }
+  .btn:hover{border-color:#d4cbec;color:var(--ink);background:var(--panel-2)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#4a2ea8;border-color:#4a2ea8;color:#fff}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 90px;display:flex;gap:26px;align-items:flex-start}
+  aside{
+    width:222px; flex-shrink:0; position:sticky; top:76px;
+  }
+  .side-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 12px; box-shadow:var(--shadow);
+  }
+  .side-title{font-size:11px;letter-spacing:1.2px;color:var(--ink-3);font-weight:700;padding:0 8px 8px}
+  .nav-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:7px 9px; border-radius:9px; font-size:12.8px; color:var(--ink-2);
+    text-decoration:none; cursor:pointer; transition:.15s; border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--brand-soft);color:var(--brand);border-color:#e2daf8}
+  .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600;border-color:#dcd2f7}
+  .nav-item .n{
+    font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+    background:var(--line-2);border-radius:20px;padding:1px 7px;font-weight:600;
+  }
+  .nav-item.active .n{background:#ddd4f8;color:var(--brand)}
+  .progress-box{margin-top:12px;padding:12px 10px 8px;border-top:1px solid var(--line-2)}
+  .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:7px}
+  .progress-label b{color:var(--brand);font-variant-numeric:tabular-nums}
+  .bar{height:6px;background:var(--line-2);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--brand),#8b6cf5);transition:width .35s ease}
+
+  main{flex:1;min-width:0}
+
+  .hero{
+    background:linear-gradient(135deg,#2b1a66 0%,#5b3bc4 52%,#8b6cf5 100%);
+    border-radius:18px; padding:26px 28px; color:#fff;
+    box-shadow:0 14px 34px -18px rgba(60,30,140,.75);
+    position:relative; overflow:hidden;
+  }
+  .hero::after{
+    content:"IR"; position:absolute; right:6px; bottom:-42px;
+    font-size:130px; font-weight:800; color:rgba(255,255,255,.09); letter-spacing:-5px;
+    pointer-events:none;
+  }
+  .hero h1{margin:0 0 8px;font-size:25px;letter-spacing:.3px;font-weight:700}
+  .hero p{margin:0;font-size:13.5px;opacity:.92;max-width:680px;line-height:1.7}
+  .hero .stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;position:relative;z-index:1}
+  .chip{
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+    border-radius:20px; padding:4px 12px; font-size:12.3px; letter-spacing:.2px;
+    backdrop-filter:blur(4px);
+  }
+  .chip b{font-weight:700}
+
+  .section{margin-top:34px;scroll-margin-top:82px}
+  .section-head{display:flex;align-items:baseline;gap:11px;margin-bottom:14px;padding-left:2px}
+  .section-head h2{margin:0;font-size:17.5px;letter-spacing:.2px}
+  .section-head .cnt{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .section-head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);margin-bottom:5px}
+
+  .q{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:11px; box-shadow:var(--shadow); overflow:hidden;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .q.open{border-color:#ddd4f7;box-shadow:0 2px 4px rgba(30,20,60,.05),0 14px 30px -18px rgba(91,59,196,.4)}
+  .q-head{
+    display:flex; align-items:flex-start; gap:13px; padding:14px 18px;
+    cursor:pointer; user-select:none;
+  }
+  .q-head:hover{background:var(--panel-2)}
+  .num{
+    flex-shrink:0; width:29px; height:29px; border-radius:9px;
+    background:var(--brand-soft); color:var(--brand);
+    font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .q.open .num{background:var(--brand);color:#fff}
+  .q-title{flex:1;font-size:14.6px;font-weight:600;line-height:1.6;letter-spacing:.1px}
+  .q-tags{display:flex;align-items:center;gap:7px;flex-shrink:0;margin-top:2px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  .tag.hot{background:var(--hot-soft);color:var(--hot)}
+  .tag.d1{background:#e9f5ee;color:#0f7b57}
+  .tag.d2{background:#fff4e3;color:#b26a00}
+  .tag.d3{background:#e7f5f2;color:#0f7b6c}
+  .caret{
+    flex-shrink:0;color:var(--ink-3);font-size:11px;margin-top:8px;transition:transform .25s;
+  }
+  .q.open .caret{transform:rotate(180deg);color:var(--brand)}
+
+  .q-body{display:none;padding:0 20px 18px 20px;}
+  .q.open .q-body{display:block}
+  .q-body .inner{padding-top:4px;border-top:1px dashed var(--line);padding-top:14px}
+
+  .blk-label{
+    font-size:11px;font-weight:700;letter-spacing:1.3px;color:var(--brand);
+    margin:0 0 8px; display:flex; align-items:center; gap:7px;
+  }
+  .blk-label::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--brand);display:block}
+  .blk-label.follow{color:var(--hot)}
+  .blk-label.follow::before{background:var(--hot)}
+
+  ul.pts{margin:0;padding:0;list-style:none}
+  ul.pts li{
+    position:relative;padding-left:19px;margin-bottom:7px;font-size:13.9px;color:var(--ink-2);line-height:1.75;
+  }
+  ul.pts li::before{
+    content:"";position:absolute;left:5px;top:9px;width:5px;height:5px;border-radius:50%;
+    background:#b4a8d4;
+  }
+  ul.pts li b,ul.pts li strong{color:var(--ink);font-weight:600}
+  ul.pts li em{font-style:normal;color:var(--brand);font-weight:600}
+
+  code{
+    background:var(--code-bg);color:var(--code-ink);
+    padding:1.5px 6px;border-radius:5px;font-size:12.7px;
+    font-family:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    border:1px solid #e4def6;
+  }
+
+  .follow-box{
+    margin-top:16px;background:var(--panel-2);border:1px solid var(--line-2);
+    border-left:3px solid #f0a06a;border-radius:10px;padding:14px 16px 6px;
+  }
+  .faq{margin-bottom:11px}
+  .faq .fq{
+    font-size:13.4px;font-weight:600;color:var(--ink);margin-bottom:4px;
+    display:flex;gap:7px;align-items:flex-start;
+  }
+  .faq .fq .mark{color:var(--hot);font-weight:800;flex-shrink:0;font-size:12px;margin-top:1px}
+  .faq .fa{font-size:13.4px;color:var(--ink-2);line-height:1.75;padding-left:19px}
+
+  .empty{
+    display:none;text-align:center;padding:60px 20px;color:var(--ink-3);font-size:14px;
+  }
+  .empty.show{display:block}
+  .empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
+
+  footer{
+    max-width:1240px;margin:0 auto;padding:8px 22px 40px;color:var(--ink-3);font-size:12px;text-align:center;
+  }
+
+  .totop{
+    position:fixed;right:26px;bottom:26px;z-index:40;
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;color:var(--brand);font-size:16px;cursor:pointer;
+    box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;
+  }
+  .totop.show{display:flex}
+
+  @media (max-width:980px){
+    aside{display:none}
+    .wrap{padding:20px 14px 80px}
+    .top-inner{padding:10px 14px;gap:10px;flex-wrap:wrap}
+    .search{max-width:none;margin-left:0;order:3;flex-basis:100%}
+    .logo-txt span{display:none}
+  }
+  @media print{
+    header.top,aside,.totop,.q-tags .tag.d1,.q-tags .tag.d2,.q-tags .tag.d3{display:none!important}
+    body{background:#fff;font-size:11.5pt}
+    .q-body{display:block!important}
+    .q{border:1px solid #ccc;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+    .hero{box-shadow:none}
+    .wrap{display:block;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo">
+      <div class="logo-mark">IR</div>
+      <div class="logo-txt">
+        <b>图编译器</b>
+        <span>50 问 · 面试宝典（含追问）</span>
+      </div>
+    </div>
+    <div class="search">
+      <input id="q" type="text" placeholder="搜索，如 融合 / 布局 / 调度 / lowering / 自动微分" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <button class="btn" id="expandAll">展开全部</button>
+    <button class="btn primary" id="printBtn">打印 / 存 PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="side-card">
+      <div class="side-title">知 识 模 块</div>
+      <div id="nav"></div>
+      <div class="progress-box">
+        <div class="progress-label"><span>复习进度</span><span><b id="pv">0</b> / 50</span></div>
+        <div class="bar"><i id="pbar"></i></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>深度学习图编译器 面试 50 问</h1>
+      <p>围绕「一张计算图如何被编译成硬件上跑得最快的代码」这条主线，把深度学习编译器拆成 50 道高频面试题：计算图与静态/动态图、图 IR 与多级中间表示（Relay / HLO / MLIR / TensorIR）、图优化 pass、算子融合与调度、内存规划与张量布局、自动微分与训练图、后端 lowering 与主流生态（TVM / XLA / TensorRT / torch.compile）。每题给出回答要点，并附面试官最可能追问的方向。</p>
+      <div class="stats">
+        <span class="chip"><b>50</b> 道高频题</span>
+        <span class="chip"><b>7</b> 大知识模块</span>
+        <span class="chip">计算图 · IR · 融合 · 调度 · lowering</span>
+        <span class="chip">要点 + 追问 双栏结构</span>
+      </div>
+    </div>
+
+    <div id="list"></div>
+    <div class="empty" id="empty">
+      <div class="big">⌕</div>
+      没有匹配的题目，换个关键词试试
+    </div>
+  </main>
+</div>
+
+<footer>按 <b>/</b> 快速搜索 · 点击题目展开答案 · 建议对照 <code>TVM / XLA / Triton / TorchInductor</code> 的文档与源码亲手过一遍</footer>
+<button class="totop" id="totop">↑</button>
+
+<script>
+var DATA = [
+
+/* ============ 一、计算图与图编译基础 ============ */
+{cat:"计算图与图编译基础",diff:1,hot:true,
+ q:"什么是计算图？为什么深度学习框架离不开图？",
+ points:[
+  "计算图是以 [[算子]] 为节点、以 [[张量]] 为边的有向无环图（DAG），描述数据的依赖关系与计算顺序。",
+  "解耦：前端只负责「表达模型」，后端负责「执行优化」，两边可以独立演进。",
+  "为编译器提供了全局优化的抓手 —— 算子融合、常量折叠、内存复用、并行调度都建立在图上。",
+  "图是自动微分的天然载体：沿反向图走一遍就能生成梯度计算。",
+  "便于跨硬件复用同一份模型（ONNX / StableHLO 等作为交换格式）。"
+ ],
+ follow:[
+  {q:"计算图和数据流图（DFG）是一回事吗？",a:"在深度学习语境下基本等价。DFG 更泛化，强调「数据到达即可触发计算」，天然适合异步与并行；计算图通常特指深度学习里的算子级图。"},
+  {q:"为什么说它是 DAG 而不是树？",a:"一个张量往往被多个算子消费（残差连接、多头共享权重等），形成共享节点；树结构无法表达这种多消费者关系。"},
+  {q:"图里怎么表达控制流？",a:"早期把控制流也编码成算子（[[If]] / [[While]]）；现代做法是在 IR 里保留真正的控制流（如 MLIR 的 [[cf]] dialect），或者做图分裂把控制流部分单独交给运行时。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:1,hot:true,
+ q:"静态图与动态图的区别和取舍？",
+ points:[
+  "[[动态图]]（define-by-run，PyTorch eager）：边执行边建图，调试直观、写法灵活；但每次都要过 Python 解释器，难以做全局优化。",
+  "[[静态图]]（define-and-run，TF1 Graph / TorchScript）：先建完整图再执行，能做全局优化、部署友好；但调试麻烦、动态控制流别扭。",
+  "现在的主流是「动态图写代码 + 静态图编译」：用 TorchDynamo 之类在运行时捕获子图交给编译器，兼顾两者。",
+  "核心权衡：优化空间（静态大）↔ 灵活性与调试体验（动态好）；首次编译开销（JIT 高）。"
+ ],
+ follow:[
+  {q:"为什么动态图也能被编译？",a:"框架通过字节码级追踪（Dynamo）或记录算子调用（FX trace）把真实的执行序列固化成一张子图，再用 guard 保证捕获的图在当前输入下仍然成立。"},
+  {q:"graph break 是什么？",a:"动态图追踪时遇到无法进入图的操作（依赖张量值的 Python 分支、[[print]]、numpy 调用等）就切断，分成多个子图分别编译，中间回落到 eager。break 越多，优化越碎。"},
+  {q:"为什么静态图在部署里更常见？",a:"图一旦固定，就能脱离 Python 运行时、做 AOT 优化与序列化，适合推理服务（TensorRT / ONNX Runtime）。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:2,hot:true,
+ q:"图编译器和传统编译器（GCC/LLVM）最大的区别在哪？",
+ points:[
+  "输入粒度不同：图编译器吃的是 [[算子级 IR]]，传统编译器吃的是通用语言（C/C++/LLVM IR）。",
+  "优化空间更大：算子融合、layout 变换、内存复用这些传统编译器几乎不做，也做不了。",
+  "有一个现成的 [[算子库]] 生态（cuBLAS / cuDNN / oneDNN），「自己生成 kernel」还是「回调库」是个关键取舍。",
+  "目标高度异构：GPU / NPU / TPU / DSP，且硬件快速迭代，需要可插拔后端。",
+  "必须处理张量语义：shape、dtype、layout、数值精度，这些传统编译器完全不管。",
+  "对编译时间与运行时的权衡更敏感（JIT 首次延迟、编译缓存命中率）。"
+ ],
+ follow:[
+  {q:"为什么不干脆全部编译成 LLVM IR？",a:"LLVM 不懂算子语义（GEMM / Conv），而张量级优化（融合、tiling、layout）必须在算子层做。实践中是「高层图优化 + 算子级调度，最后落到 LLVM / NVCC 生成机器码」。"},
+  {q:"有算子库了，图编译器是不是多余？",a:"不多余。库只解决单个大算子，图编译器解决的是「算子之间」的融合、内存、调度与跨后端编排，两者互补。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:2,hot:false,
+ q:"一张计算图从框架到硬件端要经过哪些阶段？",
+ points:[
+  "[[图捕获]]：Dynamo / Tracing / JIT 得到初始图 IR（FX Graph、Relay、HLO 等）。",
+  "[[图级优化]]：常量折叠、CSE、DCE、代数化简、算子融合、布局传播、量化改写。",
+  "[[Lowering]]：把高层算子降到算子级的中间层（[[Relay]] → [[TensorIR]]，[[HLO]] → [[Linalg]]）。",
+  "[[调度与代码生成]]：tiling、vectorize、unroll，生成 CUDA / LLVM / Triton 代码，或回落到算子库。",
+  "[[运行时]]：内存规划、kernel launch、stream 同步、算子编排与执行。"
+ ],
+ follow:[
+  {q:"哪一步最容易成为性能瓶颈？",a:"通常是调度与代码生成（决定 kernel 质量）和内存规划（决定峰值显存）。图级优化多只是及格线，真正拉开差距的是算子级调度。"},
+  {q:"编译一次要多久？为什么要缓存？",a:"JIT 编译大模型可能要几十秒到几分钟，所以必须做编译缓存（按图结构、尺寸、权重做 key），否则线上不可用。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:2,hot:true,
+ q:"为什么要引入中间表示（IR）？直接用框架的图不行吗？",
+ points:[
+  "框架的图是[[面向表达]]的（Python 语义、autograd 细节混在一起），不适合直接做优化。",
+  "IR 是[[面向变换]]的：结构规整、语义明确，便于写 pass、做分析。",
+  "分层 IR 让优化逐步降低：高层看得到算子语义，低层看得到循环与内存，各司其职。",
+  "提供[[稳定性与可扩展性]]：新前端、新后端只需要对接 IR，而不是两两结对适配。"
+ ],
+ follow:[
+  {q:"为什么需要多级 IR 而不是只有一级？",a:"一级 IR 要么太高（无法做调度），要么太低（丢失算子语义）。多级 IR 允许在合适的抽象层做合适的优化，MLIR 就是这个思想的工程化。"},
+  {q:"一个合格的 IR 要满足什么条件？",a:"语义无歧义、结构规整（理想是 SSA）、可打印可解析、变换可组合，并且能表达目标硬件需要的全部信息。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:2,hot:false,
+ q:"图编译器里「编译期」和「运行期」的边界在哪？",
+ points:[
+  "编译期：形状与类型推导、图优化、算子调度、代码生成、内存规划（静态图可以全部在编译期完成）。",
+  "运行期：加载编译产物、分配与复用内存、launch kernel、流同步、执行控制流。",
+  "边界由「信息何时可知」决定：shape 越早确定，越多工作能前移到编译期。",
+  "动态 shape 与动态控制流会把工作推到运行期，代价是丢失优化机会与额外的 JIT 抖动。"
+ ],
+ follow:[
+  {q:"为什么希望把工作尽量前移？",a:"编译期做的事没有运行时开销（零成本）。运行期做得越少，延迟越稳定，也越容易做静态内存分配。"},
+  {q:"编译期做不了的典型例子？",a:"依赖张量实际数值才能决定的控制流（data-dependent control flow），以及动态 shape 下无法确定的内存大小。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:3,hot:true,
+ q:"图编译器怎么处理动态 shape？",
+ points:[
+  "[[符号化 shape]]：把未知维度标成符号（占位维度），让图本身保持静态、可优化。",
+  "[[Shape 特化 + 缓存]]：来一个新 shape 就特化编译一份并缓存，命中缓存则零开销，但容易抖动。",
+  "[[Bucketing]]：把相近的 shape 归并（如把序列长度 pad 到 8 的倍数），用少量编译产物覆盖大范围输入。",
+  "[[运行时动态执行]]：把 shape 相关计算下沉到运行期，牺牲部分优化换通用性（TensorRT 的 optimization profile、TVM 的 [[Any]] 维度）。",
+  "[[边界算子处理]]：对 shape 敏感的部分（reshape / 切片）保留为运行时算子，其余部分照常编译。"
+ ],
+ follow:[
+  {q:"动态 shape 为什么会让优化失效？",a:"tiling 因子、融合边界、内存大小、向量化宽度都依赖具体尺寸；尺寸不定就只能保守处理（更小的 tile、更少的融合）。"},
+  {q:"怎么避免「每个 batch 都重编译」的抖动？",a:"把 batch 或长度约束到固定档位（bucketing）、用动态 shape 内核覆盖常见区间、把编译缓存持久化到磁盘。"}
+ ]},
+
+{cat:"计算图与图编译基础",diff:2,hot:true,
+ q:"什么是算子与算子库？为什么编译器不能完全取代它们？",
+ points:[
+  "[[算子]] 是图上最小的计算单元（matmul / conv / softmax）；[[算子库]] 是厂商高度调优的实现（cuBLAS / cuDNN / oneDNN / MKL）。",
+  "在大算子上，库的性能常常优于自动生成，尤其是 GEMM、Conv、Attention 这类高价值算子。",
+  "编译器的务实策略：[[能融就融]]（元素级算子融合），[[大算子回调库]]，把优化集中在算子之间的边界。",
+  "也有「完全生成」路线（TVM 的自动调度、Triton 手写 kernel），牺牲通用性换端到端最优。"
+ ],
+ follow:[
+  {q:"回调库有什么代价？",a:"库是黑盒，可能与融合、内存规划的假设冲突（内部自己分配 workspace、对 layout 有硬性要求），从而打断上下游融合。"},
+  {q:"什么算子最适合自动生成？",a:"元素级算子、带简单 reduction 的算子，以及「多个算子的融合体」—— 这些恰好是算子库覆盖不到的地方，收益最直接。"}
+ ]},
+
+/* ============ 二、图 IR 与中间表示 ============ */
+{cat:"图 IR 与中间表示",diff:3,hot:false,
+ q:"图 IR 中为什么常引入 let binding（let 表达式）？",
+ points:[
+  "[[let]] 把子表达式命名成一个变量，避免同一子表达式被反复展开（否则表达式树会导致重复计算爆炸）。",
+  "等价于 SSA 中的 value 命名，天然支持[[共享]]与 [[CSE]]。",
+  "让图有明确的「中间值」概念，便于打印、分析与 pass 读写。",
+  "Relay 里就是 [[Let]] 节点；TensorIR 用显式 [[block]] 与变量替代。"
+ ],
+ follow:[
+  {q:"let 和 SSA 是什么关系？",a:"let 可以看作「函数式 SSA」：每个绑定只赋值一次，命名即定义，本质上就是把 SSA 的值命名用绑定表达出来。"},
+  {q:"没有 let 会怎样？",a:"子表达式被内联展开，同一份计算在图里出现多次，图会指数级膨胀，也无法指代中间结果。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:2,hot:true,
+ q:"Graph IR（图级 IR）与 Tensor IR（算子级 IR）的区别？",
+ points:[
+  "[[Graph IR]]（Relay / HLO / FX Graph）：节点是算子、边是张量，粒度粗，关注「算子之间的关系」，用来做融合、常量折叠、布局传播。",
+  "[[Tensor IR]]（TE / TensorIR / Triton IR / Linalg）：描述循环嵌套、访存与并行，粒度细，关注「单个算子怎么算得快」，用来做 tiling、向量化、代码生成。",
+  "两者通过 [[lowering]] 连接：图上的一个算子被降到一段 Tensor IR。",
+  "有些框架把两级合成一层（如 Triton 直接写在块级）；MLIR 则用 dialect 分层承载这条链路。"
+ ],
+ follow:[
+  {q:"为什么不能只保留一级 IR？",a:"算子级看不到循环，无法调度；循环级看不到算子语义，无法融合。融合要在算子级判断，调度要在循环级实现。"},
+  {q:"lowering 时最容易丢什么信息？",a:"除 shape / layout / dtype 之外的语义，比如是否允许重排浮点、边界如何处理。这些一旦丢失就无法做等价变换，所以必须在 IR 里显式保留。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:1,hot:false,
+ q:"常见的高层图 IR 与模型交换格式有哪些？",
+ points:[
+  "[[ONNX]]：跨框架的模型交换格式，本质是算子级图 IR，生态最广。",
+  "[[StableHLO]] / [[HLO]]（XLA）：JAX / TF 使用的高层算子 IR，StableHLO 已成为事实标准之一。",
+  "[[Relay]]（TVM）：函数式、带 let 与类型系统的图 IR。",
+  "[[FX Graph]]（PyTorch）：Dynamo 捕获出的图表示，配合 Inductor 编译。",
+  "此外还有 [[TorchScript IR]]、[[TensorFlow GraphDef]]，以及 MLIR 里的 [[torch]] / [[stablehlo]] dialect。"
+ ],
+ follow:[
+  {q:"为什么需要交换格式？",a:"让「训练框架」和「推理引擎」解耦：无论模型在哪训练，都能落到统一 IR 再交给不同后端。"},
+  {q:"ONNX 的主要痛点？",a:"算子集版本碎片化、不同导出器语义有差异、动态 shape 表达受限，跨引擎的精度与行为不一致是常见坑。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:3,hot:true,
+ q:"MLIR 的 dialect 体系和图编译器是什么关系？",
+ points:[
+  "MLIR 提供[[可扩展的多级 IR 基础设施]]：一个 dialect 就是一组 op / type / attr 加配套的 pass。",
+  "典型链路：[[stablehlo]] / [[torch]] → [[linalg]] / [[tensor]] / [[memref]] → [[scf]] / [[affine]] / [[llvm]]，逐级 lowering。",
+  "图编译器可以「寄生」在 MLIR 上：复用 pass 基础设施、渐进式降低、一份 IR 走多种后端。",
+  "代价：学习曲线陡、dialect 之间的转换 pass 要自己写、元编程有一定开销。"
+ ],
+ follow:[
+  {q:"MLIR 是编译器还是框架？",a:"是 IR 基础设施与框架，提供 IR 表示、pass 管理、模式重写（DRR）与多后端接口；具体的优化逻辑仍要自己写 dialect 和 pass。"},
+  {q:"为什么说渐进式 lowering 有价值？",a:"每一步只做一小类变换，容易证明正确、容易调试；一口气从高层降到机器码则很难定位问题。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:2,hot:true,
+ q:"什么是 SSA？IR 为什么要用 SSA？",
+ points:[
+  "[[SSA]]（静态单赋值）：每个变量只被赋值一次，用「新名字」代替「重新赋值」。",
+  "好处是 [[def-use 链显式化]]，数据流分析、常量传播、DCE、CSE 都变得非常简单。",
+  "控制流汇合处用 [[phi]]（或 block argument）表示「来自不同分支的值」。",
+  "图 IR 天然接近 SSA：每个张量节点就是一个只定义一次的值，所以图优化的写法很像 SSA 优化。"
+ ],
+ follow:[
+  {q:"图 IR 需要 phi 吗？",a:"处理控制流合流时就需要。纯静态 DAG 没有分支就没有 phi；带 if / while 的图就要用 phi 或 block 参数。"},
+  {q:"SSA 有什么缺点？",a:"变量名爆炸、调试时不如普通变量直观；从非 SSA 转换到 SSA 需要计算支配边界并插入 phi。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:2,hot:true,
+ q:"张量布局（NCHW / NHWC）在图里如何表示与传播？",
+ points:[
+  "layout 是张量的物理排布，[[逻辑形状相同但布局不同，性能可能差几倍]]。",
+  "图 IR 里通常显式插入 layout 变换算子（[[transpose]] 或自定义 layout op），或把 layout 挂在 tensor type 上。",
+  "[[传播]]：把 layout 决策一路向下游传，直到遇到必须转换、或转换代价小于收益的点。",
+  "目标：[[尽量减少变换次数]]，能合并的合并，能把变换推到图边界的就推到边界。"
+ ],
+ follow:[
+  {q:"为什么 GPU 上常用 NHWC？",a:"NHWC 让通道维连续，配合张量核（Tensor Core）与 im2col 更友好，访存也更连续。"},
+  {q:"layout 变换本身的代价大吗？",a:"很大。一次 NCHW↔NHWC 是整张量重排，就是一次全量读写；所以布局优化的收益往往高于算子级微调。"}
+ ]},
+
+{cat:"图 IR 与中间表示",diff:2,hot:false,
+ q:"什么是 shape / dtype 推导？为什么它是图编译的第一步？",
+ points:[
+  "每个算子根据输入推断输出的 [[shape 与 dtype]]，这是图合法性与后续一切优化的前提。",
+  "编译期推导成功 → 可以静态分配内存、选择 kernel、判断能否融合。",
+  "推导失败（动态维度、信息缺失）→ 需要符号化，或把工作推迟到运行期。",
+  "dtype 不一致是最常见的报错源之一（int32 vs int64、float32 vs float16）。"
+ ],
+ follow:[
+  {q:"为什么很多框架要求显式指定输入 shape？",a:"否则无法完成推导，也就无法编译。这正是「静态图必须先 build / 先 trace」的根因。"},
+  {q:"dtype 会影响什么？",a:"影响 kernel 选择、内存占用、数值精度，以及能否用上张量核。比如 fp16 与 bf16 的可用算子集就不同。"}
+ ]},
+
+/* ============ 三、图优化 Pass ============ */
+{cat:"图优化 Pass",diff:1,hot:true,
+ q:"常见的图优化 pass 有哪些？",
+ points:[
+  "[[常量折叠 / 常量传播]]：编译期把常量计算算掉。",
+  "[[CSE]]：消除重复子图；[[DCE]]：删除无贡献的节点。",
+  "[[代数化简]]：x*1、x+0、合并同类项、转置的转置消掉。",
+  "[[算子融合]]：把多个算子合成一个 kernel（图编译最核心的优化）。",
+  "[[布局变换与传播]]：减少数据搬运。",
+  "[[量化改写]]：插入或合并量化节点。",
+  "[[控制流变换]]：内联、展开、把控制流提升到图级。"
+ ],
+ follow:[
+  {q:"为什么图级 pass 的收益通常小于算子级？",a:"图级 pass 多是「白捡的」小收益（去冗余、折常量）；真正影响性能的是融合与调度，属于算子级工作。"},
+  {q:"pass 的先后顺序重要吗？",a:"很重要。先融合再 CSE 与先 CSE 再融合结果不同；编译器通常用固定的 pass pipeline，并反复迭代到收敛。"}
+ ]},
+
+{cat:"图优化 Pass",diff:1,hot:true,
+ q:"常量折叠与常量传播的区别？",
+ points:[
+  "[[常量传播]]：把「已知的值」沿数据流传播到下游（[[y = x + 1]] 而 x 是常量 2，则 y 也已知）。",
+  "[[常量折叠]]：把「输入全是常量」的算子直接算成一个常量张量。",
+  "两者通常一起做，并迭代到不动点（折叠产生新常量，又触发新的传播）。",
+  "收益：减少运行期计算、触发更多融合、让 shape 变静态。"
+ ],
+ follow:[
+  {q:"哪些图的常量折叠收益最大？",a:"带大量常量参数的图：量化模型里的 scale / zero_point 计算、形状计算子图、训练图里冻结的参数。"},
+  {q:"常量折叠有风险吗？",a:"有。编译期计算量可能很大、可能改变浮点结果（精度、NaN 行为），也会拉长编译时间，通常要设阈值。"}
+ ]},
+
+{cat:"图优化 Pass",diff:2,hot:true,
+ q:"什么是 CSE？图上怎么找重复子表达式？",
+ points:[
+  "[[CSE]]（公共子表达式消除）：多个节点计算完全相同的表达式，就只算一次，其余复用结果。",
+  "图上做法：对每个节点按「算子类型 + 属性 + 输入编号」做[[结构哈希]]，哈希相同即视为等价。",
+  "对满足交换律的算子（a+b 与 b+a）要[[规范化排序]]后再哈希。",
+  "意义：消除前端作者无意造成的重复计算（重复的 layout 变换、重复的权重切片等）。"
+ ],
+ follow:[
+  {q:"CSE 靠什么保证等价？",a:"靠算子语义。只有确定性的纯算子才能合并；带随机性（dropout）或带内部状态（训练态 BN 的统计量）的算子不能随便合并。"},
+  {q:"结构哈希和子图同构是什么关系？",a:"结构哈希是同构判断的高效近似。严格的子图同构（尤其带交换律）是 NP 难问题，工程上用哈希加模式匹配。"}
+ ]},
+
+{cat:"图优化 Pass",diff:3,hot:false,
+ q:"死代码消除（DCE）在图里怎么做？为什么很常见？",
+ points:[
+  "从图的输出（以及所有有副作用的节点）出发做[[可达性分析]]，不可达的节点就是死代码。",
+  "有副作用的节点（随机数、打印、写内存、同步）必须视为「活」的，不能删。",
+  "常见来源：训练图里未使用的输出、被优化掉的中间结果、条件分支里未被选中的分支。"
+ ],
+ follow:[
+  {q:"为什么 DCE 往往先做？",a:"删掉无用节点能让后续 pass 更简单（输入更少），也避免编译无意义的子图浪费时间和内存。"},
+  {q:"为什么自动微分特别需要 DCE？",a:"反向图可能生成了某条输出的梯度，但用户并不需要那一部分；不用的梯度子图会被删掉。"}
+ ]},
+
+{cat:"图优化 Pass",diff:2,hot:false,
+ q:"代数化简有哪些经典规则？为什么要特别小心浮点？",
+ points:[
+  "恒等式：x*1=x、x+0=x、x*0=0、x-x=0、x/1=x。",
+  "结构化简：转置两次消掉、连续 reshape 可合并、concat 可折叠。",
+  "强度削弱：除法变乘法（x/2 → x*0.5）、幂变乘法。",
+  "[[浮点不满足结合律与分配律]]：(a+b)+c 与 a+(b+c) 结果可能不同；x*0 在 x 为 NaN / Inf 时结果是 NaN。",
+  "因此浮点化简要保守，只在「保数值语义」的前提下做，或明确开启 fast-math。"
+ ],
+ follow:[
+  {q:"fast-math 是什么？为什么默认关闭？",a:"它允许编译器假设浮点满足结合律、没有 NaN / Inf，从而能做更多重排与化简，提升性能但可能改变数值结果，所以默认不开。"},
+  {q:"算子融合会改变浮点结果吗？",a:"会。融合改变了运算顺序与中间精度（很多硬件中间结果用更高精度），这就是「融合前后精度不一致」的常见原因。"}
+ ]},
+
+{cat:"图优化 Pass",diff:1,hot:true,
+ q:"什么是算子融合？为什么它是图编译器最核心的优化？",
+ points:[
+  "[[融合]]：把多个算子的计算合并进同一个 kernel，一次访存完成多步计算。",
+  "收益一：[[减少 kernel launch 开销]]（launch 本身是微秒级的固定成本）。",
+  "收益二：[[消除中间张量的读写]]，元素级算子融合后直接省掉「写一次 + 读一次」。",
+  "收益三：[[提升算术强度]]，把访存密集型算子变成计算密集型，更接近硬件算力上限。",
+  "收益四：[[降低内存峰值]]，中间结果不再物化。"
+ ],
+ follow:[
+  {q:"融合总能提升性能吗？",a:"不一定。融合会增加寄存器与共享内存压力、降低并行度、拉长编译时间，甚至导致寄存器溢出，反而变慢。"},
+  {q:"什么算子最容易融合？",a:"元素级算子链（relu / add / mul 等），计算简单、无跨元素依赖，融合收益几乎必然为正。"}
+ ]},
+
+{cat:"图优化 Pass",diff:2,hot:true,
+ q:"图分割（partitioning / subgraph splitting）为什么必要？",
+ points:[
+  "后端往往[[只支持部分算子]]：能编译的走编译器，不支持的必须回退到框架或算子库。",
+  "于是要把图切成「编译段」与「回退段」，并在边界处做数据交接。",
+  "其他用途：多后端异构调度（CPU + GPU + NPU）、量化与非量化分段、显存受限时按段流式执行。",
+  "目标：[[最大化编译段、最小化边界开销]]（每次跨界都有拷贝与同步代价）。"
+ ],
+ follow:[
+  {q:"分割的判据是什么？",a:"算子支持情况、数据搬运代价、段的大小、后端切换开销。常用贪心或动态规划，把「能合的尽量合在一起」。"},
+  {q:"分割不好会怎样？",a:"频繁在回退段与编译段之间来回搬运，拷贝与同步开销吃掉融合收益，甚至比不编译还慢。"}
+ ]},
+
+{cat:"图优化 Pass",diff:3,hot:false,
+ q:"什么是 layout 变换与 layout 传播？为什么尽量推迟或消除它？",
+ points:[
+  "[[layout 传播]]：把一个布局决策沿图向上下游扩散，让算子尽量在「不需要变换」的布局下计算。",
+  "[[变换消除]]：若上下游对布局的需求一致，就不插变换；若必须变换，尽量合并成一次。",
+  "[[推迟到边界]]：把变换推到图入口 / 出口，或放到能被融合吸收的位置。",
+  "核心目的：减少整张量的数据重排 —— 每一次都相当于一次全量读写。"
+ ],
+ follow:[
+  {q:"布局该怎么选？",a:"按硬件最擅长的布局选（GPU 常选 NHWC 以贴合 Tensor Core），再与后端库、生成 kernel 的实际需求对齐。"},
+  {q:"布局需求冲突时怎么办？",a:"在收益最大的地方做一次变换，其余地方让算子适配；或直接改写算子，让融合 kernel 内部处理布局。"}
+ ]},
+
+/* ============ 四、算子融合与调度 ============ */
+{cat:"算子融合与调度",diff:2,hot:true,
+ q:"算子融合有哪几种典型模式？",
+ points:[
+  "[[纵向融合（消费者链）]]：conv → bias → relu 这类前后依赖的算子合成一个 kernel。",
+  "[[横向融合（生产者共享）]]：多个算子共享同一输入或同一权重（如多头注意力的多个投影），拼成一次大 GEMM。",
+  "[[reduction + elementwise]]：reduce 之后紧跟逐元素运算，合并成一个 kernel。",
+  "[[注入式融合]]：把「小算子」注进「大算子」，例如把 scale / shift 注进 GEMM 或 Conv。"
+ ],
+ follow:[
+  {q:"横向融合的收益来自哪？",a:"把多个小 GEMM 拼成大 GEMM，提升硬件利用率与并行度，同时减少 launch 次数。"},
+  {q:"哪些融合模式最难做？",a:"带复杂依赖的 reduction 融合、需要跨 block 全局同步的算子（如全局 softmax）、以及会显著增加寄存器压力的融合。"}
+ ]},
+
+{cat:"算子融合与调度",diff:2,hot:true,
+ q:"为什么推理期 conv + BN 可以折叠成一个 conv？",
+ points:[
+  "推理期 BN 的参数（mean / var / gamma / beta）已经固定，等价于一个逐通道的仿射变换。",
+  "仿射可以[[乘进卷积权重]]、[[加到卷积偏置]]：[[W' = W * scale]]、[[b' = (b - mean) * scale + beta]]。",
+  "于是 BN 从图里彻底消失，少一次访存与一次 kernel 调用。",
+  "前提是推理模式（统计量固定）；训练模式的 BN 依赖 batch 统计量，是动态的，不能折。"
+ ],
+ follow:[
+  {q:"训练时为什么不能折？",a:"BN 的统计量随 batch 变化，是动态量，无法在编译期确定。"},
+  {q:"折叠会影响精度吗？",a:"会有微小数值差异（重排与中间精度），一般可接受；敏感场景需要做数值对齐验证。"}
+ ]},
+
+{cat:"算子融合与调度",diff:2,hot:true,
+ q:"什么是调度（schedule）与循环变换？",
+ points:[
+  "[[调度]]：在算法（算什么）不变的前提下决定「怎么算」—— 循环次序、分块、并行方式与向量化。",
+  "[[tiling（分块）]]：把大循环切成块，提升 cache 与共享内存命中。",
+  "[[reorder（重排）]]：调整循环顺序以改善访存局部性。",
+  "[[vectorize]]：把标量循环变成向量指令；[[unroll]] 展开循环减少分支与索引开销；[[parallel]] 把外层循环并行到多核或多 block。"
+ ],
+ follow:[
+  {q:"调度和算法优化有什么区别？",a:"调度不改变计算语义（结果一致），只改变执行方式；算法优化可能改变语义（如用更少乘法的快速算法）。"},
+  {q:"为什么调度这么难？",a:"搜索空间巨大，且与硬件强相关（cache 大小、寄存器数量、并行度）；自动调度本质上就是在做这个搜索。"}
+ ]},
+
+{cat:"算子融合与调度",diff:2,hot:true,
+ q:"为什么 tiling（分块）能显著提升性能？",
+ points:[
+  "减少访存：数据被装进[[寄存器 / 共享内存]]后反复使用，避免反复从全局内存取。",
+  "提升[[算术强度]]：同样一次访存服务更多次计算。",
+  "改善[[局部性]]：让访问落在 cache 行或共享内存 bank 内。",
+  "代价：块太小 → 并行度与复用不足；块太大 → 寄存器溢出、占用率下降。"
+ ],
+ follow:[
+  {q:"tile size 怎么定？",a:"在寄存器与共享内存容量约束下最大化数据复用，同时保证足够并行度；通常靠自动搜索（autotuning）来找。"},
+  {q:"matmul 的经典优化顺序？",a:"分块 → 把块装进共享内存 / 寄存器 → 寄存器分块 → 向量化 → 配合 Tensor Core，层层叠加。"}
+ ]},
+
+{cat:"算子融合与调度",diff:3,hot:false,
+ q:"自动调度（AutoTVM / Ansor / MetaSchedule）在解决什么问题？",
+ points:[
+  "手工调度依赖专家经验，模型和硬件一变就要重写，不可扩展。",
+  "[[自动调度]]：用模板（AutoTVM）或分层搜索（Ansor）自动寻找 tile / reorder / vectorize 等参数组合。",
+  "通常用[[代价模型]]预测性能，减少真实测量的次数。",
+  "产出可以缓存：为「算子 + shape + 目标硬件」缓存最优调度，避免线上重复搜索。"
+ ],
+ follow:[
+  {q:"自动调度的代价？",a:"搜索本身耗时（可能几小时到几天），所以多用于离线对常用算子调优，或用一个可迁移的代价模型。"},
+  {q:"和手写 kernel 相比效果如何？",a:"常见算子上已接近手写；极端特化场景仍不如专家手写（如 FlashAttention、CUTLASS 的极致调优）。"}
+ ]},
+
+{cat:"算子融合与调度",diff:3,hot:false,
+ q:"Triton 与图编译器自动代码生成是什么关系？",
+ points:[
+  "[[Triton]] 提供「块级编程」抽象：你写 block 级 kernel（加载块、计算、存回），编译器负责向量化与调度。",
+  "图编译器的 [[codegen]] 端可以把算子降成 Triton IR（如 PyTorch Inductor 生成 Triton kernel）。",
+  "两者互补：编译器覆盖大多数模式，不合适时用 [[BYOC]] 或回调让专家手写 kernel 兜底。",
+  "生产实践常见「自动生成 + 手写特化」混合：热点大算子手写，长尾算子自动生成。"
+ ],
+ follow:[
+  {q:"为什么 Inductor 选 Triton 而不是直接生成 CUDA C？",a:"Triton 抽象层级合适、可被自动生成、跨 GPU 代际更稳，也比手写 CUDA 更容易维护与调优。"},
+  {q:"图编译器能生成 FlashAttention 级别的 kernel 吗？",a:"部分可以（已有工作能识别在线 softmax 模式并生成），但极致性能版本仍是手写调优出来的。"}
+ ]},
+
+{cat:"算子融合与调度",diff:3,hot:true,
+ q:"融合的边界问题：哪些算子不适合融合？",
+ points:[
+  "会显著[[增加寄存器 / 共享内存压力]]的，可能导致寄存器溢出与占用率下降。",
+  "需要[[跨 block 全局同步]]的 reduction（如整段序列的 softmax），难以在单个 kernel 内完成。",
+  "融合后[[并行度不足]]：小算子在融合后并行块太少，跑不满硬件。",
+  "[[dtype / layout 冲突]]：双方要求不同的精度或布局，融合会引入额外变换。",
+  "融合会[[拉长编译时间]]，收益不明确时就不值得做。"
+ ],
+ follow:[
+  {q:"怎么决定融不融？",a:"用代价模型或启发式比较「融合后的估算收益」与「寄存器压力、并行度损失、编译开销」，编译器一般有阈值控制。"},
+  {q:"融合会增加编译时间吗？",a:"会。融合组合是组合爆炸的，编译器必须剪枝，只考虑有收益的相邻融合。"}
+ ]},
+
+/* ============ 五、内存规划与布局 ============ */
+{cat:"内存规划与布局",diff:2,hot:true,
+ q:"图编译器的内存规划（memory planning）在做什么？",
+ points:[
+  "静态图能算出[[每个张量的生命周期]]（从定义到最后一个消费者），据此让「已不再使用的张量」把内存让给后来的张量。",
+  "经典做法是[[区间图着色]]（interval graph coloring）或 best-fit 装箱，分配内存块并最小化峰值。",
+  "目标是[[降低峰值显存]]，让更大的模型或更大的 batch 能跑起来。",
+  "与融合强相关：被融合掉的中间张量根本不需要分配内存。"
+ ],
+ follow:[
+  {q:"为什么推理特别看重峰值内存？",a:"峰值决定能塞下多大的 batch 与模型，直接决定吞吐与成本。"},
+  {q:"内存规划难在哪？",a:"要考虑对齐、并发流、算子内部 workspace，还可能和算子库自己的分配冲突，动态 shape 下更难。"}
+ ]},
+
+{cat:"内存规划与布局",diff:3,hot:false,
+ q:"什么是内存复用与原地（in-place）操作？什么时候安全？",
+ points:[
+  "[[原地操作]]：算子的输出直接写回输入缓冲区，省一次分配与一次拷贝。",
+  "安全条件：该输入[[在之后不再被其他节点使用]]，且算子本身支持原地语义。",
+  "常见适用：激活函数（relu）、add_ 类操作、优化器更新（Adam 的原地更新）。",
+  "图编译器通过[[引用计数与生命周期分析]]判断能否原地化。"
+ ],
+ follow:[
+  {q:"原地操作有什么风险？",a:"它破坏了「函数式」假设：如果还有别的消费者就会算错；也会影响自动微分（反向需要前向的输入值）。"},
+  {q:"自动微分为什么怕原地？",a:"反向需要前向的输入值，被原地覆盖就丢了；所以框架会保存必要的张量，或禁止危险的原地改写。"}
+ ]},
+
+{cat:"内存规划与布局",diff:2,hot:true,
+ q:"张量布局对性能影响有多大？NCHW 与 NHWC 各自适合什么？",
+ points:[
+  "同一算法换个布局，性能可能[[差几倍]]，因为访存模式与向量化能力完全不同。",
+  "[[NCHW]]：通道在低维，逐通道参数（BN）友好，传统卷积库习惯用；但通道不连续，用 Tensor Core 前常需转换。",
+  "[[NHWC]]：通道连续，im2col 展开与向量化访存更友好，GPU 上通常更快。",
+  "选择取决于硬件与后端：GPU / Tensor Core 偏 NHWC，某些 NPU 有自己的私有布局。"
+ ],
+ follow:[
+  {q:"布局变换的成本怎么摊销？",a:"尽量让整条链统一布局，只在图边界或算子内部做一次；把变换融进相邻 kernel。"},
+  {q:"为什么 NPU 常有私有布局？",a:"为了匹配其内部存储与计算阵列（如按通道分块的权重排布），编译器需要把数据转成「硬件友好」的物理排布。"}
+ ]},
+
+{cat:"内存规划与布局",diff:3,hot:false,
+ q:"访存局部性、伪共享在图编译器里如何体现？",
+ points:[
+  "[[时间 / 空间局部性]]：循环变换（tiling / reorder）就是为了让复用的数据待在 cache 或共享内存里。",
+  "[[合并访存（coalescing）]]：让同一 warp 或线程组的访问落在连续地址，避免多次内存事务。",
+  "[[bank conflict]]：共享内存分块时要避免多线程撞同一个 bank。",
+  "[[伪共享]]：多核上不同线程写同一 cache line 的不同变量，导致 cache 反复失效；可用 padding 或对齐分块规避。"
+ ],
+ follow:[
+  {q:"这些在高层图优化里看得到吗？",a:"看不到，它们属于算子级与代码生成阶段。但图级决策（布局、融合）决定了这些优化有没有空间可做。"},
+  {q:"为什么说「融合提升算术强度」与局部性有关？",a:"融合让中间结果留在寄存器或共享内存，避免写回全局内存再读，正是局部性的体现。"}
+ ]},
+
+{cat:"内存规划与布局",diff:2,hot:false,
+ q:"什么是 workspace？为什么有些算子需要额外内存？",
+ points:[
+  "[[workspace]] 是算子执行时需要的[[临时缓冲区]]，既不是输入也不是输出。",
+  "典型来源：算法本身需要（im2col 展开、Winograd 的中间结果、sort 的临时数组、cuDNN 的工作区）。",
+  "由[[运行时或内存规划器]]统一分配与复用，避免每个算子各自 malloc。",
+  "workspace 大小既影响峰值显存，也影响能否与前后算子融合。"
+ ],
+ follow:[
+  {q:"workspace 会阻碍融合吗？",a:"会。需要大 workspace 的算子通常不适合融进别的 kernel，因为临时区放不进寄存器。"},
+  {q:"怎么减少 workspace 占用？",a:"选 workspace 小的算法、复用同一块缓冲区，或改用融合友好的算法（如 FlashAttention 避免物化注意力矩阵）。"}
+ ]},
+
+{cat:"内存规划与布局",diff:3,hot:true,
+ q:"如何优化 softmax / attention 这类访存密集型算子？",
+ points:[
+  "常规做法要把 [[N×N 注意力矩阵]]物化到显存，访存量是 [[O(N²)]]，显存与带宽都吃紧。",
+  "[[FlashAttention]] 的思路：[[分块]] + [[online softmax]]，边算边归一化，从不物化完整矩阵。",
+  "收益：显存从 [[O(N²)]] 降到 [[O(N)]]，访存大幅减少，速度显著提升。",
+  "这是「融合 + 在线算法」结合的典范：算法选择本身就决定了融合的可能性。"
+ ],
+ follow:[
+  {q:"online softmax 的关键是什么？",a:"维护「当前最大值与归一化因子」，每来一个块就更新 running max / sum 并重标定，避免两遍扫描。"},
+  {q:"图编译器能自动发现这种优化吗？",a:"很难全自动。通常靠「模式识别 + 预置优化模板」，或直接手写特化 kernel 接入。"}
+ ]},
+
+/* ============ 六、自动微分与训练图 ============ */
+{cat:"自动微分与训练图",diff:2,hot:true,
+ q:"图编译器怎么支持自动微分？前向模式与反向模式的区别？",
+ points:[
+  "[[前向模式]]：沿正向传播导数，适合[[输入少、输出多]]的场景。",
+  "[[反向模式]]：先跑正向、再沿反向图传播梯度，适合[[输入多、输出少]]（深度学习的主场景：参数极多、loss 是标量）。",
+  "反向模式需要[[保存前向中间值]]（tape / activation），带来显存开销。",
+  "图编译器的角色：[[把反向图的生成也交给编译器]]（如 AOTAutograd），并对正向 + 反向整图一起优化与内存规划。"
+ ],
+ follow:[
+  {q:"为什么深度学习几乎只用反向模式？",a:"因为 loss 是标量（输出为 1），而参数多达百万到千亿（输入极多）。反向模式一次就能算出所有参数的梯度，代价与前向同阶。"},
+  {q:"tape 是什么？",a:"记录前向计算过程（算子和中间张量）的结构，反向时按逆序回放来求导。"}
+ ]},
+
+{cat:"自动微分与训练图",diff:2,hot:false,
+ q:"反向图是怎么从正向图生成的？",
+ points:[
+  "每个算子注册自己的[[反向规则]]（vjp / jvp）：给定输出梯度，算出输入梯度。",
+  "从 loss 出发[[反向遍历正向图]]，遇到节点就调用其反向规则，用链式法则把梯度累加到输入。",
+  "有多个消费者的张量，其梯度会被[[累加]]（所以本质是 DAG 上的求和）。",
+  "生成的梯度计算本身就是一张新图，可以继续被编译与优化。"
+ ],
+ follow:[
+  {q:"为什么梯度要累加？",a:"链式法则：一个张量影响多个下游时，它收到的梯度是各条路径贡献之和。"},
+  {q:"哪些算子没法自动求导？",a:"无定义或不可导处（argmax、sort、离散采样）、有自定义语义的算子，需要手写反向规则或做近似（STE 直通估计）。"}
+ ]},
+
+{cat:"自动微分与训练图",diff:3,hot:true,
+ q:"什么是 checkpointing / 重计算？它解决什么问题？",
+ points:[
+  "反向需要前向的中间激活，全部保存会[[爆显存]]。",
+  "[[重计算（activation checkpointing / rematerialization）]]：只保存部分关键激活，反向时把丢失的激活[[重新算一遍]]。",
+  "本质是[[用计算换显存]]：牺牲约一次额外前向的时间，换来显著的内存下降。",
+  "图编译器可以在图上自动选出「保存哪些、重算哪些」，做全局最优的取舍。"
+ ],
+ follow:[
+  {q:"怎么选 checkpoint 的位置？",a:"在显存受限前提下最小化重算开销，这是「内存 ↔ 计算」的组合优化问题，常用启发式或贪心。"},
+  {q:"为什么大模型训练离不开它？",a:"激活显存随层数与序列长度增长，不做重计算根本放不下。"}
+ ]},
+
+{cat:"自动微分与训练图",diff:3,hot:false,
+ q:"训练图比推理图多了哪些优化点？",
+ points:[
+  "[[梯度融合]]：把多个小梯度累加 / 规约融合，减少 kernel 与访存。",
+  "[[梯度累积]]：多个 micro-batch 的梯度先攒着再一次更新，等价于更大 batch。",
+  "[[通信插入与重叠]]：多卡训练要插 [[all-reduce]] / [[all-gather]]，并尽量与计算重叠。",
+  "[[混合精度]]：插入 cast、用 loss scaling，让尽量多的算子跑在低精度上。",
+  "[[原地优化器更新]]、参数与梯度分片（ZeRO 类）。"
+ ],
+ follow:[
+  {q:"通信与计算重叠怎么实现？",a:"把反向计算与梯度 all-reduce 按层流水化（bucket + 异步通信），让通信躲在计算后面。"},
+  {q:"为什么训练图优化比推理难？",a:"多了自动微分、通信、精度与随机性；而且训练对数值一致性更敏感，很多激进优化不能做。"}
+ ]},
+
+{cat:"自动微分与训练图",diff:2,hot:false,
+ q:"混合精度训练在图层面怎么处理？",
+ points:[
+  "把权重与激活降到 [[fp16 / bf16]]，但保留 [[fp32 主权重]]，既加速又省显存。",
+  "图改写：在需要的位置插 cast，并把相邻的 cast 合并或消除。",
+  "[[loss scaling]]：放大 loss 避免梯度下溢，更新前再缩放回来。",
+  "[[黑白名单]]：数值敏感的算子（softmax / reduce 类）强制走高精度，其余走低精度。",
+  "目标：[[最小化 cast 次数]]，同时不破坏数值稳定性。"
+ ],
+ follow:[
+  {q:"fp16 和 bf16 怎么选？",a:"fp16 精度高但动态范围小、容易溢出（需要 loss scaling）；bf16 动态范围大、几乎不需要缩放，更适合大模型训练。"},
+  {q:"cast 为什么影响性能？",a:"每次 cast 都是一次额外的读写与类型转换，插在算子之间会打断融合、增加访存。"}
+ ]},
+
+{cat:"自动微分与训练图",diff:3,hot:true,
+ q:"动态图框架怎么做到「可编译」？TorchDynamo 是怎么工作的？",
+ points:[
+  "[[字节码捕获]]：Dynamo 在 Python 字节码层拦截执行，把张量运算记录成 FX 图。",
+  "[[guard 机制]]：为捕获的图记录生效条件（shape / dtype / 对象 id 等），下次执行前校验，不满足就重新捕获。",
+  "[[graph break]]：遇到无法进入图的操作（Python 分支、外部库调用）就切断，分段编译，中间回落到 eager。",
+  "[[多级缓存]] 编译产物，避免重复编译。",
+  "后端可选（Inductor / TensorRT / 自研），编译结果接入执行。"
+ ],
+ follow:[
+  {q:"为什么在字节码层拦截，而不是 API 层？",a:"字节码层能覆盖更广的 Python 写法（不只是张量 API），也不需要用户改代码，比 hook 张量方法更彻底。"},
+  {q:"graph break 为什么是性能杀手？",a:"它打断了图级优化，强制回落到逐算子执行，还会引入额外的同步与拷贝。"},
+  {q:"怎么减少 graph break？",a:"把依赖张量值的 Python 逻辑改写成张量运算、避免在热路径调用不可捕获的库、用 torch.compile 的日志定位并逐一消除。"}
+ ]},
+
+/* ============ 七、后端 Lowering 与生态 ============ */
+{cat:"后端 Lowering 与生态",diff:1,hot:true,
+ q:"什么是 lowering？完整的降低链路是什么？",
+ points:[
+  "[[Lowering（降低）]]：把高层抽象 IR 翻译成更低层、更接近硬件的 IR，每一步只做一小类变换。",
+  "典型链路：[[高层图 IR]]（Relay / HLO）→ [[算子级 / 循环级 IR]]（TensorIR / Linalg）→ [[低层 IR]]（LLVM IR / CUDA C / Triton IR）→ 机器码。",
+  "好处是[[每一步变换都可验证、可组合]]，出错时容易定位。",
+  "关键约束：降低过程中必须保留足够信息（shape / layout / 语义），否则后续优化就做不了。"
+ ],
+ follow:[
+  {q:"为什么叫「降低」而不是「编译」？",a:"「降低」强调抽象层次的下降；编译是整体过程，lowering 是其中「逐级降抽象」的环节。"},
+  {q:"lowering 最容易出什么问题？",a:"语义丢失（把不确定的浮点重排偷偷变成确定）、布局假设前后不一致、边界处理（padding / 越界）没对齐。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:2,hot:false,
+ q:"代码生成有哪几种方式？",
+ points:[
+  "[[算子库调用]]：直接生成对 cuBLAS / cuDNN 的调用（最稳、最快落地，但不灵活）。",
+  "[[模板 / DSL 生成]]：按调度模板生成 CUDA C 或 TVM / Triton IR（TVM 的经典路线）。",
+  "[[编译到 LLVM IR]]：生成 LLVM IR，交给 LLVM 做底层优化与多架构代码生成。",
+  "[[生成 Triton IR]]：块级生成，交由 Triton 编译（Inductor 路线）。",
+  "实践中[[混合使用]]：大算子调用库或手写，其余自动生成。"
+ ],
+ follow:[
+  {q:"哪种方式性能最好？",a:"没有绝对。库在它专门优化的算子上最好，生成代码在「融合体 / 长尾算子」上更好，混合才是最优解。"},
+  {q:"为什么越来越多方案选 LLVM 作后端？",a:"它提供成熟的多架构优化与代码生成基础设施（指令选择、寄存器分配、向量化），能省去自己造轮子。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:3,hot:true,
+ q:"XLA 的 HLO 与 TVM 的 Relay / TensorIR 思路差异在哪？",
+ points:[
+  "[[XLA / HLO]]：把图降成 HLO，用一系列 HLO pass 做融合与布局，再生成 LLVM / TPU 代码；倾向[[整体编译 + 静态 shape]]，与 JAX / TF 深度耦合。",
+  "[[TVM]]：强调[[算子级调度与自动调优]]（TE / TensorIR + AutoTVM / Ansor），主打跨硬件可移植性，用 [[BYOC]] 接入厂商后端。",
+  "共同点：都在做融合、布局、内存规划与代码生成，都支持多种后端。",
+  "差异：XLA 更偏「图级 + 编译器友好后端」；TVM 更偏「算子级 + 调度搜索 + 生态接入」。"
+ ],
+ follow:[
+  {q:"哪个更好？",a:"取决于目标。TPU 或自研硬件走 XLA 风格更顺；要覆盖多种异构后端、还想自己调算子，TVM 更灵活。"},
+  {q:"两者的演进趋势是什么？",a:"都在往「多级 IR + 自动调度 + 可插拔后端」走，MLIR 生态让两者的边界越来越模糊。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:1,hot:true,
+ q:"主流的图编译器与运行时生态有哪些？各自定位？",
+ points:[
+  "[[XLA / JAX]]：JIT 编译 + 静态 shape，面向 TPU / GPU，函数式风格。",
+  "[[TVM]]：开源端到端编译栈，跨硬件，支持自动调度与 BYOC。",
+  "[[TensorRT]]：NVIDIA 推理优化引擎，图优化 + 内核选择 + 量化，偏部署。",
+  "[[ONNX Runtime]]：跨平台推理运行时，图优化 + 多种 EP（执行提供者）。",
+  "[[torch.compile（Dynamo + Inductor）]]：PyTorch 2.x 的 JIT 编译路线。",
+  "[[MLIR / IREE]]：IR 基础设施与新编译器框架；[[OpenVINO / TFLite]] 偏边缘与端侧部署。"
+ ],
+ follow:[
+  {q:"推理用的编译器和训练用的有什么区别？",a:"推理不需要自动微分与通信，可以更激进地做量化、布局与内存优化；训练要保数值一致性与反向图。"},
+  {q:"选型的核心考虑？",a:"目标硬件、框架生态、算子覆盖率、动态 shape 支持、部署链路，以及你能否介入修改它的实现。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:3,hot:true,
+ q:"torch.compile 的整体架构是什么？",
+ points:[
+  "[[Dynamo]]：字节码捕获 + guard + graph break，产出 FX 图。",
+  "[[AOTAutograd]]：提前生成正向与反向图（训练的 gradient graph）。",
+  "[[Inductor]]：把 FX 图降成 [[Triton]] kernel（GPU）或 C++ / OpenMP（CPU），做融合与内存规划。",
+  "[[缓存与多后端]]：编译产物按 key 缓存；也支持接入自定义后端。"
+ ],
+ follow:[
+  {q:"Inductor 怎么做融合？",a:"主要做「元素级 + reduction」的纵向融合，把能合并的算子合成一个 Triton kernel。"},
+  {q:"为什么首次运行很慢？",a:"首次要做捕获、编译、自动调优（可能试多个配置），之后走缓存才快。这正是「预热」存在的意义。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:2,hot:true,
+ q:"量化在图编译器里怎么做？",
+ points:[
+  "[[PTQ（训练后量化）]]：用校准数据统计激活范围（min/max、KL、MSE），为张量确定 scale / zero_point。",
+  "[[QAT（量化感知训练）]]：训练时插入伪量化节点，让模型适应量化误差。",
+  "图改写：插入 [[quantize / dequantize]] 节点，随后做[[量化节点融合]]（把 q / dq 融进算子，形成 int8 算子）。",
+  "[[后处理优化]]：把算子融合与量化合并（如 int8 的 conv + relu）。",
+  "要处理[[数值敏感算子]]（softmax / layernorm）与溢出，常做混合精度（部分 fp16 / bf16）。"
+ ],
+ follow:[
+  {q:"为什么量化能提速？",a:"int8 的访存开销与张量核算力都比 fp32 高，显存占用还降 4 倍；访存受限的算子收益尤其明显。"},
+  {q:"量化最大的风险？",a:"精度掉点，尤其是激活分布差异大的模型；需要逐层做敏感度分析，并保留部分高精度层。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:2,hot:false,
+ q:"怎么评估一个图编译器的好坏？",
+ points:[
+  "[[性能]]：端到端延迟、吞吐（QPS / TPS）、相对基线（eager 或官方引擎）的加速比。",
+  "[[显存 / 内存]]：峰值占用（决定 batch 上限与成本）。",
+  "[[编译时间]]：首次编译延迟与编译缓存命中率（决定线上可用性）。",
+  "[[覆盖率]]：多少比例的图或算子在编译段内执行，多少回退（fallback）。",
+  "[[数值正确性]]：与参考实现的误差（相对 / 绝对、最大误差），是否出现 NaN / Inf。",
+  "[[鲁棒性]]：动态 shape、边界输入、长尾模型、异常恢复。"
+ ],
+ follow:[
+  {q:"只快但精度不对行不行？",a:"不行。数值正确性是底线；性能必须在「精度达标」的前提下比较，通常要设误差阈值并做端到端回归测试。"},
+  {q:"为什么非要看覆盖率？",a:"覆盖率低意味着大量回退，边界拷贝与同步会吃掉融合收益，端到端可能反而比不编译更慢。"}
+ ]},
+
+{cat:"后端 Lowering 与生态",diff:3,hot:true,
+ q:"图编译器落地常见哪些坑？",
+ points:[
+  "[[数值不一致]]：融合与重排改变浮点结果，没有精度对比测试就上线很危险。",
+  "[[动态 shape 抖动]]：每个新 shape 都触发 JIT 重编译，尾延迟不可控；需要 bucketing 与持久化缓存。",
+  "[[graph break 过多]]：优化被切碎，实际加速有限，需要逐段排查。",
+  "[[算子覆盖不足]]：频繁回退，边界搬运吃掉收益。",
+  "[[首次编译慢]]：冷启动不可接受；要预热、持久化缓存、尽量提前编译（AOT）。",
+  "[[调试困难]]：优化前后图不一致，定位问题要能对齐计算、导出中间 IR 逐步比对。",
+  "[[与算子库的假设冲突]]：库自带的 workspace / layout 要求可能破坏内存规划与融合。"
+ ],
+ follow:[
+  {q:"怎么排查「编译后精度不对」？",a:"二分定位：逐级关闭 pass 或逐算子对比，找到引入误差的那个变换；再检查浮点重排与中间精度设置。"},
+  {q:"怎么让图编译器真正产生收益？",a:"先测清 baseline 与瓶颈（访存还是计算），保证覆盖率与融合命中，再做端到端回归（性能 + 精度），最后才敢上线。"}
+ ]}
+
+];
+
+/* ---------- 渲染 ---------- */
+var CATS = ["计算图与图编译基础","图 IR 与中间表示","图优化 Pass","算子融合与调度","内存规划与布局","自动微分与训练图","后端 Lowering 与生态"];
+var DIFF = {1:["基础","d1"],2:["进阶","d2"],3:["深入","d3"]};
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(s){return esc(s).replace(/\[\[(.+?)\]\]/g,"<code>$1</code>");}
+
+var listEl = document.getElementById("list");
+var navEl = document.getElementById("nav");
+var opened = {};
+
+function buildCard(it, n){
+  var d = DIFF[it.diff];
+  var div = document.createElement("div");
+  div.className = "q";
+  div.dataset.n = n;
+  div.dataset.cat = it.cat;
+  var pts = it.points.map(function(p){return "<li>"+fmt(p)+"</li>";}).join("");
+  var faq = it.follow.map(function(f){
+    return '<div class="faq"><div class="fq"><span class="mark">追问</span><span>'+fmt(f.q)+'</span></div>'+
+           '<div class="fa">'+fmt(f.a)+'</div></div>';
+  }).join("");
+  div.innerHTML =
+    '<div class="q-head">'+
+      '<div class="num">'+n+'</div>'+
+      '<div class="q-title">'+fmt(it.q)+'</div>'+
+      '<div class="q-tags">'+
+        (it.hot?'<span class="tag hot">高频</span>':'')+
+        '<span class="tag '+d[1]+'">'+d[0]+'</span>'+
+      '</div>'+
+      '<div class="caret">▼</div>'+
+    '</div>'+
+    '<div class="q-body"><div class="inner">'+
+      '<p class="blk-label">回答要点</p><ul class="pts">'+pts+'</ul>'+
+      '<div class="follow-box"><p class="blk-label follow">面试官可能继续追问</p>'+faq+'</div>'+
+    '</div></div>';
+  div.querySelector(".q-head").addEventListener("click", function(){
+    div.classList.toggle("open");
+    opened[n] = div.classList.contains("open");
+    updateProgress();
+  });
+  return div;
+}
+
+var order = 0;
+CATS.forEach(function(cat){
+  var items = DATA.filter(function(x){return x.cat===cat;});
+  if(!items.length) return;
+
+  var sec = document.createElement("div");
+  sec.className = "section";
+  sec.id = "sec-" + CATS.indexOf(cat);
+  sec.dataset.cat = cat;
+  sec.innerHTML = '<div class="section-head"><h2>'+cat+'</h2>'+
+                  '<span class="cnt">'+items.length+' 题</span>'+
+                  '<span class="rule"></span></div><div class="sec-body"></div>';
+  var body = sec.querySelector(".sec-body");
+  items.forEach(function(it){ order++; body.appendChild(buildCard(it, order)); });
+  listEl.appendChild(sec);
+
+  var a = document.createElement("div");
+  a.className = "nav-item";
+  a.innerHTML = '<span>'+cat+'</span><span class="n">'+items.length+'</span>';
+  a.addEventListener("click", function(){
+    document.getElementById("sec-"+CATS.indexOf(cat)).scrollIntoView({behavior:"smooth",block:"start"});
+    document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+    a.classList.add("active");
+  });
+  navEl.appendChild(a);
+});
+
+var total = order;
+
+/* 搜索 */
+var searchInput = document.getElementById("q");
+var emptyEl = document.getElementById("empty");
+
+function doFilter(kw){
+  kw = kw.trim().toLowerCase();
+  var visibleTotal = 0;
+  document.querySelectorAll(".section").forEach(function(sec){
+    var shown = 0;
+    sec.querySelectorAll(".q").forEach(function(card){
+      var txt = card.innerText.toLowerCase();
+      var hit = !kw || txt.indexOf(kw) !== -1;
+      card.style.display = hit ? "" : "none";
+      if(hit) shown++;
+    });
+    sec.style.display = shown ? "" : "none";
+    visibleTotal += shown;
+    var cnt = sec.querySelector(".cnt");
+    cnt.textContent = shown + " 题" + (kw ? "（已筛选）" : "");
+  });
+  emptyEl.classList.toggle("show", visibleTotal === 0);
+}
+searchInput.addEventListener("input", function(){ doFilter(searchInput.value); });
+document.addEventListener("keydown", function(e){
+  if(e.key === "/" && document.activeElement !== searchInput){
+    e.preventDefault(); searchInput.focus(); searchInput.select();
+  }
+  if(e.key === "Escape" && document.activeElement === searchInput){
+    searchInput.value = ""; doFilter(""); searchInput.blur();
+  }
+});
+
+/* 展开 / 收起 */
+var expandBtn = document.getElementById("expandAll");
+var allOpen = false;
+expandBtn.addEventListener("click", function(){
+  allOpen = !allOpen;
+  document.querySelectorAll(".q").forEach(function(c){
+    c.classList.toggle("open", allOpen);
+    opened[c.dataset.n] = allOpen;
+  });
+  expandBtn.textContent = allOpen ? "全部收起" : "展开全部";
+  updateProgress();
+});
+
+/* 进度 */
+function updateProgress(){
+  var c = 0;
+  document.querySelectorAll(".q").forEach(function(q){
+    if(q.classList.contains("open")) c++;
+  });
+  document.getElementById("pv").textContent = c;
+  document.getElementById("pbar").style.width = (c/total*100) + "%";
+}
+updateProgress();
+
+/* 打印 */
+document.getElementById("printBtn").addEventListener("click", function(){
+  document.querySelectorAll(".q").forEach(function(c){ c.classList.add("open"); });
+  window.print();
+});
+
+/* 回到顶部 */
+var toTop = document.getElementById("totop");
+window.addEventListener("scroll", function(){
+  toTop.classList.toggle("show", window.scrollY > 600);
+});
+toTop.addEventListener("click", function(){ window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* 滚动高亮导航 */
+var secs = Array.prototype.slice.call(document.querySelectorAll(".section"));
+var navItems = Array.prototype.slice.call(document.querySelectorAll(".nav-item"));
+window.addEventListener("scroll", function(){
+  var pos = window.scrollY + 120, idx = 0;
+  secs.forEach(function(s, i){ if(s.offsetTop <= pos) idx = i; });
+  navItems.forEach(function(n, i){ n.classList.toggle("active", i === idx); });
+});
+</script>
+</body>
+</html>
