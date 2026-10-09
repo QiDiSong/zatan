@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>杂谈 · 笔记目录</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --text: #2c2c2a;
+    --muted: #5f5e5a;
+    --border: #e2e1dc;
+    --blue: #185fa5;
+    --blue-bg: #e6f1fb;
+    --teal: #0f6e56;
+    --teal-bg: #e1f5ee;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    line-height: 1.7;
+    padding: 52px 16px 64px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { margin-bottom: 30px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: 2px; }
+  header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .badge { background: var(--blue-bg); color: var(--blue); border-radius: 999px; padding: 3px 13px; font-size: 13px; }
+  .badge.t { background: var(--teal-bg); color: var(--teal); }
+  .hint { color: var(--muted); font-size: 13px; margin: 18px 0 12px; }
+  ul.notes { list-style: none; display: grid; gap: 12px; }
+  ul.notes li {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  ul.notes li:hover { border-color: #85b7eb; transform: translateY(-1px); }
+  ul.notes a { display: block; padding: 16px 22px; text-decoration: none; color: inherit; }
+  ul.notes .title { font-size: 16px; font-weight: 500; word-break: break-all; }
+  ul.notes .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .empty {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer { margin-top: 42px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--blue); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>杂谈</h1>
+    <p>学习笔记 · 技术随笔 · 杂项产出 —— 每一篇都是独立页面，点标题即看</p>
+    <div class="meta">
+      <span class="badge" id="count">正在读取目录…</span>
+      <span class="badge t">GitHub Pages 托管</span>
+    </div>
+  </header>
+  <p class="hint">目录内容实时同步自仓库，新推的笔记会自动出现在下方</p>
+  <ul class="notes" id="list">
+    <li><a href="./%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E8%87%AA%E6%88%91%E4%BF%AE%E5%85%BB-%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5%E6%B1%87%E7%BC%96-%E8%AE%B0%E5%BF%86%E7%AC%94%E8%AE%B0.html" target="_blank" rel="noopener">
+      <div class="title">程序员的自我修养-编译链接汇编-记忆笔记</div>
+      <div class="sub">HTML 笔记</div>
+    </a></li>
+  </ul>
+  <div class="empty" id="empty" style="display:none">仓库里还没有 HTML 笔记，推一篇就会自动出现在这里</div>
+  <footer>
+    <span>仓库：</span><a href="https://github.com/QiDiSong/zatan" target="_blank" rel="noopener">github.com/QiDiSong/zatan</a>
+    <span id="status"></span>
+  </footer>
+</div>
+<script>
+const OWNER = "QiDiSong";
+const REPO = "zatan";
+
+function titleOf(name) {
+  return name.replace(/\.html?$/i, "").replace(/_/g, " ");
+}
+
+async function loadNotes() {
+  const list = document.getElementById("list");
+  const count = document.getElementById("count");
+  try {
+    const resp = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const files = await resp.json();
+    const notes = files
+      .filter(f => f.type === "file" && /\.html?$/i.test(f.name) && f.name.toLowerCase() !== "index.html")
+      .sort((a, b) => a.name.localeCompare(b.name, "zh"));
+    if (!notes.length) {
+      list.innerHTML = "";
+      document.getElementById("empty").style.display = "block";
+      count.textContent = "共 0 篇笔记";
+    } else {
+      list.innerHTML = notes.map(f =>
+        '<li><a href="./' + encodeURIComponent(f.name) + '" target="_blank" rel="noopener">' +
+        '<div class="title">' + titleOf(f.name) + '</div>' +
+        '<div class="sub">HTML 笔记 · ' + (f.size / 1024).toFixed(1) + ' KB</div>' +
+        '</a></li>'
+      ).join("");
+      count.textContent = "共 " + notes.length + " 篇笔记";
+    }
+    document.getElementById("status").textContent = " · 目录已实时同步";
+  } catch (e) {
+    count.textContent = "目录自动同步暂不可用（下方为内置列表）";
+    document.getElementById("status").textContent = " · 自动同步失败，可刷新重试";
+  }
+}
+loadNotes();
+</script>
+</body>
+</html>
