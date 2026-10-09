@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图算子全解 · 81 个算子面试手册</title>
+<style>
+  :root{
+    --bg:#f2f8f7;
+    --panel:#ffffff;
+    --panel-2:#fafdfc;
+    --ink:#1a1d24;
+    --ink-2:#4a5262;
+    --ink-3:#7b8496;
+    --line:#dfeae7;
+    --line-2:#edf5f3;
+    --brand:#0e7c6b;
+    --brand-2:#12a08b;
+    --brand-soft:#e6f5f2;
+    --hot:#d9480f;
+    --hot-soft:#fdeee7;
+    --ok:#0f7b57;
+    --code-bg:#e9f6f2;
+    --code-ink:#0a6b5c;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(10,50,45,.05), 0 8px 24px -12px rgba(10,50,45,.16);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.top{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{
+    max-width:1240px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px;
+  }
+  .logo{display:flex;align-items:center;gap:11px;flex-shrink:0}
+  .logo-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(145deg,#0a6b5c,#2fc0a4);
+    color:#fff;font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    letter-spacing:-1px;
+    box-shadow:0 4px 12px -4px rgba(14,124,107,.55);
+  }
+  .logo-txt b{display:block;font-size:15.5px;line-height:1.25;letter-spacing:.2px}
+  .logo-txt span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.4px}
+  .search{
+    flex:1; max-width:430px; position:relative; margin-left:auto;
+  }
+  .search input{
+    width:100%; padding:9px 14px 9px 36px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--panel-2); color:var(--ink);
+    font-size:13.5px; font-family:inherit; outline:none;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .search input:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(18,160,139,.14);background:#fff}
+  .search::before{
+    content:"⌕"; position:absolute; left:12px; top:50%; transform:translateY(-52%);
+    color:var(--ink-3); font-size:16px; pointer-events:none;
+  }
+  .search kbd{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:10.5px; color:var(--ink-3); border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:5px; padding:1px 5px; background:#fff;
+    font-family:inherit;
+  }
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-2);
+    padding:8px 13px; border-radius:9px; font-size:12.8px; font-family:inherit;
+    cursor:pointer; white-space:nowrap; transition:.16s;
+  }
+  .btn:hover{border-color:#c9e2dc;color:var(--ink);background:var(--panel-2)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#0a6b5c;border-color:#0a6b5c;color:#fff}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 90px;display:flex;gap:26px;align-items:flex-start}
+  aside{
+    width:224px; flex-shrink:0; position:sticky; top:76px;
+  }
+  .side-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 12px; box-shadow:var(--shadow);
+  }
+  .side-title{font-size:11px;letter-spacing:1.2px;color:var(--ink-3);font-weight:700;padding:0 8px 8px}
+  .nav-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:7px 9px; border-radius:9px; font-size:12.6px; color:var(--ink-2);
+    text-decoration:none; cursor:pointer; transition:.15s; border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--brand-soft);color:var(--brand);border-color:#d9efe9}
+  .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:600;border-color:#cfe9e3}
+  .nav-item .n{
+    font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+    background:var(--line-2);border-radius:20px;padding:1px 7px;font-weight:600;
+  }
+  .nav-item.active .n{background:#d3ebe5;color:var(--brand)}
+  .progress-box{margin-top:12px;padding:12px 10px 8px;border-top:1px solid var(--line-2)}
+  .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-bottom:7px}
+  .progress-label b{color:var(--brand);font-variant-numeric:tabular-nums}
+  .bar{height:6px;background:var(--line-2);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--brand),#2fc0a4);transition:width .35s ease}
+
+  main{flex:1;min-width:0}
+
+  .hero{
+    background:linear-gradient(135deg,#08423a 0%,#0e7c6b 52%,#2fc0a4 100%);
+    border-radius:18px; padding:26px 28px; color:#fff;
+    box-shadow:0 14px 34px -18px rgba(8,70,60,.75);
+    position:relative; overflow:hidden;
+  }
+  .hero::after{
+    content:"OP"; position:absolute; right:8px; bottom:-42px;
+    font-size:130px; font-weight:800; color:rgba(255,255,255,.09); letter-spacing:-5px;
+    pointer-events:none;
+  }
+  .hero h1{margin:0 0 8px;font-size:25px;letter-spacing:.3px;font-weight:700}
+  .hero p{margin:0;font-size:13.5px;opacity:.94;max-width:700px;line-height:1.7}
+  .hero .stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;position:relative;z-index:1}
+  .chip{
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+    border-radius:20px; padding:4px 12px; font-size:12.3px; letter-spacing:.2px;
+    backdrop-filter:blur(4px);
+  }
+  .chip b{font-weight:700}
+
+  .section{margin-top:34px;scroll-margin-top:82px}
+  .section-head{display:flex;align-items:baseline;gap:11px;margin-bottom:14px;padding-left:2px}
+  .section-head h2{margin:0;font-size:17.5px;letter-spacing:.2px}
+  .section-head .cnt{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .section-head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);margin-bottom:5px}
+
+  .q{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:11px; box-shadow:var(--shadow); overflow:hidden;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .q.open{border-color:#cfe9e3;box-shadow:0 2px 4px rgba(10,50,45,.05),0 14px 30px -18px rgba(14,124,107,.38)}
+  .q-head{
+    display:flex; align-items:flex-start; gap:13px; padding:14px 18px;
+    cursor:pointer; user-select:none;
+  }
+  .q-head:hover{background:var(--panel-2)}
+  .num{
+    flex-shrink:0; width:29px; height:29px; border-radius:9px;
+    background:var(--brand-soft); color:var(--brand);
+    font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .q.open .num{background:var(--brand);color:#fff}
+  .q-title{flex:1;font-size:14.6px;font-weight:600;line-height:1.6;letter-spacing:.1px}
+  .q-title .en{font-family:"JetBrains Mono","SFMono-Regular",Consolas,monospace;font-size:13.6px;color:var(--brand)}
+  .q-tags{display:flex;align-items:center;gap:7px;flex-shrink:0;margin-top:2px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+  .tag.hot{background:var(--hot-soft);color:var(--hot)}
+  .tag.d1{background:#e9f1fb;color:#1b62c4}
+  .tag.d2{background:#fff4e3;color:#b26a00}
+  .tag.d3{background:#f3ecfb;color:#6b3fc4}
+  .caret{
+    flex-shrink:0;color:var(--ink-3);font-size:11px;margin-top:8px;transition:transform .25s;
+  }
+  .q.open .caret{transform:rotate(180deg);color:var(--brand)}
+
+  .q-body{display:none;padding:0 20px 18px 20px;}
+  .q.open .q-body{display:block}
+  .q-body .inner{padding-top:14px;border-top:1px dashed var(--line)}
+
+  .blk-label{
+    font-size:11px;font-weight:700;letter-spacing:1.3px;color:var(--brand);
+    margin:0 0 8px; display:flex; align-items:center; gap:7px;
+  }
+  .blk-label::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--brand);display:block}
+  .blk-label.follow{color:var(--hot)}
+  .blk-label.follow::before{background:var(--hot)}
+  .blk-label.notes{color:var(--ok)}
+  .blk-label.notes::before{background:var(--ok)}
+
+  .what{margin:0;font-size:13.9px;color:var(--ink-2);line-height:1.78}
+
+  ul.pts{margin:0;padding:0;list-style:none}
+  ul.pts li{
+    position:relative;padding-left:19px;margin-bottom:7px;font-size:13.9px;color:var(--ink-2);line-height:1.75;
+  }
+  ul.pts li::before{
+    content:"";position:absolute;left:5px;top:9px;width:5px;height:5px;border-radius:50%;
+    background:#9dbcb5;
+  }
+  ul.pts li b,ul.pts li strong{color:var(--ink);font-weight:600}
+  ul.pts li em{font-style:normal;color:var(--brand);font-weight:600}
+
+  code{
+    background:var(--code-bg);color:var(--code-ink);
+    padding:1.5px 6px;border-radius:5px;font-size:12.7px;
+    font-family:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    border:1px solid #dcefe9;
+  }
+
+  .follow-box{
+    margin-top:14px;background:var(--panel-2);border:1px solid var(--line-2);
+    border-left:3px solid #f0a06a;border-radius:10px;padding:14px 16px 6px;
+  }
+  .faq{margin-bottom:11px}
+  .faq .fq{
+    font-size:13.4px;font-weight:600;color:var(--ink);margin-bottom:4px;
+    display:flex;gap:7px;align-items:flex-start;
+  }
+  .faq .fq .mark{color:var(--hot);font-weight:800;flex-shrink:0;font-size:12px;margin-top:1px}
+  .faq .fa{font-size:13.4px;color:var(--ink-2);line-height:1.75;padding-left:19px}
+
+  .notes-wrap{margin-top:16px}
+
+  .empty{
+    display:none;text-align:center;padding:60px 20px;color:var(--ink-3);font-size:14px;
+  }
+  .empty.show{display:block}
+  .empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
+
+  footer{
+    max-width:1240px;margin:0 auto;padding:8px 22px 40px;color:var(--ink-3);font-size:12px;text-align:center;
+  }
+
+  .totop{
+    position:fixed;right:26px;bottom:26px;z-index:40;
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;color:var(--brand);font-size:16px;cursor:pointer;
+    box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;
+  }
+  .totop.show{display:flex}
+
+  @media (max-width:980px){
+    aside{display:none}
+    .wrap{padding:20px 14px 80px}
+    .top-inner{padding:10px 14px;gap:10px;flex-wrap:wrap}
+    .search{max-width:none;margin-left:0;order:3;flex-basis:100%}
+    .logo-txt span{display:none}
+  }
+  @media print{
+    header.top,aside,.totop,.q-tags .tag.d1,.q-tags .tag.d2,.q-tags .tag.d3{display:none!important}
+    body{background:#fff;font-size:11.5pt}
+    .q-body{display:block!important}
+    .q{border:1px solid #ccc;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+    .hero{box-shadow:none}
+    .wrap{display:block;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo">
+      <div class="logo-mark">OP</div>
+      <div class="logo-txt">
+        <b>图算子全解</b>
+        <span>81 个算子 · 面试问答 + 避坑</span>
+      </div>
+    </div>
+    <div class="search">
+      <input id="q" type="text" placeholder="搜索算子，如 conv / softmax / gather / allreduce / 量化" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <button class="btn" id="expandAll">展开全部</button>
+    <button class="btn primary" id="printBtn">打印 / 存 PDF</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="side-card">
+      <div class="side-title">算 子 族</div>
+      <div id="nav"></div>
+      <div class="progress-box">
+        <div class="progress-label"><span>复习进度</span><span><b id="pv">0</b> / 81</span></div>
+        <div class="bar"><i id="pbar"></i></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>深度学习计算图 · 算子全解</h1>
+      <p>把一张计算图里的算子按「算子族」全部梳理一遍，共 10 类 81 个算子：张量创建与形状变换、数学与逐元素运算、归约与统计、线性代数与卷积、池化与空间操作、激活函数、归一化与正则、索引集合与排序、序列与注意力、通信控制流与量化。每个算子都给三样东西 —— <b>它是什么</b>（一句话讲清语义）、<b>常见面试问与答</b>（面试官会怎么问、该怎么答）、<b>学习注意事项</b>（易错点与坑）。</p>
+      <div class="stats">
+        <span class="chip"><b>81</b> 个算子</span>
+        <span class="chip"><b>10</b> 大算子族</span>
+        <span class="chip">语义 · 面试问答 · 避坑</span>
+        <span class="chip">按 <b>/</b> 搜索算子名</span>
+      </div>
+    </div>
+
+    <div id="list"></div>
+    <div class="empty" id="empty">
+      <div class="big">⌕</div>
+      没有匹配的算子，换个关键词试试
+    </div>
+  </main>
+</div>
+
+<footer>按 <b>/</b> 快速搜索算子 · 点击卡片展开「语义 / 面试问答 / 注意事项」 · 建议对照 <code>ONNX / PyTorch ATen / TVM Relay</code> 的算子集逐个核对</footer>
+<button class="totop" id="totop">↑</button>
+
+<script>
+var DATA = [
+
+/* ============ 一、张量创建与形状变换 ============ */
+{cat:"张量创建与形状变换",diff:1,hot:true,
+ op:"Constant / ConstantOfShape",
+ what:"在图中直接产生常量张量：Constant 给定数据本身，ConstantOfShape 只给定形状（用指定标量填充）。它是编译期就能确定的节点，也是常量折叠的主要来源。",
+ qa:[
+  {q:"常量和「可训练参数（weight）」在图上有什么区别？",a:"常量是图里写死的数据，不参与梯度更新、编译期即可确定；参数（initializer / Parameter）是可变状态，训练时被优化器更新，因此不能被当成常量折叠掉。"},
+  {q:"大量常量节点对图编译是好事吗？",a:"是。它们让常量折叠、常量传播与 shape 静态化成为可能，能把一部分计算整体挪到编译期完成。"}
+ ],
+ notes:[
+  "ConstantOfShape 常被前端当作「形状占位」，导出到部分推理引擎时不被支持，需要改写或回退。",
+  "整份权重不应走 Constant 节点，而应作为 initializer，否则图体积与解析开销会爆。",
+  "常量折叠在编译期执行：注意它可能改变浮点结果，也可能显著拉长编译时间。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:false,
+ op:"Zeros / Ones / Full / Empty",
+ what:"按给定形状生成全 0、全 1、指定标量或未初始化的张量，用于初始化、构造 mask 与占位。",
+ qa:[
+  {q:"Empty 和 Zeros 的区别？",a:"Empty 只分配内存、不保证内容，最快但值未定义；Zeros 会真正写 0，多一次完整访存。"},
+  {q:"这些算子在编译器眼里有什么特殊性？",a:"形状确定时常量折叠掉；形状动态时退化为运行时算子，而生成操作本身是访存密集型，往往成为融合链的起点。"}
+ ],
+ notes:[
+  "若初始化张量随后被整体覆盖（如 out= 写入），可被优化掉，是 DCE 的常见目标。",
+  "Full 的填充值若来自动态输入则无法折叠，常量则可与下游融合。",
+  "注意 dtype：整数 0 与浮点 0.0 是不同类型，会影响后续算子选择。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:false,
+ op:"Arange / Range",
+ what:"生成等差序列张量，常用于位置索引、坐标网格与形状计算。",
+ qa:[
+  {q:"Arange 的结果在图上是常量吗？",a:"参数全为常量时可编译期折叠成常量；只要其中任一来自运行时输入，就只能运行时生成。"},
+  {q:"为什么它常与 shape 计算绑在一起？",a:"很多图用 Arange 构造索引去做 gather / slice，形状一变索引就变，会阻碍静态优化。"}
+ ],
+ notes:[
+  "浮点版本的「端点是否包含」语义在不同框架定义不同，跨框架转换务必核对。",
+  "输出长度由参数值决定，属于「值决定形状」的算子，容易引入动态 shape。",
+  "常见优化是把 Arange + Gather 识别为 reshape / slice，需要模式匹配。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:2,hot:true,
+ op:"RandomNormal / RandomUniform / Dropout",
+ what:"产生随机数的算子；Dropout 训练时按概率随机置零并做 1/(1-p) 缩放，推理时退化为恒等映射。",
+ qa:[
+  {q:"为什么随机算子不能被 CSE 合并？",a:"它们不是纯函数：两次调用即使输入完全相同，也必须产生不同结果。因此 CSE 与常量折叠都必须把随机算子当成「有副作用」的节点。"},
+  {q:"Dropout 在训练图和推理图里有什么区别？",a:"训练时是随机掩码加缩放；推理时是恒等映射，通常被编译器直接删掉（图简化）。"}
+ ],
+ notes:[
+  "随机数依赖 seed，跨设备/跨框架的可复现性是个高频坑。",
+  "推理态消除 Dropout 必须在确定是推理的前提下做，否则会静默改变训练行为。",
+  "随机算子会打断融合与 CSE，位置尽量靠前，别卡在计算链中间。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:true,
+ op:"Reshape / View / Flatten",
+ what:"在不改变元素顺序与数据的前提下改变张量的逻辑形状；Flatten 是 Reshape 的特例（把连续维度摊平）。",
+ qa:[
+  {q:"Reshape 是零开销的吗？",a:"多数情况下是「元数据变换」，只改 shape、不搬数据，接近零开销；但若内存不连续（如 transpose 之后），可能被迫做一次真实拷贝。"},
+  {q:"Reshape 和 Transpose 的本质区别？",a:"Reshape 只改形状、不改元素顺序，是视角变换；Transpose 改变元素排列，通常必须搬数据。把两者混为一谈是结果错误的常见来源。"}
+ ],
+ notes:[
+  "要能区分「视图（view，共享内存）」与「拷贝（copy）」，连续性与 stride 决定是哪一种。",
+  "多个连续 Reshape 可合并，编译器常做这种化简。",
+  "动态 shape 下若目标形状是计算得来的，会把静态图拖成动态图。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:false,
+ op:"Squeeze / Unsqueeze",
+ what:"删除或插入大小为 1 的维度，用于对齐广播规则与满足算子对形状的要求。",
+ qa:[
+  {q:"为什么它们几乎零开销？",a:"不涉及任何数据搬运，只改 shape 元数据；在编译器里通常被直接消除，融进相邻算子的形状推导。"},
+  {q:"什么时候会出错？",a:"Squeeze 指定的维度实际大小不是 1 就会报错；不指定维度时行为依赖实现（有些框架会删掉所有大小为 1 的维度），跨框架要小心。"}
+ ],
+ notes:[
+  "它们常与广播规则绑定：维度插错会让广播算出完全不同的结果，而且不报错。",
+  "是最容易被 DCE 或形状推导吸收的算子，图里出现多半只是前端写法导致。",
+  "与 Reshape 一样要留意内存连续性。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:2,hot:true,
+ op:"Expand / Tile / BroadcastTo",
+ what:"把张量沿某些维度复制扩展：Tile 做物理复制，Expand / BroadcastTo 用 stride=0 做逻辑广播。",
+ qa:[
+  {q:"Expand 和 Tile 的性能差别大吗？",a:"很大。Expand 可以只改 stride、不复制数据（零拷贝视图）；Tile 必须真实复制，访存开销与展开后的体积成正比。"},
+  {q:"广播（broadcasting）在图上怎么体现？",a:"有的框架隐式融进元素级算子（自动对齐），有的显式插 BroadcastTo 节点；显式节点对分析与优化更友好。"}
+ ],
+ notes:[
+  "广播规则（从最后一维对齐、大小为 1 的维可扩展）几乎必考，要能讲清楚。",
+  "隐式广播会让形状推导变复杂，也容易掩盖「形状不匹配」的错误。",
+  "Tile 在动态 shape 下开销不可预测，尽量用 Expand 或让下游直接支持广播。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:true,
+ op:"Transpose / Permute",
+ what:"按给定维度置换重新排列张量，是布局变换的基础算子。",
+ qa:[
+  {q:"Transpose 的代价是什么？",a:"通常是整张量的数据重排（一次全量读写），还可能破坏内存连续性、让后续算子退化；所以编译器尽量做布局传播来减少变换次数。"},
+  {q:"为什么说它是布局优化的关键节点？",a:"它直接决定后续算子的访存是否连续、能否向量化，是 layout 传播与消除的主要对象。"}
+ ],
+ notes:[
+  "变换后要关注「是否仍连续」，不连续会让后续 Reshape 退化成拷贝。",
+  "两次相邻 Transpose 若互逆可直接消除；多次 Transpose 可合并为一次置换。",
+  "要有意识地区分 NCHW↔NHWC 这类高频布局变换，它往往是性能瓶颈的根源。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:1,hot:true,
+ op:"Concat / Split",
+ what:"Concat 沿某一维拼接多个张量；Split 沿某一维把一个张量切成多份。两者互为逆操作，常用于多分支结构的汇合与拆分。",
+ qa:[
+  {q:"Concat 的性能瓶颈在哪？",a:"需要把各输入整块复制到输出，是纯访存操作；输入多、张量大时明显拖慢，能融合进上游算子（多路输出直接写入同一缓冲）最好。"},
+  {q:"Concat 有哪些常见优化？",a:"① 与上游算子融合，避免中间结果物化；② 相邻 Concat 合并；③ 若只有一路后续使用，可改写为 Slice 而不是整块拼接。"}
+ ],
+ notes:[
+  "维度参数（axis）极易写错，负索引语义尤其要核对。",
+  "Split 是「一个输入多个输出」，IR 必须支持多输出节点，设计时就要考虑。",
+  "Concat 后面紧跟对应的 Split 时，等价于恒等，可以被消除。"
+ ]},
+
+{cat:"张量创建与形状变换",diff:2,hot:false,
+ op:"Pad",
+ what:"在张量边缘补值（constant / reflect / edge / wrap），用于卷积的 same padding、尺寸对齐与序列补齐。",
+ qa:[
+  {q:"Pad 能融进卷积吗？",a:"能，而且是常见优化：把 Pad 融进 Conv 的边界处理（implicit padding），省掉一次完整的数据复制。"},
+  {q:"不同 padding 模式有什么坑？",a:"constant 补常数最简单；reflect / edge / wrap 语义复杂，跨框架实现可能有差异，且难以与卷积融合。"}
+ ],
+ notes:[
+  "Pad 会改变形状，进而影响后续所有形状推导，是动态 shape 的常见来源。",
+  "常量 Pad + Conv 的融合是图编译器的经典优化点。",
+  "序列任务里 Pad 必须与 mask 配套，否则会把 padding 位置也算进注意力。"
+ ]},
+
+/* ============ 二、数学与逐元素运算 ============ */
+{cat:"数学与逐元素运算",diff:1,hot:true,
+ op:"Add / Sub / Mul / Div",
+ what:"最基础的逐元素四则运算，支持广播。它是图中出现频率最高的一类算子，也是融合收益最大的一类。",
+ qa:[
+  {q:"为什么元素级算子最适合融合？",a:"它们没有跨元素依赖、计算简单，融合后能把「多次读写」压缩成一次，直接消掉中间张量的访存开销。"},
+  {q:"除法的性能有什么特点？",a:"除法比乘法慢很多（尤其是浮点），常见优化是把「除以常量」改写为「乘以倒数」，但这会改变浮点结果，要谨慎。"}
+ ],
+ notes:[
+  "广播规则是重灾区：形状对齐写错往往不报错，而是静默算错。",
+  "整数除法的取整语义（向零取整 vs 向下取整）在不同语言与框架间不同。",
+  "溢出：int8 / int16 的加法极易溢出，量化图里要特别小心。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:1,hot:false,
+ op:"Pow / Sqrt / Rsqrt / Exp / Log",
+ what:"幂与超越函数，是各类激活、归一化与损失函数的组成部分；Rsqrt 是 1/sqrt 的融合形式。",
+ qa:[
+  {q:"为什么要单独提供 Rsqrt，而不是让编译器把 1/Sqrt 融合出来？",a:"因为 rsqrt 有专门硬件指令（快很多），数值行为也更稳定；显式提供能让后端更可靠地选中它。"},
+  {q:"Log / Exp 在数值上有什么风险？",a:"Log 的定义域必须为正，负输入会产生 NaN；Exp 容易上溢成 Inf。所以 Softmax 之类必须做「减最大值」的平移来规避。"}
+ ],
+ notes:[
+  "注意定义域与值域，NaN / Inf 的传播是调试噩梦。",
+  "Pow 的整数指数与浮点指数在实现与精度上都不同，别混用。",
+  "这些算子通常是访存受限的，融合收益明显。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:1,hot:false,
+ op:"Abs / Neg / Sign / Clip",
+ what:"取绝对值、取负、取符号；Clip 把值裁剪到给定区间，是防溢出与限幅的常用手段。",
+ qa:[
+  {q:"Clip 为什么在量化图里特别重要？",a:"量化把浮点映射到有限的整数区间，超出范围会溢出或饱和；Clip 用来保证数值落在可表示范围内（饱和量化）。"},
+  {q:"Sign 对梯度有什么影响？",a:"Sign 的导数几乎处处为 0（不可导）。训练图里要么接受这个近似，要么配合直通估计（STE）处理。"}
+ ],
+ notes:[
+  "Clip 的边界是常量时便于融合与折叠，动态边界则不行。",
+  "Abs / Sign 在 0 点附近不可导，要注意反向图的数值稳定性。",
+  "Neg 常被融进其他算子（如 Sub 的等价改写），不必单独存在。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:1,hot:false,
+ op:"Floor / Ceil / Round / Trunc",
+ what:"取整算子，常用于量化、坐标计算与形状计算。",
+ qa:[
+  {q:"Round 的「四舍五入」在不同框架一致吗？",a:"不一致。有的用「舍入到偶数（banker's rounding）」，有的用「远离零方向」，跨框架转换必须核对。"},
+  {q:"取整算子的梯度怎么处理？",a:"几乎处处导数为 0，训练时通常用 STE 直通估计，或把它放到不需要梯度的分支里。"}
+ ],
+ notes:[
+  "取整不可导，训练图里出现要格外警惕梯度消失。",
+  "取整常常同时改变 dtype（浮点转整数），会影响后续算子选择。",
+  "用在索引 / 坐标计算中时要留意 ±0.5 的舍入方向。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:1,hot:false,
+ op:"Min / Max（逐元素）",
+ what:"逐元素取两（或多）个张量的最小值 / 最大值，是 ReLU、Clip 等算子的底层实现。",
+ qa:[
+  {q:"Max 和 ReduceMax 有什么区别？",a:"Max 是逐元素二元运算（形状不变），ReduceMax 是沿指定轴归约（维度变小）。名字相近、语义完全不同，是面试常考的区分点。"},
+  {q:"Max 的梯度是怎么定义的？",a:"梯度只流向取到最大值的那一路（argmax 路由）；存在多个相等最大值时，按实现分配（均分或只给一路）。"}
+ ],
+ notes:[
+  "与归约算子的命名混淆是高频错误点。",
+  "NaN 在 Max 中的传播规则各实现不同，数值调试时要留意。",
+  "Max / Min 是 ReLU / Clip 的实现基础，理解这层关系有助于融合分析。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:1,hot:false,
+ op:"Comparison（Equal / Greater / Less …）",
+ what:"逐元素比较，输出布尔掩码张量，用于条件选择与 mask 构造。",
+ qa:[
+  {q:"比较算子输出的布尔张量后面怎么用？",a:"通常喂给 Where / MaskedFill 做选择，或作为 mask 参与乘法；部分硬件不支持 bool 张量，需要先转成 0/1。"},
+  {q:"浮点比较有什么坑？",a:"浮点相等比较几乎不可靠（有 NaN 参与时结果全为 false），一般用容差比较；编译器也不会对浮点比较做常量折叠。"}
+ ],
+ notes:[
+  "布尔张量的 dtype 与存储在各类后端支持程度不同，是常见的后端适配问题。",
+  "「比较 + Where」的组合本质是依赖数据的计算，会阻碍部分静态优化。",
+  "与逻辑算子配合时注意：向量化之后不存在短路语义。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:2,hot:false,
+ op:"Logical（And / Or / Not / Xor）",
+ what:"逐元素逻辑运算，用于组合多个条件掩码。",
+ qa:[
+  {q:"向量化之后「短路求值」还存在吗？",a:"不存在。逻辑算子按元素并行计算，两侧都会被求值，因此不能靠它规避代价高或非法的表达式。"},
+  {q:"逻辑运算怎么参与融合？",a:"它属于元素级算子，可以和其他元素级算子一起融合；但布尔类型在部分硬件上需要转成整型计算，会影响融合的具体实现。"}
+ ],
+ notes:[
+  "因为没有短路语义，「先判断再计算」的逻辑必须用 Where 或控制流实现，而不是靠 And / Or。",
+  "布尔与整型的转换点会引入额外的 cast 访存。",
+  "与比较算子一起构成掩码逻辑时，注意运算优先级与括号。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:2,hot:true,
+ op:"Where / Select",
+ what:"按条件从两个张量中逐元素选择（类似三元表达式），也常用于按掩码填值。",
+ qa:[
+  {q:"Where 算不算「依赖数据的控制流」？",a:"不算控制流，而是逐元素的数据选择 —— 两条分支都会被计算，只是结果按条件选出。它不会造成图分裂，但会同时保留两条路径的计算量。"},
+  {q:"它和 If 的区别？",a:"Where 是张量级、逐元素、无分支跳转；If 是图级控制流，只有一支会被执行，涉及图分裂与运行时调度。"}
+ ],
+ notes:[
+  "两条分支都必须可计算（不能有一支会报错），这是与 If 的关键差异。",
+  "掩码的广播规则容易被忽略，形状不匹配会静默算错。",
+  "量化图里 Where 的两个输入常需统一 dtype，会引入 cast。"
+ ]},
+
+{cat:"数学与逐元素运算",diff:2,hot:false,
+ op:"Erf / Mod / Sin / Cos / Reciprocal",
+ what:"杂项数学函数：Erf 是 GELU 的组成部分，Mod 求余，Sin / Cos 用于位置编码，Reciprocal 求倒数。",
+ qa:[
+  {q:"Erf 为什么重要？",a:"GELU 的精确形式就是基于 Erf 定义的；部分框架用 tanh 近似来加速，导致同一模型在不同框架下数值存在差异。"},
+  {q:"Mod 的语义在不同框架一致吗？",a:"不一致。余数的符号规则（跟随被除数还是除数）在 Python、C 与各框架间不同，是极容易出错的点。"}
+ ],
+ notes:[
+  "三角函数类算子通常精度要求高、代价大，且常出现在位置编码这种热路径里。",
+  "求余与整除的符号语义务必核对，不要想当然。",
+  "Reciprocal 常可与其他算子融合（a/b 改写为 a*recip(b)），但精度会变化。"
+ ]},
+
+/* ============ 三、归约与统计 ============ */
+{cat:"归约与统计",diff:1,hot:true,
+ op:"ReduceSum",
+ what:"沿指定维度求和，可保留或压缩维度。它是最基础的归约算子，也是反向传播里高频出现的算子（广播梯度的来源）。",
+ qa:[
+  {q:"归约算子为什么难以融合？",a:"归约需要跨元素累加，通常要跨 block 同步或使用原子操作；与上下游元素级算子融合时，对寄存器与共享内存的压力较大。"},
+  {q:"keepdims 参数有什么用？",a:"保留被归约的维度（置为 1），便于后续广播对齐；不保留则维度消失，直接影响形状推导与下游算子的形状匹配。"}
+ ],
+ notes:[
+  "keepdims 写错是最常见的形状错误来源之一。",
+  "大张量上的全局归约需要跨 block 通信，代价远高于逐元素算子。",
+  "反向传播时归约会变成广播，是「融合掉整个中间张量」的重要机会。"
+ ]},
+
+{cat:"归约与统计",diff:1,hot:true,
+ op:"ReduceMean",
+ what:"沿指定维度求平均，等价于 ReduceSum 后除以元素个数；是 LayerNorm、GlobalAveragePool 等算子的组成部分。",
+ qa:[
+  {q:"ReduceMean 和 GlobalAveragePool 是一回事吗？",a:"数值上等价（后者是沿空间维求平均），但语义与归属不同：前者是通用归约，后者是池化算子，后端可能走不同的优化路径。"},
+  {q:"它和 ReduceSum 有融合关系吗？",a:"编译器常把 Sum 与「除以常量」合并，避免两次遍历，一次读入即可得到平均值。"}
+ ],
+ notes:[
+  "除数（元素个数）是常量时便于融合；动态 shape 下它是运行期值。",
+  "注意整数张量的均值语义（截断还是浮点），容易静默出错。",
+  "反向传播同样产生广播，注意梯度是否正确回落。"
+ ]},
+
+{cat:"归约与统计",diff:2,hot:true,
+ op:"ReduceMax / ReduceMin",
+ what:"沿指定维度取最大 / 最小值，是 Softmax 数值稳定（减 max）与各种池化语义的基础。",
+ qa:[
+  {q:"为什么 Softmax 的实现里几乎总有 ReduceMax？",a:"为了防止 Exp 上溢：先减去最大值再做 Exp，数学上恒等，但能避开 Inf。这是最重要的数值稳定技巧之一。"},
+  {q:"归约极值的梯度是什么？",a:"梯度只回传给取到极值的位置，其余为 0；存在并列极值时由实现决定如何分配。"}
+ ],
+ notes:[
+  "NaN 在 Max 中的传播规则各后端不同，调试时要注意。",
+  "「减 max 再做 Exp」是标准写法，自己实现算子时必须照做。",
+  "与 ReduceSum 类似，全局归约存在跨 block 通信成本。"
+ ]},
+
+{cat:"归约与统计",diff:2,hot:false,
+ op:"ReduceProd / ReduceL1 / ReduceL2",
+ what:"连乘归约与 L1 / L2 范数归约，常用于范数计算、正则项与归一化。",
+ qa:[
+  {q:"ReduceL2 内部是怎么算的？",a:"先平方、再求和、再开方（sqrt(sum(x²))）。因为涉及平方与开方，上溢与下溢都要小心。"},
+  {q:"ReduceProd 有什么风险？",a:"连乘极易上溢或下溢（元素多时尤其明显），实际很少直接用于大张量。"}
+ ],
+ notes:[
+  "范数计算中的平方会放大数值范围，量化场景要格外小心。",
+  "常与求幂、开方融合成单个 kernel。",
+  "这些算子在 L2 归一化等场景里是热路径。"
+ ]},
+
+{cat:"归约与统计",diff:1,hot:true,
+ op:"ArgMax / ArgMin",
+ what:"返回沿指定维度最大值 / 最小值的位置索引，是分类解码、束搜索与 NMS 的基础。",
+ qa:[
+  {q:"ArgMax 的输出是什么类型？",a:"是索引（整型，通常 int64 / int32），形状比输入少一维。索引类型在各后端支持不同，是常见的适配问题。"},
+  {q:"ArgMax 可导吗？",a:"不可导（输出是离散索引），因此不能参与梯度回传；训练里若需要它的信息，要用 STE 或软化近似（soft-argmax）。"}
+ ],
+ notes:[
+  "输出是索引不是数值，别和 ReduceMax 混用（一个给位置、一个给值）。",
+  "并列极值时取哪个索引由实现决定，跨框架可能不一致。",
+  "索引类型 int32 / int64 的差异会导致后端算子不匹配。"
+ ]},
+
+{cat:"归约与统计",diff:2,hot:false,
+ op:"Cumsum / Cumprod",
+ what:"沿指定轴做前缀扫描（scan），累计求和 / 累计乘积，常用于序列累积、掩码前缀和与位置计算。",
+ qa:[
+  {q:"前缀扫描在图编译里为什么特殊？",a:"它看起来像归约，实际上是「带状态的顺序依赖」，并行化需要专门的 scan 算法（分块 + 跨块修正），是实现与调度上比较难的算子。"},
+  {q:"Cumsum 通常用在哪？",a:"掩码的前缀和、变长序列的 offset 计算、累积分布采样等。"}
+ ],
+ notes:[
+  "并行前缀和是算法难点，不同后端的实现质量差异很大。",
+  "只能沿某一维做，维度选错会静默产生错误结果。",
+  "动态 shape 下输出长度不定，影响静态内存规划。"
+ ]},
+
+{cat:"归约与统计",diff:1,hot:true,
+ op:"Softmax / LogSoftmax",
+ what:"把向量归一化成概率分布：Softmax 用 exp 归一；LogSoftmax 直接输出对数概率（数值更稳，常与 NLLLoss 配套）。",
+ qa:[
+  {q:"为什么 LogSoftmax 比 log(Softmax) 更稳？",a:"后者要先把极小的概率取 log，容易下溢成 -Inf；LogSoftmax 直接在 log 域计算，避免中间极小数，精度与稳定性都更好。"},
+  {q:"为什么推理实现里常用「减 max」的写法？",a:"防止 exp 上溢成 Inf。减最大值是恒等变换，不改变结果，却显著扩大了可表达的数值范围。"}
+ ],
+ notes:[
+  "axis 参数决定沿哪一维归一化，选错是最常见的错误。",
+  "全局 softmax 需要跨 block 同步、融合受限；分段（如 FlashAttention 的 online softmax）是主流解法。",
+  "量化图里 softmax 通常是数值敏感算子，需要保留较高精度。"
+ ]},
+
+/* ============ 四、线性代数与卷积 ============ */
+{cat:"线性代数与卷积",diff:1,hot:true,
+ op:"MatMul / Gemm",
+ what:"矩阵乘法（MatMul）与带偏置的通用矩阵乘（Gemm，即 αAB+βC）；是深度学习里最核心、最耗时的一类算子。",
+ qa:[
+  {q:"为什么 GEMM 是图编译优化的重点？",a:"它的计算量占整个模型的大头（Transformer 里尤其明显），且高度可优化：分块、共享内存、寄存器分块、Tensor Core、算子融合都能大幅提升吞吐。"},
+  {q:"MatMul 和 Gemm 有什么区别？",a:"MatMul 是纯矩阵乘（可能带批量维度、支持广播）；Gemm 是 BLAS 里的通用形式，含缩放系数 α、β 与偏置矩阵 C，融合偏置是常见做法。"}
+ ],
+ notes:[
+  "形状约定（转置 A / 转置 B、批量维广播）极易出错，跨框架导出时务必核对。",
+  "GEMM 的 tile 选择与硬件强相关，是自动调优的主要对象。",
+  "注意 fp16/bf16 的累加精度：通常在 fp32 累加再转回低精度，否则会掉点。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:true,
+ op:"BatchMatMul",
+ what:"带批量维的矩阵乘法，对最后两维做矩阵乘、前面维度做批量广播；Transformer 的注意力计算就是它的典型应用。",
+ qa:[
+  {q:"BatchMatMul 和循环调用 MatMul 有什么区别？",a:"前者能把批量维展开成更大的并行度，一次 kernel 完成，避免多次 launch 与中间结果；后者会遇到 kernel 启动与访存开销叠加的问题。"},
+  {q:"批量维广播有什么坑？",a:"两个输入的批量维必须能广播对齐（size 相等或为 1），写错往往直接报形状错误，或在某些框架里静默产生错误结果。"}
+ ],
+ notes:[
+  "支持批量广播会显著增加形状推导的复杂度，是动态 shape 常见来源。",
+  "在 GPU 上常被拆成「批量归约 → 大 GEMM → 还原」，需要编译器做形状重排。",
+  "fp16 下的累加精度与溢出，是 Attention 类模型训练中的高频问题。"
+ ]},
+
+{cat:"线性代数与卷积",diff:3,hot:false,
+ op:"Einsum",
+ what:"用爱因斯坦求和约定统一表达各种张量收缩（矩阵乘、批量矩阵乘、迹、内积、外积等），是一个「万能但难以优化」的算子。",
+ qa:[
+  {q:"Einsum 有什么优缺点？",a:"优点是表达力强，一个表达式能覆盖大量张量运算、可读性好；缺点是优化难 —— 需要编译器自己决定收缩顺序与中间张量，而顺序对性能影响巨大。"},
+  {q:"为什么 Einsum 的收缩顺序很重要？",a:"不同收缩顺序对应的计算量与中间张量大小可能差几个数量级，最优顺序类似「矩阵链乘」的规划问题，是编译优化的重要课题。"}
+ ],
+ notes:[
+  "多数框架的 Einsum 会先做「表达式解析 → 拆成基础算子」，拆解得不好会生成大量中间张量。",
+  "表达式里的省略号（...）语义与广播配合时容易出错。",
+  "面试里常被用来考察「能否把复杂表达式拆成高效算子链」。"
+ ]},
+
+{cat:"线性代数与卷积",diff:1,hot:true,
+ op:"Conv / Conv1D / Conv2D / Conv3D",
+ what:"卷积算子，是 CNN 的核心；按空间维数分为 1D / 2D / 3D 版本，本质是在局部窗口内做加权求和。",
+ qa:[
+  {q:"卷积和互相关是一回事吗？",a:"深度学习里说的「卷积」通常指互相关（不做核翻转），只是习惯上沿用了卷积这个名字；与数学定义的卷积差一个核翻转。"},
+  {q:"卷积的实现方式有哪些？",a:"① 直接卷积（滑窗）；② im2col + GEMM（通用，最常用）；③ Winograd（减少乘法，适合小卷积核）；④ FFT（大核）。图编译器要按尺寸选择最合适的路径。"}
+ ],
+ notes:[
+  "要记清各参数：stride、padding、dilation、groups、输出通道数，它们共同决定输出形状。",
+  "输出形状公式必须能当场推出来（含 stride 与 padding），这是高频考点。",
+  "im2col 会带来内存膨胀，是与 GEMM 融合时需要权衡的点。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:true,
+ op:"ConvTranspose（反卷积 / 转置卷积）",
+ what:"转置卷积，用于上采样（语义分割、生成模型），可以理解为「卷积的梯度传播形式」而不是真正的逆运算。",
+ qa:[
+  {q:"为什么叫「转置」卷积？",a:"因为它的前向计算正好等于普通卷积反向传播时的输入梯度计算，数学上是卷积权重矩阵的转置作用，因此得名；它并不是卷积的逆运算。"},
+  {q:"转置卷积容易出现什么视觉问题？",a:"stride 大于 1 时会造成输出格子之间的重叠不均匀，产生「棋盘格伪影（checkerboard）」；常见缓解是改用「插值上采样 + 普通卷积」。"}
+ ],
+ notes:[
+  "输出形状与 padding / stride 的关系比普通卷积更绕，必须推导清楚。",
+  "它不是逆运算：先卷积再转置卷积无法还原原图（信息已经丢失）。",
+  "性能上常被改写为「插值 + 卷积」，这在图优化里是常见改写。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:true,
+ op:"DepthwiseConv / GroupConv",
+ what:"分组卷积：GroupConv 把通道分组、组内分别卷积；DepthwiseConv 是分组数等于通道数的极端情形，是移动端网络的基石。",
+ qa:[
+  {q:"分组卷积能省多少计算？",a:"计算量约降为原来的 1/g（g 为组数）。Depthwise 卷积把每个通道独立处理，配合 1×1 卷积（Pointwise）构成 MobileNet 的核心模块，显著降低 FLOPs。"},
+  {q:"为什么分组卷积常配合 1×1 卷积使用？",a:"Depthwise 只做空间混合、不做通道混合，表达能力受限；后接 1×1 卷积做通道混合，两者合起来才等价于「更省算力的普通卷积」。"}
+ ],
+ notes:[
+  "分组卷积的访存效率常低于理论 FLOPs 收益，实际加速比可能不达预期（访存受限）。",
+  "组数 / 通道数整除关系写错会报错，是常见的手写模型 bug。",
+  "某些后端对 depthwise 的支持不如普通卷积成熟，性能差异很大。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:false,
+ op:"DilatedConv（空洞卷积）",
+ what:"在卷积核元素之间插入空洞（dilation），在不增加参数量与计算量前提下扩大感受野。",
+ qa:[
+  {q:"空洞卷积为什么不增加计算量？",a:"它只是把采样点拉开，核的参数量与乘加次数不变，但覆盖的空间范围（感受野）变大，因此是「免费」扩大感受野的手段。"},
+  {q:"空洞卷积有什么副作用？",a:"采样点稀疏会丢失部分局部信息，且多层堆叠时若 dilation 设计不当会产生「网格化伪影（gridding）」；常用连续递增的 dilation 来缓解。"}
+ ],
+ notes:[
+  "dilation 会实质改变输出形状，形状公式必须带上 dilation 项。",
+  "与分组卷积叠加使用时，实现复杂度显著上升，后端支持度参差不齐。",
+  "感受野的计算（含 dilation）是常见面试计算题。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:false,
+ op:"im2col / GEMM 变换",
+ what:"把卷积的滑窗输入展开成矩阵（im2col），从而把卷积转成一次大规模 GEMM 的实现技巧，是主流的卷积加速路径。",
+ qa:[
+  {q:"im2col 为什么要这么做？",a:"因为 GEMM 有高度成熟的优化库与硬件支持，把卷积转成 GEMM 就能直接复用这些成果，避免了为卷积单独做极致优化。"},
+  {q:"im2col 的代价是什么？",a:"内存膨胀：展开后的矩阵有大量重复数据（同一像素被多个窗口引用），额外占用显存与带宽；因此有「隐式 im2col（不实际展开、边算边取）」的优化。"}
+ ],
+ notes:[
+  "它是实现技巧而非语义算子，在 IR 里通常以「模式 + 调度」而不是独立算子出现。",
+  "理解 im2col 是理解 Conv→GEMM 融合与访存优化的关键。",
+  "与 Winograd、FFT 是并列的卷积实现路线，各有适用尺寸。"
+ ]},
+
+{cat:"线性代数与卷积",diff:2,hot:false,
+ op:"Resize / Interpolate / Upsample",
+ what:"对张量的空间维度做缩放：最近邻、双线性、双三次、面积插值等，用于上采样与下采样。",
+ qa:[
+  {q:"最近邻和双线性插值的取舍？",a:"最近邻最快、无计算但可能有明显锯齿；双线性更平滑、需要更多计算与访存。语义分割里对齐方式会影响精度，需要与训练时保持一致。"},
+  {q:"上采样的坐标映射要注意什么？",a:"align_corners 之类的参数决定像素中心如何对齐，取不同的值结果不同；跨框架导出时这是常见的「结果对不上」的原因。"}
+ ],
+ notes:[
+  "插值模式与对齐参数必须与训练保持一致，否则精度会掉。",
+  "Resize 本质也是整张量的访存操作，通常难以与卷积融合。",
+  "动态分辨率下输出尺寸不定，影响静态内存规划。"
+ ]},
+
+/* ============ 五、池化与空间操作 ============ */
+{cat:"池化与空间操作",diff:1,hot:true,
+ op:"MaxPool",
+ what:"在滑动窗口内取最大值，做下采样、扩大感受野并带来一定的平移不变性。",
+ qa:[
+  {q:"MaxPool 的梯度怎么走？",a:"梯度只回传给窗口内取到最大值的位置（类似 argmax 路由），其余位置为 0；需要在前向时记录最大值的位置索引。"},
+  {q:"MaxPool 和 stride 卷积能互相替代吗？",a:"在功能上可以（用 stride=2 的卷积也能下采样），但计算量与语义不同：池化无可学习参数、更便宜；卷积有参数、能学习下采样方式。"}
+ ],
+ notes:[
+  "窗口大小与 stride 共同决定输出形状，边界处理（ceil mode）会影响最后一行/列是否保留。",
+  "需要保存 argmax 索引用于反向，是显存占用的一个来源。",
+  "现在很多现代网络用 stride 卷积替代池化，注意区分设计意图。"
+ ]},
+
+{cat:"池化与空间操作",diff:1,hot:true,
+ op:"AveragePool",
+ what:"在滑动窗口内取平均值做下采样；也包括带 padding 的变体（计数时是否包含 padding 会影响结果）。",
+ qa:[
+  {q:"AveragePool 的 count_include_pad 参数为什么重要？",a:"它决定计算均值时分母是否包含 padding 位置。包含与不包含会得到不同的数值，是跨框架结果不一致的常见原因。"},
+  {q:"AveragePool 和 MaxPool 各适合什么场景？",a:"MaxPool 保留最显著特征，常用于分类主干网络；AveragePool 更平滑，常用于末端聚合（如 GlobalAveragePool）。"}
+ ],
+ notes:[
+  "边界分母（是否含 pad）的语义必须核对。",
+  "与 MaxPool 一样，输出形状依赖窗口与步长。",
+  "在量化图里平均池化对数值较敏感，注意饱和。"
+ ]},
+
+{cat:"池化与空间操作",diff:1,hot:false,
+ op:"GlobalAveragePool / GlobalMaxPool",
+ what:"把整个空间维度归约成一个值（每个通道一个数），常用于分类头，把 H×W 压成 1×1。",
+ qa:[
+  {q:"为什么分类网络末端常用 GlobalAveragePool 而不是 Flatten + FC？",a:"参数量几乎为零，能大幅减少全连接层带来的参数爆炸与过拟合，且对输入分辨率更鲁棒。"},
+  {q:"它和 ReduceMean 有什么区别？",a:"数值上等价（沿空间维求平均），但语义与实现归属不同：这是池化算子，可能有专门的高效实现，且语义上明确是「空间下采样」。"}
+ ],
+ notes:[
+  "等价于对 H、W 两维做归约，注意 keepdims 的表示。",
+  "常与后续的 1×1 卷积（或 FC）融合，是融合优化的常见位置。",
+  "若输入含 padding，是否计入平均会改变结果。"
+ ]},
+
+{cat:"池化与空间操作",diff:2,hot:false,
+ op:"AdaptiveAvgPool",
+ what:"自适应平均池化：给定目标输出尺寸，自动推导窗口与步长，使任意输入尺寸都能得到固定输出（如 7×7）。",
+ qa:[
+  {q:"自适应池化是怎么算窗口的？",a:"按「输入尺寸 / 输出尺寸」推导每个输出位置对应的输入区间（常用 floor/ceil 切分），使不等长的输入区间尽量均分，从而支持任意输入尺寸。"},
+  {q:"它为什么能处理任意输入尺寸？",a:"因为窗口大小是运行时根据输入推导的，而不是固定超参，因此同一个模型能接受不同分辨率的输入。"}
+ ],
+ notes:[
+  "它不是简单等分：边界处的窗口大小可能不同，实现要按区间计算而非固定步长。",
+  "与动态 shape 关系密切，是「输入分辨率可变」网络的关键算子。",
+  "不同框架的 floor/ceil 切分细节可能不同，跨框架要核对。"
+ ]},
+
+{cat:"池化与空间操作",diff:3,hot:false,
+ op:"ROIAlign / ROIPool",
+ what:"从特征图的候选区域（RoI）中提取固定尺寸的特征，用于两阶段检测器（如 Faster R-CNN）。ROIAlign 用双线性插值避免量化误差。",
+ qa:[
+  {q:"ROIAlign 相比 ROIPool 改进在哪？",a:"ROIPool 在划分区域与采样时做了两次取整（量化），引入位置偏差；ROIAlign 取消取整，改用双线性插值采样，显著提升检测精度（尤其小目标）。"},
+  {q:"ROIAlign 的采样点怎么定？",a:"把 RoI 均分成固定网格，每个格子内取若干个采样点（常见 2×2），用双线性插值得到特征值再做平均或最大。"}
+ ],
+ notes:[
+  "ROI 坐标依赖检测头输出，属于动态、数据相关的算子，静态图优化受限。",
+  "采样点数与网格尺寸是精度/速度的权衡参数。",
+  "跨越量化前后时插值行为可能变化，注意精度对齐。"
+ ]},
+
+{cat:"池化与空间操作",diff:3,hot:false,
+ op:"MaxUnpool / Unpool",
+ what:"最大池化的逆操作：按前向记录的 argmax 索引把值放回原位置，其余位置补零，用于上采样。",
+ qa:[
+  {q:"为什么反池化必须知道 argmax 索引？",a:"因为最大池化丢弃了非最大值位置的信息，要还原就必须知道每个最大值原来在哪；因此前向必须保存索引（indices），反向或解码时使用。"},
+  {q:"反池化和转置卷积有什么不同？",a:"反池化只是把值放回原位、其余补零，没有可学习参数，还原能力有限；转置卷积是可学习的上采样，能生成更平滑的结果。"}
+ ],
+ notes:[
+  "必须与前向池化的 indices 严格配对，索引错位会得到完全错误的结果。",
+  "常与 MaxPool 成对出现，图优化里要保证两者索引一致。",
+  "在编解码结构（如 SegNet）里是核心算子。"
+ ]},
+
+/* ============ 六、激活函数 ============ */
+{cat:"激活函数",diff:1,hot:true,
+ op:"ReLU",
+ what:"逐元素取 max(0, x)，最简单也最常用的激活函数；引入非线性、计算极快、缓解梯度消失。",
+ qa:[
+  {q:"ReLU 的缺点是什么？",a:"① 负半区梯度为 0，可能造成「神经元死亡」；② 输出非零均值，影响收敛；③ 在 0 点不可导（工程上约定导数为 0 或 1）。"},
+  {q:"为什么 ReLU 计算这么便宜？",a:"只需一次比较 + 选择，没有指数、除法等昂贵运算，因此非常适合融合 —— 它几乎总是被融进上游算子，不单独占一个 kernel。"}
+ ],
+ notes:[
+  "神经元死亡：学习率过大或初始化不当时大量神经元输出恒为 0，可用 LeakyReLU 缓解。",
+  "ReLU 是融合的典型对象：Conv + Bias + ReLU 常被合成一个 kernel。",
+  "0 点导数约定在各框架不统一，但实践中影响极小。"
+ ]},
+
+{cat:"激活函数",diff:1,hot:true,
+ op:"LeakyReLU / PReLU",
+ what:"LeakyReLU 在负半区给一个固定小斜率；PReLU 把这个斜率变成可学习参数（逐通道），避免神经元死亡。",
+ qa:[
+  {q:"LeakyReLU 解决了什么问题？",a:"ReLU 在负半区梯度恒为 0 会导致神经元死亡；LeakyReLU 给负半区一个小斜率（如 0.01），让梯度仍能回传，从而缓解该问题。"},
+  {q:"PReLU 和 LeakyReLU 关键差别？",a:"LeakyReLU 的负半区斜率是固定超参，PReLU 把它变成可学习参数（常按通道独立），表达能力更强但会增加参数量与训练复杂度。"}
+ ],
+ notes:[
+  "负半区斜率的选择会影响收敛，常见取值 0.01 / 0.1 / 0.2。",
+  "PReLU 的参数逐通道时，实现上是一次逐通道缩放，可与上游融合。",
+  "跨框架导出时 PReLU 的参数组织方式可能不同，需要核对。"
+ ]},
+
+{cat:"激活函数",diff:2,hot:false,
+ op:"ELU / SELU",
+ what:"ELU 在负半区用指数形式平滑过渡到 -α；SELU 是带特定参数缩放的 ELU，配合特定初始化可自带归一化效果（自归一化网络）。",
+ qa:[
+  {q:"ELU 相比 ReLU 的优劣？",a:"优点是负半区平滑且输出均值更接近零，通常收敛更快；缺点是含指数运算，计算更贵，且在量化场景里更难处理。"},
+  {q:"SELU 为什么声称能「自归一化」？",a:"配合 LeCun 初始化与特定网络结构（AlphaDropout），SELU 能让激活值在层间保持接近零均值、单位方差，从而缓解内部协变量偏移，理论上不需要 BN。"}
+ ],
+ notes:[
+  "含 exp 的激活在低精度（fp16）下要注意精度与溢出。",
+  "SELU 的「自归一化」有前提条件（初始化方式、Dropout 类型），不能随便替换。",
+  "融合时指数运算会影响 kernel 的寄存器与指令量。"
+ ]},
+
+{cat:"激活函数",diff:2,hot:true,
+ op:"GELU",
+ what:"高斯误差线性单元：x·Φ(x)（Φ 为标准正态的累积分布函数），Transformer 里的标准激活；常用 tanh 或 sigmoid 近似实现。",
+ qa:[
+  {q:"GELU 和 ReLU 的核心区别？",a:"ReLU 是硬门控（要么 0 要么原值），GELU 是按概率平滑门控（值越大越可能原样通过，接近 0 时被抑制），曲线更平滑，梯度性质更好。"},
+  {q:"为什么有 GELU 的近似实现？",a:"精确形式要用 Erf，代价高；实践中常用 tanh 或 sigmoid 近似，速度更快但数值与精确版略有差异 —— 这正是「同一模型不同框架结果对不上」的常见原因。"}
+ ],
+ notes:[
+  "近似版本与精确版本的数值差异要能在做精度对齐时解释清楚。",
+  "BERT / GPT 类模型里 GELU 是热路径，融合收益明显。",
+  "低精度下 Erf / tanh 的实现精度会影响最终效果。"
+ ]},
+
+{cat:"激活函数",diff:2,hot:true,
+ op:"SiLU / Swish / HardSwish",
+ what:"Swish/SiLU 是 x·sigmoid(x)，平滑非单调激活；HardSwish 用分段线性近似替代 sigmoid，专为移动端低成本实现设计。",
+ qa:[
+  {q:"HardSwish 为什么被设计出来？",a:"sigmoid 需要指数运算，移动端代价高；HardSwish 用 ReLU6 类的分段线性函数近似 sigmoid，去掉了指数，速度更快且精度损失很小。"},
+  {q:"Swish 是非单调的，这有什么意义？",a:"负半区存在一个小的下凹区域（允许小的负值通过），这种非单调性被实验证明有利于优化与泛化。"}
+ ],
+ notes:[
+  "HardSwish / HardSigmoid 的分段边界（如 3 与 6）必须与训练时一致。",
+  "SiLU 含 sigmoid，低精度下注意精度；HardSwish 更友好。",
+  "在 MobileNetV3 / EfficientNet 里是标准配置，性能与精度权衡的典型案例。"
+ ]},
+
+{cat:"激活函数",diff:1,hot:true,
+ op:"Sigmoid",
+ what:"把实数压到 (0,1)，用作概率输出与门控；也是 LSTM、注意力门控的基础。",
+ qa:[
+  {q:"Sigmoid 的梯度有什么问题？",a:"导数最大只有 0.25，且两端饱和区导数趋近 0，深层网络连乘后容易梯度消失；这是它被 ReLU 取代的主要原因。"},
+  {q:"为什么 Softmax 不能用 Sigmoid 代替？",a:"Sigmoid 各元素独立归一，输出和不为 1；Softmax 在类别间竞争归一，输出构成概率分布。多分类必须用 Softmax，多标签才用 Sigmoid。"}
+ ],
+ notes:[
+  "饱和区（|x| 很大时）梯度消失，注意初始化与归一化。",
+  "输出非零均值，会加重后续层的偏移。",
+  "exp 运算在低精度下有溢出风险，实现上常做数值稳定处理。"
+ ]},
+
+{cat:"激活函数",diff:1,hot:false,
+ op:"Tanh",
+ what:"把实数压到 (-1,1)，零均值，是 RNN 隐状态与注意力里常用的激活。",
+ qa:[
+  {q:"Tanh 和 Sigmoid 的关系？",a:"tanh(x) = 2·sigmoid(2x) - 1，两者只是缩放平移关系；但 tanh 输出是零均值，因此在隐层里通常优于 sigmoid。"},
+  {q:"Tanh 有什么缺点？",a:"同样存在饱和区梯度消失问题（导数最大为 1，两端趋近 0），深层网络依然难训。"}
+ ],
+ notes:[
+  "在 RNN / LSTM 里用于压缩隐状态范围，注意梯度在长序列上会衰减。",
+  "与 Sigmoid 一样含 exp，低精度实现需注意。",
+  "零均值这一性质是被反复考察的点。"
+ ]},
+
+{cat:"激活函数",diff:2,hot:false,
+ op:"Softplus / Mish / Softsign",
+ what:"Softplus 是 ln(1+e^x)（ReLU 的平滑版）；Mish 是 x·tanh(softplus(x))；Softsign 是 x/(1+|x|)（tanh 的无指数版本）。",
+ qa:[
+  {q:"Softplus 和 ReLU 的关系？",a:"Softplus 是 ReLU 的平滑近似，处处可导、无死亡神经元；但计算含 exp，代价高于 ReLU，且输出恒正。"},
+  {q:"Softsign 相对于 Tanh 的优势？",a:"它不含指数运算（只用到绝对值与除法），计算更廉价，曲线形状与 tanh 类似，但导数衰减是多项式级而非指数级。"}
+ ],
+ notes:[
+  "这些「小众激活」在特定论文里出现，面试若被问到能说出定义与动机即可。",
+  "Mish 计算较重（含 softplus 与 tanh），对融合不友好。",
+  "Softsign 的导数衰减更慢，理论上有缓解梯度消失的意味。"
+ ]},
+
+{cat:"激活函数",diff:2,hot:false,
+ op:"HardSigmoid / ThresholdedReLU",
+ what:"HardSigmoid 用分段线性函数近似 sigmoid（去掉指数）；ThresholdedReLU 在输入小于阈值时输出 0，大于则原样输出。",
+ qa:[
+  {q:"HardSigmoid 的近似公式？",a:"常见形式是 clip(0.2x + 0.5, 0, 1)，只涉及乘加与裁剪，完全没有指数，因此在移动端与低精度硬件上代价极低。"},
+  {q:"ThresholdedReLU 有什么用途？",a:"给 ReLU 加一个可调阈值（而非固定 0），可以更激进地稀疏化激活，用于噪声抑制或压缩场景。"}
+ ],
+ notes:[
+  "分段线性函数的系数（斜率与截距）必须与训练一致，否则精度漂移。",
+  "这类激活对量化非常友好，是量化网络里的常见选择。",
+  "阈值 / 系数在不同框架的默认值可能不同，导出时要显式指定。"
+ ]},
+
+/* ============ 七、归一化与正则 ============ */
+{cat:"归一化与正则",diff:2,hot:true,
+ op:"BatchNorm",
+ what:"对一个 batch 内、按通道统计均值与方差做归一化，再施加可学习的缩放与偏移；是 CNN 训练稳定与加速收敛的关键。",
+ qa:[
+  {q:"BN 训练和推理有什么区别？",a:"训练时用当前 batch 的统计量，并滑动平均累积「全局统计量」；推理时改用累积的全局统计量（固定值），因此推理图可以把 BN 折叠进卷积。"},
+  {q:"BN 为什么依赖 batch size？",a:"统计量来自当前 batch，batch 太小则统计噪声大、效果变差；这也是 LayerNorm / GroupNorm 在序列与小 batch 场景更受青睐的原因。"}
+ ],
+ notes:[
+  "训练必须处于 train 模式才会更新统计量，模式写错会导致结果异常且难察觉。",
+  "推理折叠需要同时处理权重与偏置，注意公式推导。",
+  "分布式训练里同步 BN（SyncBN）需要跨卡通信，是通信与计算交织的典型场景。"
+ ]},
+
+{cat:"归一化与正则",diff:2,hot:true,
+ op:"LayerNorm",
+ what:"对每个样本、在特征维度（最后一维或若干维）内做归一化，与 batch 无关，因此适合变长序列与 Transformer。",
+ qa:[
+  {q:"LayerNorm 和 BatchNorm 的本质区别？",a:"BN 沿 batch 维统计（跨样本），LN 沿特征维统计（样本内）。前者依赖 batch 大小、需维护全局统计量；后者与 batch 无关，训练/推理行为一致，因此推理无需特殊处理。"},
+  {q:"为什么 Transformer 用 LayerNorm？",a:"序列长度可变、batch 常常较小，BN 的批统计不稳定；LN 对每个位置独立归一，天然适配变长输入。"}
+ ],
+ notes:[
+  "归一化的维度集合（normalized_shape）必须与实现一致，写错会静默出错。",
+  "RMSNorm 是它去掉均值中心化的简化版，在 LLM 里更常见。",
+  "LN 的计算需要两次归约（均值与方差）或一次 fused 实现，融合对性能影响大。"
+ ]},
+
+{cat:"归一化与正则",diff:2,hot:false,
+ op:"GroupNorm / InstanceNorm",
+ what:"GroupNorm 把通道分组、在组内做归一化（介于 LN 与 IN 之间）；InstanceNorm 对每个通道单独归一化，与 batch 无关。",
+ qa:[
+  {q:"GroupNorm 为什么在检测/分割里常用？",a:"检测与分割的训练 batch 通常很小，BN 统计不可靠；GroupNorm 不依赖 batch、又比 LayerNorm 更尊重通道结构，因此表现更稳。"},
+  {q:"InstanceNorm 和 LayerNorm 的区别？",a:"IN 对每个通道、每个样本独立归一化（还常跨空间维）；LN 对所有通道一起归一化。IN 更常用于风格迁移，会抹掉逐通道的均值/方差信息。"}
+ ],
+ notes:[
+  "分组的整除关系与组数选择会影响效果；组数没选好会退化成 LN 或 IN。",
+  "推理时无需特殊处理（不依赖 batch 统计量），与 BN 不同。",
+  "实现上也是归约 + 仿射，融合空间较大。"
+ ]},
+
+{cat:"归一化与正则",diff:2,hot:true,
+ op:"RMSNorm",
+ what:"均方根归一化：只用输入的二范数（均方根）做缩放，不做均值中心化，比 LayerNorm 更省计算，是主流大模型的标配。",
+ qa:[
+  {q:"RMSNorm 相比 LayerNorm 省了什么？",a:"省掉了「减去均值」这一步（以及相应的归约与广播），只做平方均值开方再缩放。实验表明去掉中心化对效果影响很小，但速度更快。"},
+  {q:"为什么大模型偏爱 RMSNorm？",a:"计算更简单、访存更少、数值更稳定，在长序列与大参数量场景下收益明显；也与预归一化（pre-norm）结构配合良好。"}
+ ],
+ notes:[
+  "只有缩放没有偏移（或可选的逐通道缩放），别与 LayerNorm 混淆。",
+  "二范数计算包含平方与开方，低精度下要留意溢出。",
+  "常与残差结构配合，是图融合（RMSNorm + 残差）的常见优化点。"
+ ]},
+
+{cat:"归一化与正则",diff:1,hot:true,
+ op:"Dropout",
+ what:"训练时以概率 p 随机把激活置零，并对剩余元素放大 1/(1-p)，用于抑制过拟合；推理时退化为恒等。",
+ qa:[
+  {q:"为什么训练时要除以 (1-p)？",a:"为了让训练与推理的期望一致（保持激活的期望不变），这种写法称为「inverted dropout」，使得推理时无需任何缩放、直接恒等即可。"},
+  {q:"Dropout 在图编译器里怎么处理？",a:"推理图中它是恒等映射，直接删除（DCE）；训练图中它是随机算子，位置会影响融合与确定性，不应被 CSE 合并。"}
+ ],
+ notes:[
+  "训练/推理模式必须正确切换，否则会静默改变行为。",
+  "推理态删除必须在确定是推理时做，不能无条件删。",
+  "与 BN 一样受模式影响，两者常一起出现在「模型转换后精度不对」的排查清单里。"
+ ]},
+
+{cat:"归一化与正则",diff:3,hot:false,
+ op:"LocalResponseNorm / WeightNorm",
+ what:"LRN 在通道间做局部响应归一化（AlexNet 时代）；WeightNorm 把权重分解为方向与幅度、在训练中重参数化，推理时可折叠回普通权重。",
+ qa:[
+  {q:"LRN 为什么现在很少用了？",a:"它需要跨通道归约，访存代价高、实现复杂；BatchNorm / LayerNorm 效果更好也更易优化，因此 LRN 基本被取代。"},
+  {q:"WeightNorm 的核心思想？",a:"把权重 w 重写成 g·(v/‖v‖)，让幅度 g 与方向 v 解耦，改善优化条件；训练结束后可把 g 与 v 合并回一个普通权重，推理零开销。"}
+ ],
+ notes:[
+  "LRN 的通道内/通道间归一化细节在不同实现中不完全一致。",
+  "WeightNorm 属于「训练时技巧、推理时消除」的典型，图优化里要能识别并折叠。",
+  "这类算子在现代模型里已少见，但面试可能作为「归一化演进」被问到。"
+ ]},
+
+/* ============ 八、索引集合与排序 ============ */
+{cat:"索引集合与排序",diff:1,hot:true,
+ op:"Gather / IndexSelect",
+ what:"按索引从张量中取值：Gather 可沿任意轴取，IndexSelect 相当于沿第 0 维取，是 Embedding 的底层实现。",
+ qa:[
+  {q:"Gather 和 Slice 有什么区别？",a:"Slice 按「连续区间 + 步长」取，索引是规律生成的；Gather 按「任意索引表」取，索引可乱序、可重复，因此更通用但访存更随机。"},
+  {q:"Gather 的性能特点？",a:"随机访存，难以向量化，在 GPU 上容易出现非合并访问、性能不佳；索引分布越不规则，退化越明显。"}
+ ],
+ notes:[
+  "索引越界是最常见的运行时错误，静态图里做边界检查很难。",
+  "输出形状 = 索引张量形状 + 被取张量除该轴外的形状，务必推清楚。",
+  "Embedding 就是「权重表上的 Gather」，理解这一点能把两者打通。"
+ ]},
+
+{cat:"索引集合与排序",diff:1,hot:true,
+ op:"Embedding / EmbeddingBag",
+ what:"查表算子：Embedding 按索引取出权重表的若干行（本质是 Gather）；EmbeddingBag 进一步把取出的行做求和/平均，避免物化中间结果。",
+ qa:[
+  {q:"Embedding 的梯度怎么计算？",a:"是稀疏的：只有被索引到的行才收到梯度，因此叫「稀疏梯度」；实现上常做稀疏更新（sparse update），避免对整张表做稠密更新。"},
+  {q:"EmbeddingBag 为什么更高效？",a:"它在查表后直接归约，不物化每一行的副本，省掉大量中间显存与访存；对变长序列（用 offset 表示）尤其友好。"}
+ ],
+ notes:[
+  "稀疏梯度与稠密梯度的选择影响训练性能与优化器行为（部分优化器不支持稀疏）。",
+  "索引越界 / padding 索引需要额外处理（常见做法是把 padding 指向一个全零行）。",
+  "大词表下权重表体积巨大，是显存占用的主要来源之一。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:false,
+ op:"GatherND",
+ what:"按「多维索引」取值：索引的最后一个维度指定要取的坐标个数，可以一次取出任意位置的元素块，比 Gather 更通用。",
+ qa:[
+  {q:"GatherND 和 Gather 的区别？",a:"Gather 只在单一维度上按索引取整行/整列；GatherND 允许一次用多维坐标定位（类似高级索引），表达力更强，但实现与优化也更复杂。"},
+  {q:"GatherND 主要用在什么场景？",a:"点云、稀疏结构、目标检测里按任意坐标取特征（如采样 RoI 的关键点）、以及一些自定义损失函数。"}
+ ],
+ notes:[
+  "索引张量的形状语义容易搞混（哪一维是坐标、哪一维是批量）。",
+  "随机访存模式对性能很不友好，是典型的访存瓶颈算子。",
+  "后端支持度不如 Gather 普遍，跨引擎转换时可能被拆解成多个基础算子。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:true,
+ op:"Scatter / ScatterND / IndexPut",
+ what:"按索引「写回」张量（Gather 的逆操作）：把源张量的值写到目标张量的指定位置；ScatterND 用多维索引，IndexPut 是原地写入版本。",
+ qa:[
+  {q:"Scatter 存在写冲突时怎么处理？",a:"多个索引指向同一位置时行为由实现定义：常见累加（add）、覆盖（update）、取最大/最小等模式。语义必须显式指定，否则不同后端结果可能不同。"},
+  {q:"Scatter 为什么在自动微分里很重要？",a:"它是 Gather 的对偶算子：反向传播时 Gather 的梯度要 Scatter 回去，Scatter 的梯度要 Gather 回来，两者成对出现。"}
+ ],
+ notes:[
+  "写冲突的处理模式（累加 vs 覆盖）是跨框架结果不一致的高发点。",
+  "原地写入（IndexPut）会破坏函数式假设，影响自动微分与图优化。",
+  "在 GPU 上并发写入需要原子操作，性能差异很大。"
+ ]},
+
+{cat:"索引集合与排序",diff:1,hot:true,
+ op:"Slice / StridedSlice",
+ what:"按区间与步长截取张量的一部分；StridedSlice 额外支持起始/结束/步长三组参数与掩码控制，表达力更强。",
+ qa:[
+  {q:"Slice 是零拷贝的吗？",a:"可能是视图（零拷贝）也可能是拷贝，取决于框架与连续性；若被切片的内存不连续或需要合并，就会被物化。"},
+  {q:"StridedSlice 的参数怎么理解？",a:"begin / end / strides 三个数组逐个维度指定，外加 begin_mask / end_mask / shrink_axis_mask 控制「是否省略该维边界」与「是否压缩该维」，语义非常绕。"}
+ ],
+ notes:[
+  "负索引与越界语义（自动截断 vs 报错）在不同框架不同。",
+  "StridedSlice 的掩码参数是经典的「容易写错」点。",
+  "切片结果的形状推导必须精确，否则后续算子全错。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:false,
+ op:"MaskedSelect / MaskedFill",
+ what:"MaskedSelect 按布尔掩码取出所有 true 位置的元素（输出长度动态）；MaskedFill 把掩码位置填成指定值（注意力里屏蔽 padding / 未来的常用手段）。",
+ qa:[
+  {q:"MaskedFill 在 Transformer 里用来做什么？",a:"把注意力分数中不该看的位置（padding、未来位置）填成 -inf，使 Softmax 后这些位置的概率为 0，从而实现因果屏蔽与 padding 屏蔽。"},
+  {q:"MaskedSelect 有什么问题？",a:"输出长度取决于掩码中 true 的个数，是「数据决定形状」的算子，会引入动态 shape，静态图优化与内存规划都受限。"}
+ ],
+ notes:[
+  "填充值用 -inf 时要保证 dtype 支持（fp16 的 -inf 与 fp32 的极小数不总是等价）。",
+  "MaskedSelect 的动态输出长度是图编译的难点，尽量用固定形状的等价写法替代。",
+  "掩码的广播与维度对齐很容易出错，是注意力实现 bug 的高发区。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:false,
+ op:"OneHot",
+ what:"把整型类别索引编码成 one-hot 向量（除对应位置为 1 外全为 0），常用于把标签或离散特征转成稠密表示。",
+ qa:[
+  {q:"OneHot 和 Embedding 有什么关系？",a:"数学上等价：one-hot 向量乘权重矩阵等价于按索引取出对应行。区别是 OneHot 会显式物化巨大的稀疏向量（浪费显存），Embedding 直接查表（高效）。"},
+  {q:"OneHot 的输出大小要注意什么？",a:"输出形状含类别数维度，类别多时张量会很大；同时索引必须在 [0, num_classes) 范围内，越界行为各框架不一致。"}
+ ],
+ notes:[
+  "类别数很大时避免使用 OneHot，改用 Embedding 查表。",
+  "输出 dtype 常默认为浮点，若只想做掩码应考虑用更省内存的表示。",
+  "越界索引的处理（忽略 vs 报错 vs 产生全零）需要显式指定。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:true,
+ op:"TopK",
+ what:"返回沿指定维度最大（或最小）的 k 个值及其索引，用于分类解码、束搜索、Top-K 采样与 NMS。",
+ qa:[
+  {q:"TopK 的复杂度与实现方式？",a:"朴素做法是全排序 O(n log n)；更优的是部分选择（如基于堆或快速选择，平均 O(n)）。k 很小时堆更优，k 接近 n 时排序更简单。"},
+  {q:"TopK 的输出能参与梯度吗？",a:"值是原张量中的元素，可以返回梯度；但索引是不可导的。若要用在训练里（如可微 Top-K），需要软化近似。"}
+ ],
+ notes:[
+  "k 是编译期常量还是运行期值，会显著影响能否静态优化。",
+  "并列值的处理（稳定性）由实现决定，跨框架可能不一致。",
+  "大张量上的全局 TopK 需要跨 block 合并，性能不如局部操作。"
+ ]},
+
+{cat:"索引集合与排序",diff:2,hot:false,
+ op:"Sort / ArgSort / Unique / NonZero",
+ what:"排序与集合类算子：Sort 排序值、ArgSort 返回排序索引、Unique 去重、NonZero 找出非零元素的位置。",
+ qa:[
+  {q:"ArgSort 和 Sort 的区别？",a:"Sort 返回排序后的值，ArgSort 返回排序后元素在原张量中的索引（即置换）。想要「按某个 key 重排另一个张量」时用 ArgSort 得到的索引去做 Gather。"},
+  {q:"为什么排序类算子难以融合？",a:"涉及跨元素的重排与比较，依赖全局信息，且输出位置是数据相关的；它们通常是独立的 kernel，还会产生非规则的访存模式。"}
+ ],
+ notes:[
+  "稳定性（相等元素的相对顺序是否保持）由实现决定，会影响可复现性。",
+  "NonZero / Unique 输出长度依赖数据，必然引入动态 shape。",
+  "排序是访存与比较密集型算子，在 GPU 上有专门的实现技巧（如基数排序）。"
+ ]},
+
+/* ============ 九、序列与注意力 ============ */
+{cat:"序列与注意力",diff:2,hot:true,
+ op:"RNN / LSTM / GRU",
+ what:"循环神经网络算子：RNN 有简单隐状态；LSTM 用输入/遗忘/输出门控制记忆；GRU 用更新/重置门做简化。三者都沿时间步递推。",
+ qa:[
+  {q:"LSTM 为什么能缓解梯度消失？",a:"它的细胞状态通过「加法」路径传递（遗忘门控制保留多少），相比 RNN 的连乘结构，梯度回传路径更短、更不容易指数衰减。"},
+  {q:"RNN 类算子在图上怎么表示？",a:"通常表达为带时间循环的算子（内部隐含 scan），或展开成时间步序列；展开便于并行优化但与序列长度绑定，循环表示则依赖 Scan/Loop 支持。"}
+ ],
+ notes:[
+  "序列长度可变，是动态 shape 与动态控制流的集中地。",
+  "逐步递推难以并行，是 RNN 被 Transformer 取代的重要原因。",
+  "cudnn 的融合 RNN（一次调用完成多步）与逐算子实现性能差很多。"
+ ]},
+
+{cat:"序列与注意力",diff:2,hot:true,
+ op:"Scaled Dot-Product Attention",
+ what:"注意力核心计算：softmax(Q·Kᵀ/√d)·V。缩放因子 1/√d 用于稳定点积的方差，是 Transformer 的基本构件。",
+ qa:[
+  {q:"为什么要除以 √d？",a:"Q 与 K 的点积随维度 d 增大而方差增大，数值过大进入 softmax 饱和区会导致梯度极小；除以 √d 把方差归一化到 1 左右，稳定训练。"},
+  {q:"注意力的计算瓶颈在哪？",a:"Q·Kᵀ 产生 N×N 矩阵，复杂度与显存都是 O(N²)，序列一长就爆。FlashAttention 用分块 + online softmax 避免物化，是主流解法。"}
+ ],
+ notes:[
+  "mask（padding / 因果）必须在 softmax 之前施加，且用 -inf 填充。",
+  "低精度下 softmax 的数值稳定性要特别关注。",
+  "复杂度 O(N²) 是长序列的核心矛盾，衍生出各种稀疏/线性注意力。"
+ ]},
+
+{cat:"序列与注意力",diff:2,hot:true,
+ op:"MultiHeadAttention",
+ what:"多头注意力：把 Q/K/V 投影到多个子空间分别算注意力再拼接，让模型能并行关注不同的表示子空间。",
+ qa:[
+  {q:"多头相比单头的意义？",a:"每个头在不同子空间学习不同的关注模式，能同时捕捉多种依赖关系（语法、语义、位置等），表达力强于单头。"},
+  {q:"多头注意力的实现优化点？",a:"① 把多个头的投影拼成一次大 GEMM（横向融合）；② 用 fused QKV 投影减少 kernel；③ 用 FlashAttention 类实现消除 O(N²) 中间矩阵。"}
+ ],
+ notes:[
+  "head_dim × num_heads = 模型维度，参数写错是常见 bug。",
+  "多头的转置/reshape 会引入 layout 变换，是性能敏感点。",
+  "跨框架导出时头的划分方式可能不同（拼在一起还是分开），要核对。"
+ ]},
+
+{cat:"序列与注意力",diff:3,hot:true,
+ op:"RoPE（旋转位置编码）",
+ what:"通过旋转的方式把位置信息编码进 Q/K：按位置对向量做二维旋转，使点积天然带有相对位置的三角函数关系。",
+ qa:[
+  {q:"RoPE 相比绝对位置编码的优势？",a:"它让注意力分数只依赖「相对位置差」，具备更好的长度外推性，且不增加额外参数，因此成为主流大模型的选择。"},
+  {q:"RoPE 在实现上要注意什么？",a:"旋转基频（theta）与维度切分方式必须与训练一致；扩展序列长度时需要做频率缩放（如 NTK / 线性插值），否则外推效果会崩。"}
+ ],
+ notes:[
+  "通常作用于 Q 与 K，不作用于 V。",
+  "实现里涉及 cos/sin 表与维度交错，切分方式（前后半区 vs 交错）极易写错。",
+  "长上下文扩展是当前热点，涉及频率缩放技巧。"
+ ]},
+
+{cat:"序列与注意力",diff:3,hot:false,
+ op:"位置编码 Sinusoidal / ALiBi",
+ what:"Sinusoidal 用不同频率的三角函数生成固定的绝对位置编码并加到输入上；ALiBi 不加位置编码，而是在注意力分数上按距离加一个线性偏置。",
+ qa:[
+  {q:"Sinusoidal 位置编码为什么用不同频率？",a:"不同维度对应不同波长，形成类似二进制编码的多尺度表示，让模型能同时区分近距离与远距离的位置。"},
+  {q:"ALiBi 的思路是什么？",a:"直接对注意力分数施加与距离成正比的负偏置（越远惩罚越大），无需位置嵌入参数，外推能力较好且不占显存。"}
+ ],
+ notes:[
+  "Sinusoidal 是固定（不可学习）的编码，跨框架要保证频率公式一致。",
+  "ALiBi 的斜率按头设定，头数与斜率表的对应关系要对齐。",
+  "两者是「如何在图里引入位置信息」的两种范式，面试常作对比。"
+ ]},
+
+{cat:"序列与注意力",diff:2,hot:false,
+ op:"Causal Mask / Triu",
+ what:"因果屏蔽：把注意力矩阵的上三角（未来位置）置为不可见，保证第 t 个位置只能看到 ≤ t 的位置，是实现自回归生成的关键。",
+ qa:[
+  {q:"因果屏蔽怎么实现？",a:"用下三角（tril）或上三角（triu）构造 0/1 掩码，把应屏蔽的位置在 softmax 前填成 -inf，使对应注意力权重为 0。"},
+  {q:"为什么必须在 softmax 之前施加？",a:"softmax 之后再置零会破坏归一化（概率和不再为 1）；只有在 softmax 前设为 -inf，才能让这些位置在归一化时权重为 0。"}
+ ],
+ notes:[
+  "掩码方向写反（用 tril 还是 triu）是最经典的实现错误。",
+  "与 padding mask 叠加时需要先合并成统一掩码，注意广播。",
+  "在 KV Cache 场景，掩码要考虑已缓存的历史位置。"
+ ]},
+
+{cat:"序列与注意力",diff:3,hot:false,
+ op:"BeamSearch / Sampling（TopK / TopP）",
+ what:"生成阶段的解码算子：贪心取最大、束搜索保留多条候选、Top-K / Top-P（核采样）从截断后的分布里采样。",
+ qa:[
+  {q:"束搜索为什么可能不如采样？",a:"束搜索最大化整体概率，倾向生成安全但保守、重复的文本；采样引入随机性，多样性更好，因此开放域生成常用 Top-P / 温度采样。"},
+  {q:"Top-P 和 Top-K 的区别？",a:"Top-K 固定保留前 k 个候选；Top-P 按累积概率动态截断（保留概率和达到 p 的最小集合），能自适应候选数量，通常效果更稳。"}
+ ],
+ notes:[
+  "解码是逐步、数据相关的循环，属于图级动态控制流，静态优化空间小。",
+  "温度（temperature）与采样算子的组合顺序会影响结果，需与训练/推理约定一致。",
+  "束搜索涉及多条候选的批处理与打分维护，是运行时开销的大头。"
+ ]},
+
+/* ============ 十、通信控制流与量化 ============ */
+{cat:"通信控制流与量化",diff:2,hot:true,
+ op:"AllReduce",
+ what:"集合通信算子：把所有设备上的张量按元素规约（求和/平均等），结果同步到所有设备。数据并行训练里梯度同步的核心。",
+ qa:[
+  {q:"数据并行训练里梯度是怎么同步的？",a:"各卡独立算梯度，然后对梯度做 AllReduce（backward 时按层流水执行），再各自用同一个平均后的梯度更新，从而保证各卡参数一致。"},
+  {q:"AllReduce 和 ReduceScatter + AllGather 的关系？",a:"Ring AllReduce 在实现上等价于 ReduceScatter + AllGather 两步。理解这个分解有助于做通信与计算的重叠优化。"}
+ ],
+ notes:[
+  "通信是大规模训练的主要瓶颈之一，需与计算重叠（bucket + 异步）。",
+  "梯度压缩 / 分片（如 ZeRO）可显著降低通信量。",
+  "拓扑（ring / tree / nvswitch）会影响实际带宽与延迟。"
+ ]},
+
+{cat:"通信控制流与量化",diff:3,hot:true,
+ op:"AllGather / ReduceScatter",
+ what:"AllGather 把各设备的分片汇总到所有设备；ReduceScatter 先规约再把结果分散到各设备。两者是张量并行与分片训练的基本操作。",
+ qa:[
+  {q:"张量并行里为什么需要它们？",a:"张量并行把权重切到多卡，计算需要跨卡拼装（AllGather）与汇总（ReduceScatter）；前向与反向各用到不同的组合，构成 P2P + 集合通信的流水。"},
+  {q:"它们和 AllReduce 的通信量关系？",a:"通信量与 AllReduce 同阶但方向不同；在分片训练（如 FSDP / ZeRO）里用它们替代 AllReduce，能同时降低显存与通信。"}
+ ],
+ notes:[
+  "分片维度与通信原语的搭配必须与并行策略一致。",
+  "通信与计算的流水编排（何时 gather、何时 release）决定显存峰值与效率。",
+  "跨机与机内的实现差异很大，性能调优常需要看具体拓扑。"
+ ]},
+
+{cat:"通信控制流与量化",diff:3,hot:false,
+ op:"Broadcast / AllToAll",
+ what:"Broadcast 把一份数据从某设备发到所有设备；AllToAll 是转置式通信（每个设备把自己的一部分发给其他每个设备），是专家并行（MoE）的关键。",
+ qa:[
+  {q:"AllToAll 在 MoE 里做什么？",a:"把 token 按路由结果分发到对应专家所在的设备（dispatch），计算后再收集回原设备（combine）；两个 AllToAll 构成专家并行的数据通路。"},
+  {q:"AllToAll 的主要挑战？",a:"通信模式不规则（每对设备的数据量可能不同）、容易成为瓶颈，且需要与路由/计算流水配合才能不空等。"}
+ ],
+ notes:[
+  "通信量取决于分片策略，负载不均会导致部分设备空等。",
+  "MoE 场景下 token 分布不均（热专家）会显著拖慢整体。",
+  "与 Send/Recv（点对点）相比，集合通信能更好利用带宽。"
+ ]},
+
+{cat:"通信控制流与量化",diff:3,hot:false,
+ op:"Send / Recv / Barrier",
+ what:"点对点通信原语：Send/Recv 在指定设备对之间传数据；Barrier 做同步点，保证所有设备到达后再继续。",
+ qa:[
+  {q:"点对点通信用在哪？",a:"流水并行（pipeline parallelism）里相邻阶段之间传递激活与梯度，就是 Send/Recv；Barrier 用于调试与阶段同步。"},
+  {q:"流水并行怎么避免「气泡」？",a:"用 micro-batch 把流水填满、交错调度不同阶段的前向与反向，让设备尽量不空转（如 1F1B 调度）。"}
+ ],
+ notes:[
+  "Send/Recv 必须配对，顺序与 tag 写错会导致死锁。",
+  "Barrier 会影响性能，非必要不引入。",
+  "流水并行的收益取决于流水比与 micro-batch 数量，不是越多越好。"
+ ]},
+
+{cat:"通信控制流与量化",diff:2,hot:false,
+ op:"If",
+ what:"图级条件控制流：按条件只执行其中一个分支，两个分支各自是一张子图。",
+ qa:[
+  {q:"If 和 Where 的本质区别？",a:"If 是控制流：只有一支会被真正执行，两支可以有不同的形状与算子，涉及图分裂与运行时调度；Where 两支都会被计算，只按条件选值。"},
+  {q:"If 对图优化有什么影响？",a:"它会打断图级优化（两支要分别编译、分支边界有额外开销），分支越多、条件越依赖数据，优化空间越小。"}
+ ],
+ notes:[
+  "两个分支的输出形状与 dtype 必须兼容（否则无法统一）。",
+  "条件若依赖张量值，就属于动态控制流，会阻碍静态化。",
+  "分支内部的优化可以独立做，但跨分支的融合/常量折叠做不到。"
+ ]},
+
+{cat:"通信控制流与量化",diff:3,hot:true,
+ op:"Loop / While / Scan",
+ what:"图级循环控制流：While 按条件循环，Loop 给定迭代次数，Scan 对序列做带状态的逐步计算。",
+ qa:[
+  {q:"为什么循环是图编译的难点？",a:"循环体是子图、迭代次数可能依赖数据，因此难以做跨迭代的静态优化与内存规划；编译器常需要在「展开（unroll）」与「保留循环」之间权衡。"},
+  {q:"Scan 和普通循环的区别？",a:"Scan 明确表达「带状态的顺序递推」，语义更结构化，便于后端做并行扫描优化（分块 + 修正），比通用 While 更容易优化。"}
+ ],
+ notes:[
+  "展开循环能提升并行度但会让图变大、编译变慢。",
+  "循环体内的跨迭代依赖限制了并行化。",
+  "动态终止条件会让图无法静态化，是动态 shape 的另一来源。"
+ ]},
+
+{cat:"通信控制流与量化",diff:2,hot:true,
+ op:"QuantizeLinear / DequantizeLinear",
+ what:"量化的基本算子：QuantizeLinear 把浮点映射成定点整数（含 scale / zero_point），DequantizeLinear 反向还原。两者成对出现（Q/DQ 模式）。",
+ qa:[
+  {q:"量化公式是什么？",a:"量化：q = round(x / scale) + zero_point（再裁剪到整型范围）；反量化：x = (q - zero_point) * scale。zero_point 用于支持非对称量化（如 ReLU 之后全为非负）。"},
+  {q:"为什么用 Q/DQ 节点表示量化？",a:"它把「量化感知」显式表达在图里，既便于训练时伪量化（QAT），也便于推理时把 Q/DQ 融进算子形成真正的整数算子，是事实标准。"}
+ ],
+ notes:[
+  "对称量化 zero_point 恒为 0，非对称才需要它；搞混会导致精度明显下降。",
+  "round 的舍入方式与饱和处理直接影响精度，需与硬件约定一致。",
+  "Q/DQ 的位置决定哪些算子走整数、哪些保留浮点，是量化调优的核心。"
+ ]},
+
+{cat:"通信控制流与量化",diff:2,hot:false,
+ op:"QLinearConv / FakeQuant / QDQ",
+ what:"QLinearConv 是接受量化输入的整数卷积（内部以整数计算）；FakeQuant 在训练时模拟量化误差（前向量化、反向直通）；QDQ 是把 Q/DQ 节点融入算子的整体模式。",
+ qa:[
+  {q:"为什么需要 FakeQuant？",a:"量化会让模型掉点，QAT 通过在训练时插入伪量化节点（前向做量化-反量化、反向近似直通），让模型在训练中适应量化误差，从而减小掉点。"},
+  {q:"QDQ 融合是什么？",a:"把 Q → 算子 → DQ 的模式识别出来，替换成直接吃量化输入的整数算子（如 QLinearConv），省掉中间的量化/反量化开销，真正发挥整数算力。"}
+ ],
+ notes:[
+  "FakeQuant 的量化范围（min/max 或滑动统计）决定精度，是调优重点。",
+  "并非所有算子都有整数版本，混合精度（部分 fp16）是常态。",
+  "端到端必须做精度回归，逐层敏感度分析是定位掉点的常用手段。"
+ ]},
+
+{cat:"通信控制流与量化",diff:2,hot:true,
+ op:"Custom Op / Plugin / Cast / Identity",
+ what:"自定义算子（Plugin）用于把厂商或用户实现的算子接入图；Cast 做类型转换；Identity 是恒等占位，常用于保留名字与调试锚点。",
+ qa:[
+  {q:"为什么必须有自定义算子机制？",a:"新算子不断出现，编译器的内建算子集不可能覆盖全部；BYOC / Plugin 机制让用户或厂商把私有算子接入，并让图分割把不支持的段回退给它。"},
+  {q:"Cast 为什么会影响性能？",a:"每次 Cast 都是一次额外的读写与类型转换，插在算子之间会打断融合；图优化里要把相邻 Cast 合并或消除。"}
+ ],
+ notes:[
+  "自定义算子在编译时是黑盒，会打断融合与内存规划，应尽量放在图边界。",
+  "Identity 常被 DCE 删掉，若需要保留（如作为输出锚点）要显式标记为有副作用。",
+  "Cast 的类型对（fp16↔fp32、int32↔int64）在后端支持度不同，是适配重点。"
+ ]}
+
+];
+
+/* ---------- 渲染 ---------- */
+var CATS = ["张量创建与形状变换","数学与逐元素运算","归约与统计","线性代数与卷积","池化与空间操作","激活函数","归一化与正则","索引集合与排序","序列与注意力","通信控制流与量化"];
+var DIFF = {1:["基础","d1"],2:["进阶","d2"],3:["深入","d3"]};
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(s){return esc(s).replace(/\[\[(.+?)\]\]/g,"<code>$1</code>");}
+
+var listEl = document.getElementById("list");
+var navEl = document.getElementById("nav");
+var opened = {};
+
+function buildCard(it, n){
+  var d = DIFF[it.diff];
+  var div = document.createElement("div");
+  div.className = "q";
+  div.dataset.n = n;
+  div.dataset.cat = it.cat;
+  var notes = it.notes.map(function(p){return "<li>"+fmt(p)+"</li>";}).join("");
+  var qa = it.qa.map(function(f){
+    return '<div class="faq"><div class="fq"><span class="mark">问</span><span>'+fmt(f.q)+'</span></div>'+
+           '<div class="fa">'+fmt(f.a)+'</div></div>';
+  }).join("");
+  var title = esc(it.op).replace(/^([A-Za-z0-9_\/]+)/, function(mm){return '<span class="en">'+mm+'</span>';});
+  div.innerHTML =
+    '<div class="q-head">'+
+      '<div class="num">'+n+'</div>'+
+      '<div class="q-title">'+title+'</div>'+
+      '<div class="q-tags">'+
+        (it.hot?'<span class="tag hot">高频</span>':'')+
+        '<span class="tag '+d[1]+'">'+d[0]+'</span>'+
+      '</div>'+
+      '<div class="caret">▼</div>'+
+    '</div>'+
+    '<div class="q-body"><div class="inner">'+
+      '<p class="blk-label">它是什么</p><p class="what">'+fmt(it.what)+'</p>'+
+      '<p class="blk-label follow" style="margin-top:16px">常见面试问与答</p>'+
+      '<div class="follow-box">'+qa+'</div>'+
+      '<p class="blk-label notes" style="margin-top:16px">学习注意事项 / 易错点</p>'+
+      '<ul class="pts">'+notes+'</ul>'+
+    '</div></div>';
+  div.querySelector(".q-head").addEventListener("click", function(){
+    div.classList.toggle("open");
+    opened[n] = div.classList.contains("open");
+    updateProgress();
+  });
+  return div;
+}
+
+var order = 0;
+CATS.forEach(function(cat){
+  var items = DATA.filter(function(x){return x.cat===cat;});
+  if(!items.length) return;
+
+  var sec = document.createElement("div");
+  sec.className = "section";
+  sec.id = "sec-" + CATS.indexOf(cat);
+  sec.dataset.cat = cat;
+  sec.innerHTML = '<div class="section-head"><h2>'+cat+'</h2>'+
+                  '<span class="cnt">'+items.length+' 个算子</span>'+
+                  '<span class="rule"></span></div><div class="sec-body"></div>';
+  var body = sec.querySelector(".sec-body");
+  items.forEach(function(it){ order++; body.appendChild(buildCard(it, order)); });
+  listEl.appendChild(sec);
+
+  var a = document.createElement("div");
+  a.className = "nav-item";
+  a.innerHTML = '<span>'+cat+'</span><span class="n">'+items.length+'</span>';
+  a.addEventListener("click", function(){
+    document.getElementById("sec-"+CATS.indexOf(cat)).scrollIntoView({behavior:"smooth",block:"start"});
+    document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+    a.classList.add("active");
+  });
+  navEl.appendChild(a);
+});
+
+var total = order;
+document.querySelector(".progress-label").innerHTML = "<span>复习进度</span><span><b id=\"pv\">0</b> / "+total+"</span>";
+
+/* 搜索 */
+var searchInput = document.getElementById("q");
+var emptyEl = document.getElementById("empty");
+
+function doFilter(kw){
+  kw = kw.trim().toLowerCase();
+  var visibleTotal = 0;
+  document.querySelectorAll(".section").forEach(function(sec){
+    var shown = 0;
+    sec.querySelectorAll(".q").forEach(function(card){
+      var txt = card.innerText.toLowerCase();
+      var hit = !kw || txt.indexOf(kw) !== -1;
+      card.style.display = hit ? "" : "none";
+      if(hit) shown++;
+    });
+    sec.style.display = shown ? "" : "none";
+    visibleTotal += shown;
+    var cnt = sec.querySelector(".cnt");
+    cnt.textContent = shown + " 个算子" + (kw ? "（已筛选）" : "");
+  });
+  emptyEl.classList.toggle("show", visibleTotal === 0);
+}
+searchInput.addEventListener("input", function(){ doFilter(searchInput.value); });
+document.addEventListener("keydown", function(e){
+  if(e.key === "/" && document.activeElement !== searchInput){
+    e.preventDefault(); searchInput.focus(); searchInput.select();
+  }
+  if(e.key === "Escape" && document.activeElement === searchInput){
+    searchInput.value = ""; doFilter(""); searchInput.blur();
+  }
+});
+
+/* 展开 / 收起 */
+var expandBtn = document.getElementById("expandAll");
+var allOpen = false;
+expandBtn.addEventListener("click", function(){
+  allOpen = !allOpen;
+  document.querySelectorAll(".q").forEach(function(c){
+    c.classList.toggle("open", allOpen);
+    opened[c.dataset.n] = allOpen;
+  });
+  expandBtn.textContent = allOpen ? "全部收起" : "展开全部";
+  updateProgress();
+});
+
+/* 进度 */
+function updateProgress(){
+  var c = 0;
+  document.querySelectorAll(".q").forEach(function(q){
+    if(q.classList.contains("open")) c++;
+  });
+  document.getElementById("pv").textContent = c;
+  document.getElementById("pbar").style.width = (c/total*100) + "%";
+}
+updateProgress();
+
+/* 打印 */
+document.getElementById("printBtn").addEventListener("click", function(){
+  document.querySelectorAll(".q").forEach(function(c){ c.classList.add("open"); });
+  window.print();
+});
+
+/* 回到顶部 */
+var toTop = document.getElementById("totop");
+window.addEventListener("scroll", function(){
+  toTop.classList.toggle("show", window.scrollY > 600);
+});
+toTop.addEventListener("click", function(){ window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* 滚动高亮导航 */
+var secs = Array.prototype.slice.call(document.querySelectorAll(".section"));
+var navItems = Array.prototype.slice.call(document.querySelectorAll(".nav-item"));
+window.addEventListener("scroll", function(){
+  var pos = window.scrollY + 120, idx = 0;
+  secs.forEach(function(s, i){ if(s.offsetTop <= pos) idx = i; });
+  navItems.forEach(function(n, i){ n.classList.toggle("active", i === idx); });
+});
+</script>
+</body>
+</html>
