@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepSeek 推理优化：FlashMLA、DeepEP 与低成本 API</title>
+<style>
+  :root { color-scheme: light; --ink:#172033; --muted:#5b6475; --line:#dce2eb; --panel:#f5f7fb; --blue:#2457c5; --green:#13795b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#eef2f7; color:var(--ink); font:16px/1.7 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+  .page { max-width:1000px; margin:32px auto; padding:0 20px; }
+  header { background:linear-gradient(135deg,#15264d,#2858a8); color:white; border-radius:18px; padding:36px; }
+  header h1 { font-size:clamp(27px,4vw,40px); line-height:1.25; margin:0 0 14px; }
+  header p { margin:0; color:#e2eaff; max-width:760px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+  .chip { border:1px solid #ffffff55; border-radius:999px; padding:4px 11px; font-size:13px; }
+  main { display:grid; gap:18px; margin-top:20px; }
+  section { background:white; border:1px solid var(--line); border-radius:16px; padding:24px; }
+  h2 { font-size:23px; margin:0 0 12px; }
+  h3 { font-size:17px; margin:18px 0 6px; }
+  p { margin:8px 0; }
+  .muted { color:var(--muted); font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .card strong { display:block; font-size:18px; margin-bottom:4px; }
+  .metric { display:flex; gap:12px; flex-wrap:wrap; margin:16px 0; }
+  .metric > div { flex:1 1 180px; padding:16px; border-radius:12px; background:var(--panel); border:1px solid var(--line); }
+  .metric b { display:block; font-size:28px; line-height:1.3; }
+  .metric span { color:var(--muted); font-size:13px; }
+  .flow { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:9px; align-items:stretch; margin-top:14px; }
+  .step { background:var(--panel); border:1px solid var(--line); padding:14px 10px; border-radius:12px; text-align:center; }
+  .arrow { display:grid; place-items:center; color:var(--blue); font-size:23px; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; }
+  th,td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:var(--panel); }
+  code { background:#eef2f8; padding:2px 5px; border-radius:5px; font-size:.92em; }
+  a { color:var(--blue); overflow-wrap:anywhere; }
+  .callout { border-left:4px solid var(--blue); background:#f3f7ff; padding:13px 16px; border-radius:0 10px 10px 0; margin-top:12px; }
+  footer { color:var(--muted); text-align:center; font-size:13px; padding:20px 0 30px; }
+  @media (max-width:680px) {
+    .page { margin:12px auto; padding:0 10px; }
+    header, section { padding:20px; }
+    .grid { grid-template-columns:1fr; }
+    .flow { grid-template-columns:1fr; }
+    .arrow { transform:rotate(90deg); }
+    table { font-size:14px; }
+    th,td { padding:8px; }
+  }
+  @media print {
+    body { background:white; }
+    .page { max-width:none; margin:0; padding:0; }
+    header, section { break-inside:avoid; box-shadow:none; }
+    a { color:inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>DeepSeek 推理优化：FlashMLA、DeepEP 与低成本 API</h1>
+    <p>本 session 知识总结｜从模型架构、GPU Kernel、跨卡通信到在线服务系统，理解 DeepSeek 为什么能够兼顾推理速度与 API 价格。</p>
+    <div class="chips">
+      <span class="chip">AI Compiler</span><span class="chip">LLM Inference</span>
+      <span class="chip">MoE / MLA</span><span class="chip">GPU Kernel</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. 核心结论</h2>
+      <p><strong>DeepSeek API 的低价与高速度，不是某一个算子的功劳，而是模型架构、Kernel、GPU 通信、推理调度与定价策略共同作用的结果。</strong></p>
+      <div class="grid">
+        <div class="card"><strong>模型少算</strong>MoE 每个 Token 只激活部分 Expert，避免每次都执行全部参数。</div>
+        <div class="card"><strong>显存少读</strong>MLA 压缩 KV 表示，降低 KV Cache 的容量和读取压力。</div>
+        <div class="card"><strong>Kernel 更高效</strong>FlashMLA 优化 Attention 的数据访问、计算布局与算子执行。</div>
+        <div class="card"><strong>多卡更协同</strong>DeepEP 优化 Token 的跨 GPU 分发与结果回收，减少通信等待。</div>
+      </div>
+      <div class="callout"><strong>一句话：</strong>降低单位 Token 的计算与访存成本，并提高 GPU 集群的有效吞吐量，才能同时改善成本和速度。</div>
+    </section>
+
+    <section>
+      <h2>2. FlashMLA 是什么？</h2>
+      <p><strong>FlashMLA</strong> 是 DeepSeek 开源的高性能 Attention Kernel 库，主要面向 MLA（Multi-head Latent Attention，多头潜变量注意力）及相关推理工作负载。</p>
+      <h3>它主要优化什么？</h3>
+      <ul>
+        <li>优化 Decode 阶段的 Attention 计算与 KV Cache 读取。</li>
+        <li>利用合适的 Tiling、内存访问模式和 GPU 资源调度，提高实际硬件利用率。</li>
+        <li>在适用场景下支持稀疏 Attention、低精度 KV Cache 或相关算子融合；具体能力依赖仓库版本和目标硬件。</li>
+      </ul>
+      <h3>为什么 MLA 重要？</h3>
+      <p>传统 MHA 会维护多头 Key/Value 表示；MLA 使用压缩的潜变量表示来减少缓存需求。Decode 时，降低 KV Cache 的读取量有机会显著缓解显存带宽瓶颈。</p>
+      <div class="callout"><strong>编译器视角：</strong>重点看 Attention 的 IR 表达、Tiling、数据 Layout、Memory Access、Fusion，以及专用 Kernel 的调用边界。</div>
+      <p>官方仓库：<a href="https://github.com/deepseek-ai/FlashMLA">deepseek-ai/FlashMLA</a></p>
+    </section>
+
+    <section>
+      <h2>3. DeepEP 是什么？</h2>
+      <p><strong>DeepEP</strong> 是 DeepSeek 开源的高性能 GPU 通信库，专门服务于 MoE 的 Expert Parallelism（专家并行）。它主要解决不同 GPU 之间如何高效交换 Token 数据的问题，而不是负责 Attention 数学计算。</p>
+      <h3>MoE 的 Dispatch / Compute / Combine</h3>
+      <div class="flow">
+        <div class="step"><strong>Dispatch</strong><br><span class="muted">按 Router 结果把 Token 发给对应 Expert</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><strong>Expert Compute</strong><br><span class="muted">各 GPU 执行本地 Expert 计算</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><strong>Combine</strong><br><span class="muted">收集 Expert 输出并按权重合并</span></div>
+      </div>
+      <h3>关键优化方向</h3>
+      <ul>
+        <li>优化多 GPU All-to-All 类数据交换。</li>
+        <li>提供面向高吞吐与低延迟场景的通信路径。</li>
+        <li>减少通信开销，并尽可能让通信与 Expert GEMM 重叠执行。</li>
+        <li>结合 GPU 互联与多节点网络能力；具体支持取决于版本、硬件和部署环境。</li>
+      </ul>
+      <div class="callout"><strong>编译器 / Runtime 视角：</strong>关注 Token 重排、数据布局、异步执行、通信与计算重叠、SM 资源竞争以及多卡拓扑。</div>
+      <p>官方仓库：<a href="https://github.com/deepseek-ai/DeepEP">deepseek-ai/DeepEP</a></p>
+    </section>
+
+    <section>
+      <h2>4. FlashMLA 与 DeepEP 的区别</h2>
+      <table>
+        <thead><tr><th>维度</th><th>FlashMLA</th><th>DeepEP</th></tr></thead>
+        <tbody>
+          <tr><td>主要任务</td><td>Attention 计算优化</td><td>MoE 专家间通信优化</td></tr>
+          <tr><td>核心问题</td><td>如何更快计算 Attention、降低 KV 访存成本？</td><td>如何更快分发 Token 并收集 Expert 输出？</td></tr>
+          <tr><td>主要瓶颈</td><td>Attention 计算、KV Cache 访存与 Kernel 效率</td><td>跨 GPU 通信、同步、负载与通信等待</td></tr>
+          <tr><td>典型环节</td><td>MLA / Decode Attention</td><td>MoE Dispatch / Combine</td></tr>
+        </tbody>
+      </table>
+      <p>两者互补：一个优化“算”，另一个优化“传”。实际推理系统还需要 GEMM Kernel、运行时和调度策略配合。</p>
+    </section>
+
+    <section>
+      <h2>5. DeepSeek-V3 的 MoE 与 MLA</h2>
+      <div class="metric">
+        <div><b>671B</b><span>DeepSeek-V3 总参数量（官方技术报告口径）</span></div>
+        <div><b>约 37B</b><span>每个 Token 激活参数量（约值）</span></div>
+      </div>
+      <p>MoE 让模型保留较大的总参数容量，但每个 Token 只执行选中的部分专家，因此计算量不会简单地随总参数量等比例增长。</p>
+      <p class="muted">注意：激活参数量不等于部署所需存储量。完整模型权重通常仍需驻留在 GPU 显存或分布式设备中；跨 GPU 专家通信也会带来额外成本。</p>
+    </section>
+
+    <section>
+      <h2>6. 为什么 API 能便宜、推理又快？</h2>
+      <h3>技术因素</h3>
+      <ol>
+        <li><strong>MoE：</strong>降低每 Token 实际执行的专家计算量。</li>
+        <li><strong>MLA：</strong>减少 KV Cache 占用与 Decode 阶段的读取压力。</li>
+        <li><strong>高性能 Kernel：</strong>减少访存、调度和中间结果开销。</li>
+        <li><strong>高效通信：</strong>降低 MoE 的跨卡等待，提高集群利用率。</li>
+        <li><strong>推理服务系统：</strong>通过 Continuous Batching、Prefix Cache、请求调度等方式提高有效吞吐量。</li>
+        <li><strong>推测式解码：</strong>若部署启用且预测命中率足够，可并行验证多个候选 Token，减少主模型逐 Token 执行的次数。MTP 训练目标并不意味着每次 API 请求都启用了该机制。</li>
+      </ol>
+      <h3>商业因素</h3>
+      <p>API 价格还受市场竞争、毛利目标、产品策略与流量结构影响。技术效率解释服务商为什么有能力低价提供服务，但不能单凭公开价格推断真实推理成本或利润。</p>
+      <div class="callout"><strong>成本直觉：</strong><br>单位 Token 成本 ≈ GPU 集群运行成本 ÷ 有效 Token 吞吐量。<br>在硬件成本相近时，提高有效吞吐量通常有利于降低平均成本，但真实系统还要考虑延迟、显存、通信和负载等约束。</div>
+    </section>
+
+    <section>
+      <h2>7. 速度指标不要混淆</h2>
+      <table>
+        <thead><tr><th>指标</th><th>含义</th><th>主要影响因素</th></tr></thead>
+        <tbody>
+          <tr><td>TTFT</td><td>Time to First Token：请求发出到首个 Token 返回的时间</td><td>输入长度、Prefill 吞吐、队列等待、缓存命中</td></tr>
+          <tr><td>TPOT</td><td>Time Per Output Token：生成阶段每个输出 Token 的平均时间</td><td>Decode Kernel、KV Cache、批量大小、通信与调度</td></tr>
+          <tr><td>吞吐量</td><td>单位时间处理的 Token 数</td><td>Batching、并发量、GPU 利用率、模型与 Kernel 效率</td></tr>
+          <tr><td>API 单价</td><td>每百万输入 / 输出 Token 的计费价格</td><td>实际成本、缓存计费规则、市场与商业策略</td></tr>
+        </tbody>
+      </table>
+      <p>一个 API 可以拥有很高的总吞吐量，但在高并发下仍然出现较长的单请求等待时间。因此比较“快不快”时，要区分 TTFT、TPOT 和并发吞吐量。</p>
+    </section>
+
+    <section>
+      <h2>8. 建议的学习路线（面向 AI 编译器工程师）</h2>
+      <ol>
+        <li><strong>FlashAttention 基础：</strong>理解 Tiling、IO-aware 算法、Softmax 分块计算与内存层级。</li>
+        <li><strong>MLA 与 KV Cache：</strong>理解压缩潜变量表示，以及 Decode 阶段的访存瓶颈。</li>
+        <li><strong>FlashMLA 源码：</strong>追踪 Kernel 入口、数据 Layout、Tile 配置、硬件约束与版本支持。</li>
+        <li><strong>MoE / Expert Parallelism：</strong>理解 Router、Top-k、Token 重排、Dispatch / Combine。</li>
+        <li><strong>DeepEP 源码：</strong>研究通信路径、异步执行、通信与计算重叠及资源分配。</li>
+        <li><strong>推理 Runtime：</strong>研究 Continuous Batching、Prefix Cache、Speculative Decoding 如何影响延迟和吞吐量。</li>
+      </ol>
+      <p>对 MLIR / LLVM 后端开发而言，最值得建立的连接是：高层算子语义 → IR 表达与变换 → Layout / Tiling → 专用 Kernel 或 Runtime 调用 → 硬件执行与性能分析。</p>
+    </section>
+
+    <section>
+      <h2>9. 官方资料</h2>
+      <ul>
+        <li><a href="https://github.com/deepseek-ai/FlashMLA">FlashMLA GitHub 仓库</a> — Attention Kernel 实现与支持说明。</li>
+        <li><a href="https://github.com/deepseek-ai/DeepEP">DeepEP GitHub 仓库</a> — MoE 专家并行通信库。</li>
+        <li><a href="https://github.com/deepseek-ai/DeepGEMM">DeepGEMM GitHub 仓库</a> — 可继续研究的高性能 GEMM / MoE 计算组件。</li>
+        <li><a href="https://api-docs.deepseek.com/">DeepSeek API 文档</a> — 查询最新模型名称、价格、缓存规则和接口能力。</li>
+        <li><a href="https://arxiv.org/">arXiv</a> — 搜索 DeepSeek-V3 技术报告，核对模型架构与参数规模。</li>
+      </ul>
+      <p class="muted">仓库主线、API 价格、硬件支持和推理行为会随版本变化。做性能比较或源码分析时，应固定具体 commit、GPU 型号、推理框架和测试负载；本文为概念总结，不构成特定版本的性能保证。</p>
+    </section>
+  </main>
+  <footer>DeepSeek 推理优化学习笔记 · 可离线打开 · 支持打印为 PDF</footer>
+</div>
+</body>
+</html>
